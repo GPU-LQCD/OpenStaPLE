@@ -23,7 +23,7 @@ int print_su3_soa_ildg_binary(global_su3_soa * conf, const char* nomefile,
 
 
 //WRAPPER
-static inline int save_conf(global_su3_soa * const conf, const char* nomefile,
+static inline int save_conf(global_su3_soa * const conf_rw, const char* nomefile,
         int conf_id_iter, int use_ildg)
 {
 
@@ -36,10 +36,13 @@ static inline int save_conf(global_su3_soa * const conf, const char* nomefile,
 #endif 
 
     if(use_ildg){
-        printf("Using ILDG format.\n");
-        return print_su3_soa_ildg_binary(conf,nomefile,conf_id_iter);
+        printf("MPI%02d: Using ILDG format.\n",devinfo.myrank);
+        return print_su3_soa_ildg_binary(conf_rw,nomefile,conf_id_iter);
     }
-    else return print_su3_soa_ASCII(conf,nomefile,conf_id_iter,NULL);
+    else {
+        printf("MPI%02d: Using ASCII format.\n", devinfo.myrank);
+        return print_su3_soa_ASCII(conf_rw,nomefile,conf_id_iter,NULL);
+    }
 
 }
 
@@ -58,10 +61,12 @@ static inline void save_conf_wrapper(su3_soa* conf, const char* nomefile,
         int irank;
         for(irank = 1 ; irank < devinfo.nranks; irank++)
             recv_loc_subconf_from_rank(conf_rw,irank,irank);
+
         recv_loc_subconf_from_buffer(conf_rw,conf,0);
         writeOutcome = save_conf(conf_rw, nomefile,conf_id_iter, use_ildg);
     }
-    else  send_lnh_subconf_to_master(conf,devinfo.myrank);
+    else send_lnh_subconf_to_master(conf,devinfo.myrank);
+    
     MPI_Bcast((void*) &writeOutcome,1,MPI_INT,0,MPI_COMM_WORLD);
 
     if(0 != writeOutcome){
@@ -170,6 +175,25 @@ static inline int read_conf_wrapper(su3_soa* conf, const char* nomefile,
     return error;
 
 }
+
+void rw_iterate_on_global_sites_lx_xyzt_axis_ordering( 
+        void (*single_element_rw)(
+            const int /*idxh*/, const int /*parity*/, 
+            const int /*direction*/, const void* /*data*/,
+            const int /*conf_machine_endianness_disagreement*/,
+            FILE * /*fp*/), 
+        const void* datastruct, FILE * fp,
+        const int scalar_even_mode);
+
+void binaryread_single_su3_into_su3_soa( // machine big endian
+        const int idx, const int parity, const int direction, 
+        const void* datastruct,
+        const int conf_machine_endianness_disagreement, FILE* fp);
+
+void binarywrite_single_su3_into_su3_soa(
+        const int idx, const int parity, const int direction, 
+        const void* datastruct, 
+        const int conf_machine_endianness_disagreement, FILE* fp);
 
 
 // READ AND WRITE FOR THE POOR MAN

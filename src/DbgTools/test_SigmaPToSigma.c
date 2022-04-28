@@ -124,7 +124,7 @@ int main(){
 	       }else{
 		 accettate_metro = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc,residue_metro,residue_md,id_iter-id_iter_offset-accettate_therm,accettate_metro,1);
 	       }
-#pragma acc update self(conf_acc[0:8])
+#pragma acc update host(conf_acc[0:8])
 	       //---------------------------------------//
 
 	       //--------- MISURA ROBA FERMIONICA ----------------//

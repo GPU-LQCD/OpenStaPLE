@@ -2,21 +2,14 @@
 #define RATIONAL_APPROX_C_
 
 #include "./rationalapprox.h"
-#include "../Include/common_defines.h"
 #include <stdlib.h>
 
+#define CHECKREAD(expr,should_read) \
+{int read = expr ;if(read != should_read) { \
+        printf("%s:%d, Error, not read expected number of entries : %d read vs %d should_read\n.", __FILE__, __LINE__ , read,should_read);\
+        exit(1);}}\
 
 
-#include "../OpenAcc/geometry.h" // to know if MULTIDEVICE is defined or not
-
-#ifdef NOMULTI
-#undef MULTIDEVICE
-#endif
-
-#ifdef MULTIDEVICE
-#include <mpi.h>
-#include  "../Mpi/multidev.h"
-#endif 
 
 extern int verbosity_lv;
 
@@ -79,64 +72,11 @@ char* rational_approx_filename(double error, int exponent_num, int exponent_den,
 int rationalapprox_read(RationalApprox* rational_approx)
 {
 
-    // CALCULATION OF COEFFICIENTS FOR FIRST_INV_APPROX_NORM_COEFF
-
     char * nomefile = rational_approx_filename(rational_approx->error,rational_approx->exponent_num,rational_approx->exponent_den,rational_approx->lambda_min);
 
     int error = rationalapprox_read_custom_nomefile(rational_approx,nomefile);
-#ifdef MULTIDEVICE
-    MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD );
-#endif
-    
-    if(error){
-
-#ifdef MULTIDEVICE
-        printf("MPI%02d - Some error happened in reading %s ...\n",
-                devinfo.myrank,nomefile );
-        if(0==devinfo.myrank){
-        FILE * bash_repair_commands = fopen("genappfiles.sh","a");
-
-        printf("You may want to generate a rational approximation file using the tool \'rgen\' (look in the tools directory). Please try\n");
-        printf("./rgen %e %d %d %e\n", rational_approx->error, 
-                rational_approx->exponent_num, rational_approx->exponent_den, 
-                rational_approx->lambda_min);
-        printf("(see and modify \"genappfiles.sh\", check for doublers)\n");
-        printf("(Or give command \n bash <(sort genappfiles.sh | uniq).\n");
-        fprintf(bash_repair_commands,
-                "echo \'./rgen %e %d %d %e >> rat_app_gen_log.txt &\'\n",
-                rational_approx->error, rational_approx->exponent_num,
-                rational_approx->exponent_den, rational_approx->lambda_min);
-        fprintf(bash_repair_commands,"./rgen %e %d %d %e >> rat_app_gen_log.txt &\n",
-                rational_approx->error, rational_approx->exponent_num,
-                rational_approx->exponent_den, rational_approx->lambda_min);
-        fclose(bash_repair_commands);
-
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-#else
-
-
-        char command[100];
-        sprintf(command,
-                "./rgen %e %d %d %e\n",
-                rational_approx->error, rational_approx->exponent_num,
-                rational_approx->exponent_den, 
-                rational_approx->lambda_min);
-
-        printf("Creating (and caching) file %s, wait ...\n", nomefile);
-        int status=system(command);
-
-        error = rationalapprox_read_custom_nomefile(rational_approx,nomefile);
-        free(nomefile);
-#endif
-        return error;
-    }
-    else{
-
-        free(nomefile);
-        return 0;
-    }
+    free(nomefile);
+    return error;
 }
 
 
@@ -281,6 +221,19 @@ void renormalize_rational_approximation(RationalApprox *in, RationalApprox *out)
 }
 
 
+double rational_approx_evaluate(RationalApprox *in, double x){
+
+    double res = in->RA_a0;
+
+    int order;
+    for(order = 0; order<in->approx_order;++order){
+
+        res += in->RA_a[order]/(x+in->RA_b[order]);
+
+    }
+    return res;
+
+}
 
 
 #endif

@@ -1,0 +1,29 @@
+# This file is parsed in a non safe way. 
+# Please do not write things that can be mistaken for the 
+# tile parameters.
+
+LOC_N0 32 
+LOC_N1 32 
+LOC_N2 32 
+LOC_N3 8 
+NRANKS_D3 1  # the number of ranks, in the 'slowest' dimension
+
+DEODOETILE0 8  # The tile sizes for the heaviest kernels 
+DEODOETILE1 8  # Don't use '*'
+DEODOETILE2 8
+DEODOEGANG3 8
+
+IMPSTAPTILE2 8
+IMPSTAPTILE1 8
+IMPSTAPTILE0 8
+IMPSTAPGANG3 8
+  
+STAPTILE2 8
+STAPTILE1 8
+STAPTILE0 8
+STAPGANG3 8
+
+SIGMATILE2 8
+SIGMATILE1 8
+SIGMATILE0 8
+SIGMAGANG3 8

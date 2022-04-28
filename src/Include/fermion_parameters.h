@@ -61,6 +61,7 @@ void init_all_u1_phases(bf_param bfpars, ferm_param *fpar);
 
 void init_fermion_backfield(bf_param bf_pars, ferm_param *fermion_parameters);
 
+int rat_approx_file_or_script_create(RationalApprox* rational_approx);
 
 #endif
 

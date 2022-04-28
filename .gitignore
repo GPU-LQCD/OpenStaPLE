@@ -1,1 +1,9 @@
-/Makefile
+*.bin
+*.gpu
+*.ptx
+*.o
+*~
+*.swp
+*.pyc
+*.REMEZ
+run

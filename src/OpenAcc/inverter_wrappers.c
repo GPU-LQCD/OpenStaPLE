@@ -132,11 +132,11 @@ int inverter_wrapper(inverter_package ip,
         printf("MPI%02d: (wrapper) max_cg  %d, restarting every %d, shift %f\n", devinfo.myrank,
                 max_cg,inverter_tricks.restartingEvery,shift);
 
-#pragma acc update self(ip.u[0:1])
+#pragma acc update host(ip.u[0:1])
         printf("MPI%02d: (wrapper) u[sizeh/2]: %f\n", devinfo.myrank, creal(ip.u[0].r0.c0[sizeh/2]));
-#pragma acc update self(out[0:1])
+#pragma acc update host(out[0:1])
         printf("MPI%02d: (wrapper) out[sizeh/2]: %f\n", devinfo.myrank, creal(out[0].c0[sizeh/2]));
-#pragma acc update self(in[0:1])
+#pragma acc update host(in[0:1])
         printf("MPI%02d: (wrapper) in[sizeh/2]: %f\n", devinfo.myrank, creal(in[0].c0[sizeh/2]));
     }
 

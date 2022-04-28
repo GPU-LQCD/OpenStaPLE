@@ -57,7 +57,6 @@ void initrand(unsigned long s)
 
 void initrand_fromfile(const char * filename, unsigned long seed_default){
 
-#ifndef NORANDOM
     FILE * seedfile = fopen(filename,"r");
     int reads;
     int problems_in_read = 0;
@@ -81,11 +80,6 @@ void initrand_fromfile(const char * filename, unsigned long seed_default){
 
         }
     }
-#else
-    initrand(seed_default);
-#endif
-
-
 }
 
 void saverand_tofile(const char * filename){

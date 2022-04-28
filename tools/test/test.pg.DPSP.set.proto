@@ -1,0 +1,105 @@
+
+
+ActionParameters
+Beta                          3.62       
+StoutSteps                    2        
+StoutRho                      1.500000e-01        
+
+
+BackgroundFieldParameters
+ex      5
+ey     -5
+ez      1
+bx     -5
+by      5
+bz      3
+
+
+MDParameters
+NmdSteps                      3         
+GaugeSubSteps                 3        
+TrajLength                    0.500000e+00        
+residue_metro                 1e-8        
+ExpMaxEigenvalue              5.500000e+00        
+SinglePrecMD                  SINGLEPRECISIONMD
+residue_md                    1e-4        
+MaxCGIterations               10000  # max number of iterations 
+                                     # not to get underflow 
+                                     # in single precision
+
+
+MontecarloParameters
+Ntraj                         1
+ThermNtraj                    0        
+StoreConfInterval             5        
+SaveConfInterval              5        
+StoreConfName                 test.DPSP.gaugeconf_store        
+SaveConfName                  test.DPSP.gaugeconf_save        
+MaxConfIdIter                 1000000             
+RandGenStatusFilename         test.DPSP.rgstatus.bin        
+MaxRunTimeS                   1.000000e+09        
+Seed                          42                   
+EpsGen                        1.000000e-01        
+
+
+GaugeMeasuresSettings
+GaugeOutfilename              test.DPSP.gauge.dat        
+
+
+FermionMeasuresSettings
+FermionicOutfilename          test.DPSP.fermion.dat        
+SingleInvNVectors             1        
+DoubleInvNVectorsChiral       1                   
+DoubleInvNVectorsQuarkNumber  1                   
+
+
+DeviceSettings
+device_choice                 0        
+AsyncFermionComms             1
+AsyncGaugeComms               1                   
+NProcPerNode                  SEDNODEDIM    
+NRanks                        SEDNRANKS        
+
+
+
+Geometry
+nx                            SEDNX                  
+ny                            SEDNY                  
+nz                            SEDNZ                  
+nt                            SEDNT                  
+
+xmap                          0                   
+ymap                          1                   
+zmap                          2                   
+tmap                          3                   
+
+
+
+DebugSettings
+UseILDG                       1                   
+VerbosityLv                   2                   
+SaveAllAtEnd                  0                   
+PrintBackFieldDbgInfo         0                   
+SaveDiagnostics               1                   
+DoRevTest                     SEDREVTEST
+DoNoRandomTest                1
+RngFakenessLevel              0                   
+MDDbgPrintMaxCount            9
+SaveDiagnosticsFilename       test.DPSP.md_diagnostics.dat  
+PrintDiagInfoEvery            10               
+
+
+InverterTricks
+useMixedPrecision             1                   
+restartingEvery               10000               
+mixedPrecisionDelta           1.000000e-01        
+
+
+TestSettings
+DeoDoeIterations              1000        
+MultiShiftInverterRepetitions 5
+FakeShift                     1e-14        
+BenchmarkMode                 1        
+SaveResults                   1                   
+
+

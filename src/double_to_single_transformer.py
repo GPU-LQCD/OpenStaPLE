@@ -1,21 +1,57 @@
 #!/usr/bin/python2 
-# This script does some work for converting 
+'''
+ This script does the work of creating single precision header and source files
+ from their double precision version.
 
+ There are three categories of files:
+ 1. All files (see list "fileNames")
+ 2. files where we can change all 'd_complex' with 'f_complex', 
+ and also function names without fears ("filesALLDtoF"). Not all files are such.
+ 3. Files in single precision which have been modified by hand and must 
+ not be overwritten  ("filesNoOverwrite")
+ 
+ The conversion is performed in this way:
+ 1. Types are converted through a dictionary (for files where this is allowed)
+ 2. function names are found by searching all files for function declarations,
+    and then replaced by the same name with "_f" appended
+ 3. global variable names are found by searching all files for their declaration,
+    and then replaced by the same name with "_f" appended
+ 4. #define'd Numerical constant must also be converted to float,
+    (for files where this is allowed)
+ 5. Library functions must also be converted to their float version 
+    (for files where this is allowed)
+ 6. New filenames are the old filenames with 'sp_' prepended.
+ 7. sp_struct_c_def.h is created from struct_c_def.h, defining "f_complex"
+ 8. header guards are also changed, since a file with a new name is created.
+    NOTICE that header guards must satisfy some criteria in order to be matched:
+
+       headerGuard = os.path.basename(fileName).upper().replace('.','_')
+
+'''
 from sys import argv,exit
 import os 
 import re
 
+# in autoMode, the user is not asked for permissions
+# the script does not overwrite not-automatically written files
 autoMode = False
 if 'autoMode' in argv :
     autoMode = True
     argv.remove('autoMode')
 
+
+# the script looks at output file timestamps, and by default does not 
+# rewrite files
 checkEverythingAnyway = False
 
 if 'recheck' in argv :
     checkEverythingAnyway = True
     argv.remove('recheck')
 
+silentMode = False
+if 'silentMode' in argv :
+    silentMode = True
+    argv.remove('silentMode')
 
 fileNames = [\
 'OpenAcc/alloc_vars.c',\
@@ -123,11 +159,15 @@ dpVariableNames = [] # new function names will just be dp function names + '_f' 
 dpTypes = ['double_soa','dcomplex_soa','vec3_soa','vec3',\
         'su3_soa','thmat_soa','tamat_soa',\
         'global_vec3_soa','global_su3_soa',\
+        'global_tamat_soa','global_thmat_soa',\
+        'global_dcomplex_soa','global_double_soa',\
         'single_su3' , 'single_tamat', 'single_thmat']
 # corresponding types in in sp_struct_c_def.h
 spTypes = ['float_soa','fcomplex_soa','vec3_soa_f','vec3_f',\
         'su3_soa_f','thmat_soa_f','tamat_soa_f',\
         'global_vec3_soa_f','global_su3_soa_f',\
+        'global_tamat_soa_f','global_thmat_soa_f',\
+        'global_dcomplex_soa_f','global_double_soa_f',\
         'single_su3_f' , 'single_tamat_f', 'single_thmat_f']
 
 # as in struct_c_def.h
@@ -163,7 +203,8 @@ def findFunctionNames(lineRaw):
             # $ = end of rawFunctionName    
             dpFunctionName = rawFunctionName[funcNameLocation.start():funcNameLocation.end()]
             if dpFunctionName not in dpFunctionNames and dpFunctionName != 'main':
-                print "Found function " + dpFunctionName
+                if not silentMode :
+                    print "Found function " + dpFunctionName
                 dpFunctionNames.append(dpFunctionName)
             break
 
@@ -190,7 +231,8 @@ def findFirstVarName(text): # note: does not work with,e.g. 'int a,b;':
             # $ = end of rawFunctionName    
             dpVarName = rawVarName[varNameLocation.start():varNameLocation.end()]
             if dpVarName not in dpVariableNames: 
-                print "Found Variable (", soaType, ')', dpVarName
+                if not silentMode:
+                    print "Found Variable (", soaType, ')', dpVarName
                 dpVariableNames.append(dpVarName)
 
     if len(upperBoundaries) == 0:
@@ -202,7 +244,8 @@ def findFirstVarName(text): # note: does not work with,e.g. 'int a,b;':
 
 # collecting all function names
 for fileName in fileNames:
-    print "----------\nChecking file" , fileName , '\n-----------'
+    if not silentMode:
+        print "----------\nChecking file" , fileName , '\n-----------'
     f  =open(fileName)
     fileLines = f.readlines()
     for line in fileLines:
@@ -210,17 +253,20 @@ for fileName in fileNames:
     f.close()
 
 
-dpFunctionNames.sort(key = len, reverse = True ) # CRUCIAL because some function names 
+dpFunctionNames.sort(key = len, reverse = True ) # here reverse is CRUCIAL 
+                                                 # because some function names 
                                                  # contain other function names
 
 functionNamesFile = open('functions_found.txt','w')
 for foundFunction in dpFunctionNames:
     functionNamesFile.write(foundFunction + '\n')
 functionNamesFile.close()
-print "Total functions found: ", len(dpFunctionNames)
+if not silentMode:
+    print "Total functions found: ", len(dpFunctionNames)
 
 # collecting all global variable names
-print "\n\n-----------------\nLooking for variable names\n-----------------\n"
+if not silentMode:
+    print "\n\n-----------------\nLooking for variable names\n-----------------\n"
 f = open('OpenAcc/alloc_vars.c')
 text = f.read()
 foundSomething = True
@@ -243,7 +289,9 @@ globalVarNamesFile.close()
 dpVariableNames.append('phases') # for U1 used in dirac matrix
 dpVariableNames.sort(key = len , reverse = True) # CRUCIAL
 
-print "Total global variables found: ", len(dpVariableNames)
+if not silentMode:
+    print "Total global variables found: ", len(dpVariableNames)
+
 
 
 
@@ -262,27 +310,37 @@ fileNamesToChange += filesNoOverwrite
 
 changedFiles = []
 
+fileArgs = [ fileName.replace('sp_','') for fileName in argv ] 
+
 for fileName in fileNamesToChange:
     # notice: if autoMode was in argv, it was previously removed 
     # so the case len(argv)>1 is the case when there are filenames passed as arguments 
     # and the case len(argv)==1 is the one without filenames passed as arguments
-    if (len(argv) > 1 and fileName in argv) or (len(argv)==1 and fileName not in filesNoOverwrite):
+    if (len(argv) > 1 and fileName in fileArgs) \
+            or (len(argv)==1 and fileName not in filesNoOverwrite):
         
         newFileName = os.path.dirname(fileName)+'/sp_'+os.path.basename(fileName)
         writeIt = True
 
-        if os.path.exists(newFileName):
+        if fileName in filesNoOverwrite and autoMode:
+            writeIt = False
+        elif os.path.exists(newFileName):
             doubleFileModTime = os.path.getmtime(fileName)
             singleFileModTime = os.path.getmtime(newFileName)
             if singleFileModTime > doubleFileModTime and not checkEverythingAnyway:
-                print "File ", newFileName, " is newer than ",fileName," and won't be touched."
+                if silentMode:
+                    print newFileName, "is already ok." 
+                else:
+                    print "File ", newFileName, " is newer than ",fileName," and won't be touched."
+                
                 writeIt = False
 
-        if os.path.exists(newFileName) and ( ans != 'a' or fileName in filesNoOverwrite):
+        elif os.path.exists(newFileName) and ( ans != 'a' or fileName in filesNoOverwrite):
             ans = ''
             while ans not in ['y','n','a']:
                 if fileName in filesNoOverwrite:
                     print "\nWARNING: File " + fileName + " is in the 'protected' file list!"
+
                 print "Overwrite file \'"+newFileName+"\'? (y=yes,n=no,a=yes to all)"
                 ans = raw_input().lower()
                 if ans == 'n':
@@ -405,21 +463,25 @@ for fileName in fileNamesToChange:
     
            
             
-            # adding 'typedef double complex d_complex' in sp_struct_c_def.c
+            # adding 'typedef double complex d_complex' in sp_struct_c_def.h
             if  'struct_c_def.h' in fileName:
-                print "Adding \'typedef float complex f_complex\' to ", newFileName
+                if not silentMode:
+                    print "Adding \'typedef float complex f_complex\' to ", newFileName
                 newText = newText.replace('//TYPEDEF_FLOAT_COMPLEX','typedef float complex f_complex;' )
         
             if os.path.exists(newFileName):
 
-                print "Checking if ", newFileName, " must be modified..."
+                if not silentMode:
+                    print "Checking if ", newFileName, " must be modified..."
                 oldFile = open(newFileName,'r')
                 oldText = oldFile.read()
                 oldFile.close()
                 if newText != oldText:
-                    print "... file must be modified. Writing file ", newFileName , " ..."
+                    if not silentMode:
+                        print "... file must be modified. Writing file ", newFileName , " ..."
                 else:
-                    print "File ", newFileName, " has no changes and won't be touched."
+                    if not silentMode:
+                        print "File ", newFileName, " has no changes and won't be touched."
                     writeIt = False
                 
                 
@@ -434,7 +496,8 @@ for fileName in fileNamesToChange:
 
 
             if writeIt:
-                print "Writing file ", newFileName, "..."
+                if not silentMode:
+                    print "Writing file ", newFileName, "..."
                 newFile = open(newFileName,'w')
                 newFile.write(newText)
                 newFile.close()
@@ -443,13 +506,18 @@ for fileName in fileNamesToChange:
 
 
 
-     
-print "\n\nRESUME: Changed files:"
-for changedFile in changedFiles:
-    print changedFile
-if len(changedFiles) == 0 :
-    print "None!"
-
-
-
-
+if not silentMode :     
+    print "\n\nRESUME: Changed files:"
+    for changedFile in changedFiles:
+        print changedFile
+    if len(changedFiles) == 0 :
+        print "None!"
+    
+else :
+    strToPrint = "Changed files:"
+    for changedFile in changedFiles:
+        strToPrint += "\n" + changedFile
+    if len(changedFiles) == 0 :
+        strToPrint += " None!"
+    print strToPrint
+ 

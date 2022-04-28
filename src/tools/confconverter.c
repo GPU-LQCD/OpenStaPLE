@@ -95,7 +95,8 @@ int main(int argc, char ** argv){
     backfield_parameters.bx = backfield_parameters.by = backfield_parameters.bz = 0;
 
     // allocating and preparing staggered phases field
-    posix_memalign((void **)&u1_back_phases, 128,8*sizeof(double_soa));
+    u1_back_phases = malloc(8*sizeof(double_soa));
+
     calc_u1_phases(u1_back_phases,backfield_parameters,0,0);
 
 

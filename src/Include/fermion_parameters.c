@@ -115,9 +115,24 @@ int init_ferm_params(ferm_param *fermion_settings){
             quark->approx_li_mother.gmp_remez_precision;
 
         // READ THE RAT APPROXS FROM THE FILES
-        errorstatus += rationalapprox_read(&(quark->approx_fi_mother));
-        errorstatus += rationalapprox_read(&(quark->approx_md_mother));
-        errorstatus += rationalapprox_read(&(quark->approx_li_mother));
+        int temp_errorstatus;
+        // first inversion
+        temp_errorstatus = rationalapprox_read(&(quark->approx_fi_mother));
+        if(temp_errorstatus) 
+            temp_errorstatus = rat_approx_file_or_script_create(&(quark->approx_fi_mother));
+        errorstatus += temp_errorstatus;
+
+        // molecular dynamics
+        temp_errorstatus = rationalapprox_read(&(quark->approx_md_mother));
+        if(temp_errorstatus) 
+            temp_errorstatus = rat_approx_file_or_script_create(&(quark->approx_md_mother));
+        errorstatus += temp_errorstatus;
+
+        // last inversion
+        temp_errorstatus = rationalapprox_read(&(quark->approx_li_mother));
+        if(temp_errorstatus) 
+            temp_errorstatus = rat_approx_file_or_script_create(&(quark->approx_li_mother));
+        errorstatus += temp_errorstatus;
 
         // needed to reuse the results from the inversions
         quark->index_of_the_first_shift = totalMdShifts;
@@ -146,6 +161,54 @@ int init_ferm_params(ferm_param *fermion_settings){
     }
 
     return errorstatus;
+
+}
+
+
+int rat_approx_file_or_script_create(RationalApprox* rational_approx){
+
+    int error_status = 1;
+
+    char * nomefile = rational_approx_filename(rational_approx->error,rational_approx->exponent_num,rational_approx->exponent_den,rational_approx->lambda_min);
+
+#ifdef MULTIDEVICE
+    printf("MPI%02d - Some error happened in reading %s ...\n", devinfo.myrank,nomefile );
+    if(0==devinfo.myrank){
+        FILE * bash_repair_commands = fopen("genappfiles.sh","a");
+
+        printf("You may want to generate a rational approximation file using the tool \'rgen\' (look in the tools directory). Please try\n");
+        printf("./rgen %e %d %d %e\n", rational_approx->error, 
+                rational_approx->exponent_num, rational_approx->exponent_den, 
+                rational_approx->lambda_min);
+        printf("(see and modify \"genappfiles.sh\", check for doublers)\n");
+        printf("(Or give command \n bash <(sort genappfiles.sh | uniq).\n");
+        fprintf(bash_repair_commands,
+                "echo \'./rgen %e %d %d %e >> rat_app_gen_log.txt &\'\n",
+                rational_approx->error, rational_approx->exponent_num,
+                rational_approx->exponent_den, rational_approx->lambda_min);
+        fprintf(bash_repair_commands,"./rgen %e %d %d %e >> rat_app_gen_log.txt &\n",
+                rational_approx->error, rational_approx->exponent_num,
+                rational_approx->exponent_den, rational_approx->lambda_min);
+        fclose(bash_repair_commands);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    error_status = 1; // error cannot be corrected here.
+#else
+    char command[100];
+    sprintf(command,
+            "./rgen %e %d %d %e\n",
+            rational_approx->error, rational_approx->exponent_num,
+            rational_approx->exponent_den, 
+            rational_approx->lambda_min);
+
+    printf("Creating (and caching) file %s, wait ...\n", nomefile);
+    int status=system(command);
+
+    error_status = rationalapprox_read_custom_nomefile(rational_approx,nomefile);
+    free(nomefile);
+
+#endif
+    return error_status;
 
 }
 

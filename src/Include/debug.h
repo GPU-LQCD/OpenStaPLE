@@ -14,6 +14,7 @@ typedef struct DEBUG_SETTINGS_T{
     int md_dbg_print_max_count;
     int md_diag_print_every;
     int print_bfield_dbginfo;
+    int md_dbg_be_verbose;
 
 
 }debug_settings_t;

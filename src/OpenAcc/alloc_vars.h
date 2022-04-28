@@ -10,8 +10,18 @@
 
 
 
-extern global_su3_soa  * conf_rw; // the gauge configuration, only for read-write
+// the gauge configuration, only for read-write
+extern global_su3_soa  * conf_rw;
+
+// ued in debugging/testing
 extern global_vec3_soa  * ferm_rw; // a global fermion, only for read-write
+extern global_tamat_soa  * tamat_rw; // a global tamat, only for read-write
+extern global_thmat_soa  * thmat_rw; // a global thmat, only for read-write
+// a global dcomplex_soa, only for read-write
+extern global_dcomplex_soa *dcomplex_rw;
+// a global double_soa, only for read-write
+extern global_double_soa *double_rw; 
+
 
 extern su3_soa  * conf_acc; // the gauge configuration.
 extern su3_soa  * conf_acc_bkp; // the old stored conf that will be recovered 

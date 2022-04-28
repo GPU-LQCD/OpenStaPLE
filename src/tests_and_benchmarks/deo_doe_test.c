@@ -74,6 +74,27 @@ int main(int argc, char* argv[]){
 
     act_params.stout_steps = 0;
     alloc_info.NPS_tot = 1;
+    //////  OPENACC CONTEXT INITIALIZATION    //////////////////////////////////////////////////////
+#ifndef __GNUC__
+    acc_device_t my_device_type = acc_device_nvidia; // NVIDIA GPUs
+    // acc_device_t my_device_type = acc_device_radeon; // AMD GPUs
+    //acc_device_t my_device_type = acc_device_xeonphi; // Intel XeonPhi
+#ifdef MULTIDEVICE
+    {
+        char* localRankStr = NULL;
+        if ((localRankStr = getenv("OMPI_COMM_WORLD_RANK")) != NULL){
+            printf("LocalRankStr: %s\n",localRankStr);
+            devinfo.myrank = atoi(localRankStr);
+        }
+    }
+    select_init_acc_device(my_device_type, devinfo.myrank%devinfo.proc_per_node);
+    printf("MPI%02d: Device Selected : OK \n", devinfo.myrank );
+#else
+    select_init_acc_device(my_device_type, devinfo.single_dev_choice);
+    printf("MPI%02d: Device Selected : OK \n", devinfo.single_dev_choice );
+#endif
+#endif
+
 
 #ifdef MULTIDEVICE
     pre_init_multidev1D(&devinfo);
@@ -117,8 +138,9 @@ int main(int argc, char* argv[]){
             printf("N fermions found: %d, only one is necessary.\n", alloc_info.NPS_tot);
     }
 
-    printf("Setting number of shifts to zero - no shifts are needeed for this benchmark.\n");
-    alloc_info.maxNeededShifts = 0;
+    printf("Setting number of shifts to 1 - no shifts are needeed for this benchmark.\n");
+    printf("                                but using 1 just to avoid errors.\n");
+    alloc_info.maxNeededShifts = 1; // DEBUG
     printf("Setting stout level to zero - no stout is needed for this benchmark.\n");
     alloc_info.stoutAllocations = 0;
     act_params.stout_steps = 0;
@@ -135,25 +157,6 @@ int main(int argc, char* argv[]){
 #endif
 
     if(0==devinfo.myrank) print_geom_defines();
-#ifndef __GNUC__
-    //////  OPENACC CONTEXT INITIALIZATION    //////////////////////////////////////////////////////
-    // NVIDIA GPUs
-    acc_device_t my_device_type = acc_device_nvidia;
-    // AMD GPUs
-    // acc_device_t my_device_type = acc_device_radeon;
-    // Intel XeonPhi
-    //acc_device_t my_device_type = acc_device_xeonphi;
-    // Select device ID
-    printf("MPI%02d: Selecting device.\n", devinfo.myrank);
-#ifdef MULTIDEVICE
-    select_init_acc_device(my_device_type, devinfo.myrank%devinfo.proc_per_node);
-#else
-    select_init_acc_device(my_device_type, devinfo.single_dev_choice);
-#endif
-    printf("MPI%02d: Device Selected : OK \n", devinfo.myrank );
-#endif
-
-
     mem_alloc_core();
     mem_alloc_extended();
     mem_alloc_core_f();
@@ -166,8 +169,8 @@ int main(int argc, char* argv[]){
 
     printf("nn computation : OK \n");
     init_all_u1_phases(backfield_parameters,fermions_parameters);
-#pragma acc data update device(u1_back_phases[0:8*alloc_info.NDiffFlavs])
-#pragma acc data update device(u1_back_phases_f[0:8*alloc_info.NDiffFlavs])
+#pragma acc update device(u1_back_phases[0:8*alloc_info.NDiffFlavs])
+#pragma acc update device(u1_back_phases_f[0:8*alloc_info.NDiffFlavs])
     printf("u1_backfield initialization : OK \n");
     sprintf(myconfname             ,"%s_MPI%02d",confname             ,devinfo.myrank);
     sprintf(myfermionname          ,"%s_MPI%02d",fermionname          ,devinfo.myrank);
@@ -201,7 +204,7 @@ int main(int argc, char* argv[]){
             printf("MPI%02d: You're using ILDG format.\n", devinfo.myrank);
         conf_id_iter=0;
     }
-#pragma acc data update device(conf_acc[0:8])
+#pragma acc update device(conf_acc[0:8])
 
 
     // init fermion
@@ -216,10 +219,7 @@ int main(int argc, char* argv[]){
     }
 
 
-#ifdef MULTIDEVICE
-    communicate_fermion_borders_hostonly(ferm_chi_acc);
-#endif
-#pragma acc data update device(ferm_chi_acc[0:1])
+#pragma acc update device(ferm_chi_acc[0:1])
 
 
 
@@ -241,7 +241,7 @@ int main(int argc, char* argv[]){
     if(test_settings.saveResults){
         if(0 == devinfo.myrank)
             printf("Writing file %s.\n", fermionname_doe);
-#pragma acc update self(ferm_phi_acc[0:1])
+#pragma acc update host(ferm_phi_acc[0:1])
         print_vec3_soa_wrapper(ferm_phi_acc,fermionname_doe);
         print_vec3_soa(ferm_phi_acc,myfermionname_doe);
     }
@@ -256,7 +256,7 @@ int main(int argc, char* argv[]){
     if(test_settings.saveResults){
         if(0 == devinfo.myrank)
             printf("Writing file %s.\n", fermionname_deo);
-#pragma acc update self(ferm_phi_acc[0:1])
+#pragma acc update host(ferm_phi_acc[0:1])
         print_vec3_soa_wrapper(ferm_phi_acc,fermionname_deo);
         print_vec3_soa(ferm_phi_acc,myfermionname_deo);
     }
@@ -272,7 +272,7 @@ int main(int argc, char* argv[]){
     if(test_settings.saveResults){
         if(0 == devinfo.myrank)
             printf("Writing file %s.\n", fermionname_fulldirac);
-#pragma acc update self(ferm_phi_acc[0:1])
+#pragma acc update host(ferm_phi_acc[0:1])
         print_vec3_soa_wrapper(ferm_phi_acc,fermionname_fulldirac);
         print_vec3_soa(ferm_phi_acc,myfermionname_fulldirac);
     }
@@ -315,7 +315,7 @@ int main(int argc, char* argv[]){
     if(test_settings.saveResults){
         if(0 == devinfo.myrank)
             printf("Writing file %s.\n", fermionname_doe_f);
-#pragma acc update self(ferm_phi_acc_f[0:1])
+#pragma acc update host(ferm_phi_acc_f[0:1])
         print_vec3_soa_wrapper_f(ferm_phi_acc_f,fermionname_doe_f);
         print_vec3_soa_f(ferm_phi_acc_f,myfermionname_doe_f);
     }
@@ -330,7 +330,7 @@ int main(int argc, char* argv[]){
     if(test_settings.saveResults){
         if(0 == devinfo.myrank)
             printf("Writing file %s.\n", fermionname_deo_f);
-#pragma acc update self(ferm_phi_acc_f[0:1])
+#pragma acc update host(ferm_phi_acc_f[0:1])
         print_vec3_soa_wrapper_f(ferm_phi_acc_f,fermionname_deo_f);
         print_vec3_soa_f(ferm_phi_acc_f,myfermionname_deo_f);
     }
@@ -346,7 +346,7 @@ int main(int argc, char* argv[]){
     if(test_settings.saveResults){
         if(0 == devinfo.myrank)
             printf("Writing file %s.\n", fermionname_fulldirac_f);
-#pragma acc update self(ferm_phi_acc_f[0:1])
+#pragma acc update host(ferm_phi_acc_f[0:1])
         print_vec3_soa_wrapper_f(ferm_phi_acc_f,fermionname_fulldirac_f);
         print_vec3_soa_f(ferm_phi_acc_f,myfermionname_fulldirac_f);
     }

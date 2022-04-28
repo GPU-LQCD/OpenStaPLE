@@ -50,6 +50,8 @@ typedef struct thmat_soa_t {
 } thmat_soa;
 
 
+// GLOBAL data structures (multi-rank)
+
 typedef struct global_vec3_soa_t {
     d_complex c0[GL_SIZEH];
     d_complex c1[GL_SIZEH];
@@ -60,6 +62,27 @@ typedef struct global_su3_soa_t {
   global_vec3_soa r1;
   global_vec3_soa r2;
 } global_su3_soa;
+typedef struct global_tamat_soa_t {
+  d_complex c01[GL_SIZEH]; // comp_01
+  d_complex c02[GL_SIZEH]; // comp_02
+  d_complex c12[GL_SIZEH]; // comp_12
+  double ic00[GL_SIZEH];   // Im(comp_00)
+  double ic11[GL_SIZEH];   // Im(comp_11)
+} global_tamat_soa;
+typedef struct global_thmat_soa_t {
+  d_complex c01[GL_SIZEH]; // comp_01
+  d_complex c02[GL_SIZEH]; // comp_02
+  d_complex c12[GL_SIZEH]; // comp_12
+  double rc00[GL_SIZEH];   // Re(comp_00)
+  double rc11[GL_SIZEH];   // Re(comp_11)
+} global_thmat_soa;
+typedef struct global_dcomplex_soa_t {
+    d_complex c[GL_SIZEH];
+} global_dcomplex_soa;
+typedef struct global_double_soa_t {
+    double d[GL_SIZEH];
+} global_double_soa;
+
 
 
 

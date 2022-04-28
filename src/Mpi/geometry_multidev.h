@@ -301,7 +301,6 @@ static inline vec4int xyzt_rank(int rank){
     return rank4int;
 
 }
-
 #pragma acc routine seq
 static inline int rank_from_0123_rank(int rank_0, int rank_1, 
                                int rank_2, int rank_3){

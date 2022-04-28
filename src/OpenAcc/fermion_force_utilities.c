@@ -17,9 +17,9 @@ void set_tamat_soa_to_zero( __restrict tamat_soa * const matrix)
 {
     int mu, idxh;
 #pragma acc kernels present(matrix)
-#pragma acc loop independent // gang(nd3)
+#pragma acc loop independent gang(8)
     for(mu=0; mu<8; mu++) {
-#pragma acc loop independent // gang(nd3)
+#pragma acc loop independent vector(32)
         for(idxh=0; idxh<sizeh; idxh++) {
             assign_zero_to_tamat_soa_component(&matrix[mu],idxh);
 
@@ -38,7 +38,7 @@ void direct_product_of_fermions_into_auxmat(
     //LOOP SUI SITI PARI
     int hd0, d1, d2, d3;
 #pragma acc kernels present(loc_s) present(loc_h)  present(approx) present(aux_u)
-#pragma acc loop independent gang(STAPGANG3)
+#pragma acc loop independent gang (STAPGANG3)
     for(d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
 #pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
         for(d2=0; d2<nd2; d2++) {
@@ -200,7 +200,6 @@ void ker_openacc_compute_fermion_force(
 
     }
 }
-
 
 
 #endif

@@ -11,10 +11,10 @@
 
 // FIRST DERIVATIVES
 
-void dM_dmu_eo0( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void dM_dmu_eo0( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -69,10 +69,10 @@ void dM_dmu_eo0( __restrict su3_soa * const u,
 #endif
 
 }
-void dM_dmu_eo1( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void dM_dmu_eo1( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -125,10 +125,10 @@ void dM_dmu_eo1( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void dM_dmu_eo2( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void dM_dmu_eo2( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -181,10 +181,10 @@ void dM_dmu_eo2( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void dM_dmu_eo3( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void dM_dmu_eo3( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -238,16 +238,16 @@ void dM_dmu_eo3( __restrict su3_soa * const u,
 #endif
 }
 
-void (*dM_dmu_eo[4])( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)=
+void (*dM_dmu_eo[4])( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)=
 {dM_dmu_eo0,dM_dmu_eo1,dM_dmu_eo2,dM_dmu_eo3};
 
-void dM_dmu_oe0( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void dM_dmu_oe0( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -299,10 +299,10 @@ void dM_dmu_oe0( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void dM_dmu_oe1( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void dM_dmu_oe1( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -354,10 +354,10 @@ void dM_dmu_oe1( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void dM_dmu_oe2( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void dM_dmu_oe2( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -409,10 +409,10 @@ void dM_dmu_oe2( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void dM_dmu_oe3( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void dM_dmu_oe3( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -465,18 +465,18 @@ void dM_dmu_oe3( __restrict su3_soa * const u,
 #endif
 }
 
-void (*dM_dmu_oe[4]) ( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)=
+void (*dM_dmu_oe[4]) ( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)=
 {dM_dmu_oe0,dM_dmu_oe1,dM_dmu_oe2,dM_dmu_oe3};
 
 // SECOND DERIVATIVES
 
-void d2M_dmu2_eo0( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void d2M_dmu2_eo0( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -529,10 +529,10 @@ void d2M_dmu2_eo0( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void d2M_dmu2_eo1( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void d2M_dmu2_eo1( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -585,10 +585,10 @@ void d2M_dmu2_eo1( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void d2M_dmu2_eo2( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void d2M_dmu2_eo2( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -641,10 +641,10 @@ void d2M_dmu2_eo2( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void d2M_dmu2_eo3( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void d2M_dmu2_eo3( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -698,16 +698,16 @@ void d2M_dmu2_eo3( __restrict su3_soa * const u,
 #endif
 }
 
-void (*d2M_dmu2_eo[4])( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)=
+void (*d2M_dmu2_eo[4])( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)=
 {d2M_dmu2_eo0,d2M_dmu2_eo1,d2M_dmu2_eo2,d2M_dmu2_eo3};
 
-void d2M_dmu2_oe0( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void d2M_dmu2_oe0( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -759,10 +759,10 @@ void d2M_dmu2_oe0( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void d2M_dmu2_oe1( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void d2M_dmu2_oe1( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -814,10 +814,10 @@ void d2M_dmu2_oe1( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void d2M_dmu2_oe2( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void d2M_dmu2_oe2( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -869,10 +869,10 @@ void d2M_dmu2_oe2( __restrict su3_soa * const u,
     communicate_fermion_borders(out);
 #endif
 }
-void d2M_dmu2_oe3( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)
+void d2M_dmu2_oe3( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)
 {
     int d0h, d1, d2, d3;
 
@@ -925,10 +925,10 @@ void d2M_dmu2_oe3( __restrict su3_soa * const u,
 #endif
 }
 
-void (*d2M_dmu2_oe[4]) ( __restrict su3_soa * const u,
-        vec3_soa * const out,
-        vec3_soa * const in,
-        double_soa * backfield)=
+void (*d2M_dmu2_oe[4]) ( __restrict const su3_soa * u,
+        vec3_soa * out,
+        __restrict const vec3_soa * in,
+        __restrict const double_soa * backfield)=
 {d2M_dmu2_oe0,d2M_dmu2_oe1,d2M_dmu2_oe2,d2M_dmu2_oe3};
 
 

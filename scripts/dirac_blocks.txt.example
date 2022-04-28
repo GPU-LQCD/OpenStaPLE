@@ -1,0 +1,4 @@
+# file to be used to compile the dirac operator test in different geometries
+# LINES CONTAINING '#' ARE IGNORED
+#DEODOETILE0 DEODOETILE1 DEODOETILE2 DEODOEGANG3
+8 8 8 8

@@ -47,11 +47,11 @@ int ker_invert_openacc(__restrict const su3_soa * u, // non viene aggiornata mai
     if(verbosity_lv > 4 ){
         printf("MPI%02d: max_cg  %d, restarting every %d, shift %f\n", devinfo.myrank,
                 max_cg,inverter_tricks.restartingEvery,shift);
-#pragma acc update self(u[0:1])
+#pragma acc update host(u[0:1])
         printf("MPI%02d: u[sizeh/2]: %f\n", devinfo.myrank, creal(u[0].r0.c0[sizeh/2]));
-#pragma acc update self(solution[0:1])
+#pragma acc update host(solution[0:1])
         printf("MPI%02d: solution[sizeh/2]: %f\n", devinfo.myrank, creal(solution[0].c0[sizeh/2]));
-#pragma acc update self(in[0:1])
+#pragma acc update host(in[0:1])
         printf("MPI%02d: in[sizeh/2]: %f\n", devinfo.myrank, creal(in[0].c0[sizeh/2]));
     }
 

@@ -1,0 +1,99 @@
+
+
+ActionParameters
+Beta                          3.75       
+StoutSteps                    2        
+StoutRho                      1.500000e-01        
+
+
+BackgroundFieldParameters
+
+
+MDParameters
+NmdSteps                      18        
+GaugeSubSteps                 4        
+TrajLength                    1.000000e+00        
+residue_metro                 1e-8        
+ExpMaxEigenvalue              5.500000e+00        
+SinglePrecMD                  SINGLEPRECISIONMD
+residue_md                    1e-4        
+MaxCGIterations               10000  # max number of iterations 
+                                     # not to get underflow 
+                                     # in single precision
+
+
+MontecarloParameters
+Ntraj                         1        
+ThermNtraj                    0        
+StoreConfInterval             5        
+SaveConfInterval              5        
+StoreConfName                 gaugeconf_store        
+SaveConfName                  gaugeconf_save        
+MaxConfIdIter                 1000000             
+RandGenStatusFilename         rgstatus.bin        
+MaxRunTimeS                   1.000000e+09        
+Seed                          42                   
+EpsGen                        1.000000e-01        
+
+
+GaugeMeasuresSettings
+GaugeOutfilename              gauge.dat        
+
+
+FermionMeasuresSettings
+FermionicOutfilename          fermion.dat        
+SingleInvNVectors             1        
+DoubleInvNVectorsChiral       0                   
+DoubleInvNVectorsQuarkNumber  0                   
+
+
+DeviceSettings
+device_choice                 0        
+AsyncFermionComms             1
+AsyncGaugeComms               1                   
+NProcPerNode                  SEDNODEDIM    
+NRanks                        SEDNRANKS        
+
+
+
+Geometry
+nx                            SEDNX                  
+ny                            SEDNY                  
+nz                            SEDNZ                  
+nt                            SEDNT                  
+
+xmap                          0                   
+ymap                          1                   
+zmap                          2                   
+tmap                          3                   
+
+
+
+DebugSettings
+UseILDG                       1                   
+VerbosityLv                   2                   
+SaveAllAtEnd                  0                   
+PrintBackFieldDbgInfo         0                   
+SaveDiagnostics               1                   
+DoRevTest                     0                   
+DoNoRandomTest                0                   
+RngFakenessLevel              0                   
+MDDbgPrintMaxCount            0                   
+SaveDiagnosticsFilename       md_diagnostics.dat  
+PrintDiagInfoEvery            10000               
+
+
+InverterTricks
+useMixedPrecision             1                   
+restartingEvery               10000               
+mixedPrecisionDelta           1.000000e-01        
+
+
+TestSettings
+DeoDoeIterations              1000        
+MultiShiftInverterRepetitions 5
+FakeShift                     1e-14        
+BenchmarkMode                 1        
+SaveResults                   0                   
+
+

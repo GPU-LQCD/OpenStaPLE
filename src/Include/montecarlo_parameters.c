@@ -25,11 +25,17 @@ void init_global_program_status(){
 
     FILE * gps_file = fopen(mc_params.statusFileName, "r");  
     if(gps_file){
-        fscanf(gps_file,"%d %f %f %d",
+        int reads = fscanf(gps_file,"%d %f %f %d",
                 &(mc_params.next_gps),
                 &(mc_params.max_flavour_cycle_time),
                 &(mc_params.max_update_time),
                 &(mc_params.measures_done));
+        if (reads != 4 ){
+            if(0 == devinfo.myrank)
+                printf("ERROR: %s:%d: montecarlo status file %s not readable\n",
+                        __FILE__,__LINE__, mc_params.statusFileName);
+
+        }
 
         fclose(gps_file);
     }

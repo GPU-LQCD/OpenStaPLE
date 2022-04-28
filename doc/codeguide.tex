@@ -1,99 +1,101 @@
 
-\chapter{Guide to the code}
+%\chapter{Guide to the code}
+\newpage
+\section*{Preface}
 
+This code can be used for the simulation of LQCD with staggered fermions.
+The default choice is for the action is the tree-level Symanzik improved 
+action for the gauge part (it is easy to switch back to the standard Wilson one,
+setting the correct \#define) and stout-improved fermions (The stout level can be 
+set to zero to recover non-stouted fermions).  \\
+The implemented algorithm is the Rational Hybrid Monte Carlo. \\
+Magnetic fields, imaginary electric fields, imaginary chemical potentials can be 
+included in the simulation. This is done by manipulating the $U(1)$ field, which 
+also contains the so-called ``staggered phases''.
+
+This guide may have the following problems:
+\begin{itemize}
+ \item Be outdated
+ \item Be wrong
+ \item Be somewhat unclear
+ \item Contain typos, or bad uses of English 
+ \item the ``setting file'' containing the parameters of the simulation
+ and other settings can be erratically referred to as ``input file'' 
+ (in a simulation there are more input files than one, but there is only one setting file,
+ not to be confused with the ``configuration'' file that usually indicates the ``gauge configuration'' file).
+\end{itemize}
+The author thinks nonetheless that it should be helpful to any user of the code.
+In particular, a read of the relevant parts is recommended before trying to use the code,
+of asking questions.
+
+If you find any mistake, please report it to the author.
+
+\newpage
+\tableofcontents
+
+\newpage
 \section{Directory content}
 
 \begin{itemize}
     \item \texttt{src}: the code, for the main program and for some tools.
-    \item tools: code and makefile for various utilities, for example to 
-generate the rational
-        approximations and test them (at present the only thing), but this
-        folder could contain tools to convert configurations from a format to
-        another and things like that), 
-    \item scripts: basically, collections of commands that you would have to
-        type too many times. Scripts here are provided for convenience, but are 
-        not maintained.
-    \item \verb|saved_approxs|: saved rational approximations, for your 
-        convenience. Not maintained.
-    \item build: the place where build happens. It is advisable to create you 
-own build directory, possibly aptly named with the lattice dimensions and 
-number of MPI ranks, since different lattice geometries require different 
-builds.
-    \item build/run: the place where your program should run. Try to put here
-        all the things your program needs (rational approximation files,
-        start configurations, files where data should be appended and so on.)
+    \item tools: code and makefile for various utilities, for example to generate the rational approximations and test them and a tool to analyse the performance from information recorded during runs. This directory could also contain tools to convert configurations from a format to another and things like that; 
+    \item scripts: basically, collections of commands that you would have to type too many times. 
+    At the moment, there are scripts for benchmarking on SLURM clusters, to analyse the performance data produced during simulations,
+    and some utilities to test different {\sf tile} configurations.
     \item docs: where documentation should be.
 \end{itemize}
-
-
-
 \section{Compilation}
 \label{compilation}
-\subsection{Generating the single precision part of the code}
-(to write)
-\subsection{Creating the makefile}
-If you don't have a makefile, or if you changed the dependence
-structure in your code, you have to create a makefile first. NO FEAR! The 
-\verb|generate_makefile.py| utility will do it for you.
-The \verb|generate_makefile.py| takes a number of arguments (in any order), 
-namely 
-\begin{itemize}
-    \item a list of files containing a \verb|main()| function that you want to 
-        compile
-    \item a \verb|compiler&linker| flag option.
-\end{itemize}
-For example:
+Compilation is done using Autotools, with the usual {\sf ./configure} , {\sf make} and {\sf make install}.
+In case the {\sf configure} script is not present, it can be created from {\sf configure.ac} 
+with the command{ \sf autoreconf --install} (notice that this step creates also the {\sf Makefile.in} in the subdirectories, 
+using also the information from the files named {\sf Makefile.am}). 
+There are a number of parameters that must be passed to {\sf configure} (the choice of the compiler and of the compiler flags), for which the user can find the python script {\sf configure\_wrapper} useful. For example,
 \begin{verbatim}
-[OPENACCREPO/build]~>./generate_makefile.py
-Please specify one compiler: either PGISLOW, GNU or PGI
+../configure_wrapper pgi cc35 cuda8.0
 \end{verbatim}
-As you see, it will tell you to choose a compiler. Try, for example
+will produce the command
 \begin{verbatim}
-[OPENACCREPO/build]~>./generate_makefile.py GNU ../src/OpenAcc/main.c \
-../src/tools/checkinput.c > makefile
+../configure CC=pgcc CFLAGS="-acc=noautopar -v -O3 -Minfo=all \
+ -ta=tesla:cc35,cuda8.0 -DUSE_MPI_CUDA_AWARE -I${MPIINC}" \
+ LDFLAGS="-acc=noautopar -v -O3 -Minfo=all -ta=tesla:cc35,cuda8.0 \
+ -lmpi -L${MPILIB}"  --prefix=$(pwd)
 \end{verbatim}
-and a makefile will be generated, using gcc and -O3 optimization
-(for more informations, look into \verb|generate_makefile.py|). 
 
-Note that you can call the \verb|generate_makefile.py| utility from any 
-location, and specify the main files using absolute paths. This is handy in 
-case of multiple build locations (for different geometries, for example).
+\subsection{Generation of the single precision part of the code}
+The single-precision part of the code is generated automatically 
+by a python script ({\sf src/double\_to\_single\_transformer.py}).
+
+It can be called with {\sf autoMode} to require minimum input. Otherwise, it can act on
+single files, or on all files that are known to need the treatment (a list is included in the script).
+
+Notice that there may be some single precision sources or headers which are not just a 
+transformation of their double precision counterpart (at the moment, only 
+{\sf src/OpenAcc/sp\_fermion\_force.c}). The transformation script contains a list
+of these files, which are not touched unless explicitly stated.
+
+{\bf Notice} that this step is performed by {\sf configure}.
 
 
 \subsection{The actual compilation}
 
 A peculiarity of this code is that, because of design decisions driven by 
 performance reasons, the lattice geometry must be konwn at compile time (and 
-if you change them, you need to \verb|make clean| and recompile). At \verb|make|
-time, it is \emph{necessary} to  specify the dimensions of the local lattice, 
-and the number of ranks in the 4th dimensions (the only one which can be 
-parallelized, since we adopted the \emph{salamino} setup). It is also 
-\verb|nice| to specify the hash of the commit of the code, so that any 
-executable produced will show it and you will be able to understand which 
-version of the source code was used. Example:
-\begin{verbatim}
-make N0=32 N1=32 N2=32 N3=8 NR3=4 COMMIT_HASH=$(git rev-parse HEAD) main
-\end{verbatim}
-Or, if you want to make all necessary things:
-\begin{verbatim}
-make N0=32 N1=32 N2=32 N3=8 NR3=4 COMMIT_HASH=$(git rev-parse HEAD) 
-\end{verbatim}
-this will \emph{make} all the ``main'' files you passed to 
-\verb|generate_makefile.py|, plus \verb|rgen|, the executable needed to 
-generate the files of the rational approximations (this is because the first 
-target in the makefile, which is \verb|all|, includes all the files you 
-specified when creating the makefile in the first place).\\
-Notice that the \verb|make| process, if started from scratch, can take several 
-minutes (with some versions of the PGI compiler, up to about one hour!).
+if you change them, you need to re-run {\sf configure}, run {\sf make clean}, and recompile). 
+At \verb|configure| time, it is \emph{necessary} to  specify the dimensions of the local lattice,
+the number of ranks in the 4th dimensions (the only one which can be 
+parallelized, since we adopted the \emph{salamino} setup), and some optimization parameters
+(for the OpenACC  {\sf tile} clause). This information must be written into a 
+{\sf geom\_defines.txt} file, an example of which is in the {\sf doc} directory.
+The {\sf configure} script will look for that file and read it, setting up the correct makefile.
 
 \subsection{Important notice}
 
-When compiling for another geometry, \emph{you need} to execute 
-\verb|make clean| first, otherwise only the recently changed files  (if 
+When compiling for a different geometry or different {\sf tile values}, \emph{you need} to execute 
+{\sf make clean} first, otherwise only the recently changed files  (if 
 any) will be 
 compiled with the new geometry, which is different from the one for the rest of 
-the files. While 
-the linker may to everything without raising any error, the results will be a 
+the files. While the linker may do everything without raising any error, the results will be a 
 mess. Clean everything first!\\
 
 For this reason it is advisable to have different directories for different 
@@ -104,21 +106,19 @@ You may need to do this on the right machine, with the right modules.
 For example, on the Pisa localui3, if you use the PGI compiler,
 you have to type
 \begin{verbatim}
-../scripts/vai_su_cudawn?.sh    # choose 6 or 7
+# go on the right machine first:
+./scripts/interactive_cudawn.sh 6 1
 module load pgi                 # last version
 module load cuda                # last version
 module load openmpi             # if needed 
 \end{verbatim}
+Notice the use of the script \verb|scripts/interactive_cudawn.sh|.
+On the COKA cluster the modules to load are similar, but there is no need to access
+the machines interactively to have access to the compiler.
 
-
-
-
-FAQ \\
-Q: Why don't you just use autotools? \\
-A: Because I don't know how to use them! If you can do better, do
-it (please).
-
-
+Notice that the { \bf modules you load in execution must be compatible 
+with compilation settings and with the modules loaded during compilation}.
+Strange things may happen otherwise.
 
 \section{Run a simulation}
 
@@ -140,8 +140,8 @@ but a too big one will make your program need too much memory, up to the point
 where it will fail as well.
 
 
-Once you have set all you need, go into \verb|./run| and launch 
-\verb|./main <input_file>|. Here, the program 
+Once you have set all you need, launch 
+{\sf ./main $<$setting\_file$>$}. Here, the program 
 will  need some  files that you have to prepare in advance. Another section
 of this guide (\ref{filesneeded}) will tell you what you usually need to 
 prepare.
@@ -215,109 +215,95 @@ Various remarks on the content of the setting file:
         An electromagnetic field. Notice that while the magnetic field is real, only 
         a purely imaginary electric field is allowed (because of another sign 
 problem). All the parameters here are optional and their default value is zero.
-    \item{Simulation: \verb|MDParameters|.} You can specify the number of steps, 
+    \item{Simulation, Molecular dynamics and Metropolis test: \verb|MDParameters|.} You can specify the number of steps, 
         the number of gauge substeps for each step, the length of the 
         trajectory, the norm (not squared) of the target residue for matrix 
         inversion during molecular dynamics evolution, if you want to use 
         the single precision version, and the target residue for matrix 
 inversion in the pre-MD and post-MD operations (generation of the $\chi$ 
 fermions and final action computation respectively). While the other two 
-parameters should be kept as 
+parameters should be kept as  
         low as possible to optimize simulation time, the length of the trajectory 
         should be kept equal to $1$ but for bugfixing purposes.
 
-\item{Simulation: \verb|MontecarloParameters|.} A lot of parameters here: 
+\item{Properties of the run: \verb|MontecarloParameters|.} A lot of parameters here: 
 \begin{itemize}
-\item \verb|NTraj| is the number of trajectories that have to be performed in 
-    this run.
+\item \verb|NTraj| is the number of trajectories that have to be performed in this run.
 \item \verb|ThermNTraj| is the number of trajectories from the beginning of the 
-    \emph{history} for which the Metropolis test can be skipped. Notice that, 
-if 
-    the run starts from a configuration which has a nonzero \verb|conf_id| 
-    (because, for example, it comes from an earlier run) and if \verb|conf_id| 
-is 
-    larger than \verb|ThermNTraj|, the Metropolis test won't be skipped at all.
+\emph{history} for which the Metropolis test can be skipped. Notice that, if the 
+run starts from a configuration which has a nonzero \verb|conf_id| (because,
+for example, it comes from an earlier run) and if \verb|conf_id| is larger than 
+\verb|ThermNTraj|, the Metropolis test won't be skipped at all.
 \item \verb|StoreConfInterval|: configurations will be stored, with 
-    \verb|conf_id| in their name, once every this number of trajectories. The 
-name 
-    is will be the one specified by \verb|StoreConfName| with \verb|conf_id| 
-    attached to it. 
-\item \verb|SaveConfInterval|: the file specified in \verb|SaveConfName| will 
-    be saved once every this number of trajectories. For safety, set 1, for 
-speed, 
-    you can increase it.
+\verb|conf_id| in their name, once every this number of trajectories. The name is will
+be the one specified by \verb|StoreConfName| with \verb|conf_id| attached to it. 
+\item \verb|SaveConfInterval|: the file specified in \verb|SaveConfName| will be saved once every this number of trajectories. For safety, set 1, for speed, you can increase it.
 
-\item Thing related to random initialization. \verb|RandGenStatusFilename| is 
+\item Thing related to the initialization of the random number generator. \verb|RandGenStatusFilename| is 
 used to specify the name of a file where the random number generator status 
 will be stored. At present, it is optional and the default value is 
 \verb|rgstatus.bin|. If this file is not found, the variable \verb|Seed| is 
 instead use to initialise the random number generator. If \verb|Seed| is zero, 
 the function \verb|time()| will be used. Notice that after a successful run 
 the file will be generated, and will be read on the next run, while \verb|Seed| 
-will be ignored.
+will be ignored. Notice also that the name of the file depends on the MPI rank when more than one MPI 
+process is used.
 \item \verb|JarzynskiMode|: setting this to 1 or -1 will turn on Jarzynski 
-mode. This is an experimental feature (see below). By default, this option is 
-inactive, and the parameter is set to 0.
+mode. By default, this option is 
+inactive, and the parameter is set to 0 (see Sec. \ref{JarzynskiMode}).
 \end{itemize}
-You can also set the \verb|Seed| of the simulation, 
-a parameter 
+You can also set the \verb|Seed| of the simulation, a parameter 
 \verb|EpsGen| defining the randomness in cold gauge conf generation, and the 
-verbosity level \verb|VerbosityLv|. 
+verbosity level \verb|VerbosityLv|.
 
 
-    \item{Measures: \verb|GaugeMeasuresSettings|.} Now, only the name of the 
-        file for the {\bf basic} gauge measures is specified (plaquette, 
-rectangle, real and imaginary part of the Polyakov loop). 
-        Notice that the name of the 
-output file will be dependent on the relevant parameters of the input file, 
-through a simple hash procedure (see \verb|src/Include/hash.c|.)
-        Of course there are, in principle, a lot of observables that 
-can be implemented. Now only the Polyakov loop and the topological charge are 
-implemented but the topological charge measurement (which involves cooling) is 
-not currently handled in the input file. 
-    \item{Measures: \verb|FermionMeasuresSettings|.}
-    Apart from the file name (which will be modified as in the gauge case),   
+
+\item{Measures: \verb|GaugeMeasuresSettings|.} Now, only the name of the file
+for the {\bf basic} gauge measures is specified (plaquette, rectangle, real and imaginary part of the Polyakov loop). Notice that the name of the output 
+file will be dependent on the relevant parameters of the input file, through a
+simple hash procedure (see \verb|src/Include/hash.c|.). Of course there are, in principle, a lot of observables that can be implemented. Now only the Polyakov
+loop and the topological charge are implemented but the topological charge 
+measurement (which involves cooling) is not currently handled in the input file. 
+\item{Measures: \verb|FermionMeasuresSettings|.}
+ Apart from the file name (which will be modified as in the gauge case),   
 you can set how many random vectors will be used for the measurement of various 
 fermionic quantities. For the chiral condensate and the quark number only one 
 inversion for random vector is needed. For the susceptiiblities, two inversions 
 per random vector are needed. The inversion in the chiral case and the inversion 
 in the quark number case have to be performed on different vectors. Notice: the 
-number of ``single inversions'' must be higher than the 
-number of ``double inversions''; this is because each ``double inversion'' 
+number of ``single inversions'' must be higher than the number of ``double 
+inversions''; this is because each ``double inversion'' 
 contains a ``single inversion'', so it is assumed that there are no reasons to 
-ask for \verb|SingleInvNVectors| to be smaller than 
-\verb|DoubleInvNVectorsChiral| or \verb|DoubleInvNVectorsQuarkNumber|.
+ask for \verb|SingleInvNVectors| to be smaller than \verb|DoubleInvNVectorsChiral|
+or \verb|DoubleInvNVectorsQuarkNumber|.
     
-    
-    \item{Device: \verb|DeviceSettings|.}  Here you can set the number of 
+\item{Device: \verb|DeviceSettings|.}  Here you can set the number of 
 mpi ranks (one or more), which must be equal to  the one set at compilation 
 time. Rank 0 (or the whole program, in the case of a single process) will run 
 on the device speficied by \verb|device_choice|. The other ranks, will chose 
 different gpus according to the scheme
 \begin{verbatim}
- d = 
+ d = (device_choice + mpi_rank) % NProcPerNode
 \end{verbatim}
-
-
 \textbf{Notice: } set this to 0 when using slurm as a job scheduler. In any 
 case, ask the sysadmin about this.\\
-When running on multiple 
-    \item{\verb|Geometry|} Here the lattice dimensions are listed and the 
-        direction mapping too. Unfortunately, the lattice dimensions cannot be set in 
-        this way; as in the case of \verb|StoutRho| they are read just to check the 
-        intention of the user and suggest recompilation. \\
-        Note that only one dimension can be parallelized, and for performance 
+
+
+\item{\verb|Geometry|} Here the lattice dimensions are listed and the 
+direction mapping too. Unfortunately, the lattice dimensions cannot be set in 
+this way; as in the case of \verb|StoutRho| they are read just to check the 
+intention of the user and suggest recompilation. \\
+Note that only one dimension can be parallelized, and for performance 
 reasons it must be the one relative to the most extern index in the arrays, 
 that is the fourth one. With the ``map'' parameters, you can choose which 
-physical directions correspond to each logical direction. By default, the 
-       
-        
-        
-   \item{Algorithmic optimizations: \verb|InverterTicks|. }
-   These actually refer to the single shift inverter: very little is doable for 
+physical directions correspond to each logical direction. By default, 
+the map is $(0,1,2,3) = (x,y,z,t)$.
+
+\item{Algorithmic optimizations: \verb|InverterTicks|. }
+ These actually refer to the single shift inverter: very little is doable for 
 the multishift one.
-   \begin{itemize}
-    \item \verb|singlePInvAccelMultiInv| : don't touch this, multishift 
+\begin{itemize}
+ \item \verb|singlePInvAccelMultiInv| : don't touch this, multishift 
 inverter is still faster (keep 0 or delete).
  \item \verb|useMixedPrecision|: in single inversions, this should provide a 
 substantial boost. Default is 0, by now.
@@ -327,24 +313,40 @@ place every how-many-you-decide steps. Default 10000.
 residue must be calculated in double precision at some points. In practice, it 
 is recalculated in double precision when its magnitude varies of a factor, 
 which is specified here. Default : 0.1.
-
-   \end{itemize}
-
-   
-   
+\end{itemize}
         
-        
-    \item{Debug: \verb|DebugSettings|.}
-    \begin{itemize}
-    \item \verb|UseILDG|: if this flag is set to $1$, the gauge configuration 
+\item{Debug: \verb|DebugSettings|.}
+\begin{itemize}
+ \item \verb|UseILDG| : if this flag is set to $1$, the gauge configuration 
 file  I/O will be done using ILDG format. The default value is 1, so ILDG 
 activated.
-    \item \verb|SaveAllAtEnd|: In case you want to reproduce a bug, you want to 
+ \item \verb|SaveAllAtEnd| : In case you want to reproduce a bug, you want to 
 start from the same gauge configuration and from the same state of the random 
 number generator(s). Setting this option to 0 will make the program not 
 overwrite the gauge configuration file and the random generator status file(s). 
 The default value is 1, of course.
-    \item 
+ \item \verb|SaveDiagnostics| : Flag to save information about performance (time measurements, number of Dirac operator iterations, action differences, gauge and
+ fermion forces measurements, gauge and fermion forces differences across a step, acceptance...)
+ \item \verb|DoRevTest| : Flag to run the reversibility test.
+ \item \verb|DoNoRandomTest| : Enable a mode where no random numbers are used.
+ \item \verb|RngFakenessLevel| : If set to zero, normal pseudorandom numbers are used. 
+ If set to 1, in the initialization of fermions and momenta field is done taking using numbers that depend on the physical location, and once the initialization is finished, always the same number is returned (to know more for the variable {\sf rng\_fake\_gl\_index }). If set to 2, the random number generator always outputs $0.5$.
+ \item \verb|MDDbgPrintMaxCount| : The number of times various quantities are printed to files, like fermions, staples etc. This can be set to a number greater than zero to do a low-level check of the effect of a code change in molecular dynamics, and should allow to pinpoin the problem.
+ \item \verb|SaveDiagnosticsFileName| : the name of the file where the performance measurement activated with the flag \verb|SaveDiagnostics| are saved. Notice that in {\sf scripts} there is a shell script, {\sf analyse\_md\_info.sh }, which can digest the data printed in this file (of course, if the diagnostics file format is changed, the analysis script may need to be updated).
+ \item \verb|PrintDiagInfoEvery| : specifies how frequently the performance\&diagnostics
+ measurements to save in the file have to be taken. Notice that measurements for the gauge forces will be taken {\sf GaugeSubSteps} times more often than the measurements for the fermion force, except in a multi-node setup.
+\end{itemize}
+
+\item{Other Test setting, for benchmarking: \verb|TestSettings|.}
+\begin{itemize}
+\item \verb|DeoDoeIterations| : How many iterations to do during the Dirac operator benchmark.
+\item \verb|MultishiftInverterRepetitions| : How many repetitions of the inversion to do
+during the Multi Shift inverter benchmark.
+\item \verb|FakeShift| : In the MultiShift inverter test, if \verb|BenchmarkMode| is set, a fake rational approximation is used. This sets the value of the shift, for all terms.
+\item \verb|BenchmarkMode| : Flag to tell the MultiShift inverter benchmark to use a fake ration approximation.
+\item \verb|SaveResults| : Flag to make so that the results of the multiplication by the Dirac operator (and its intermediate operations) are saved to a file, for comparison. 
+
+
 \end{itemize}
 \end{itemize}
 
@@ -365,7 +367,6 @@ molecular dynamics. The goal of the optimization is to obtain a reasonable
 value of the acceptance from the Metropolis test while using the lowest value 
 possible. For a discussion on this topic, see Sec.(\ref{tuning}).
 
-
 \subsubsection{Remarks: seemingly insignificant things that you have to take 
 care of}
 A parameter named \verb|ExpMaxEigenvalue| can be used in the 
@@ -383,8 +384,7 @@ version of the compiler.}:
 \begin{itemize}
     \item The type of gauge action. [triggers some long recompilation]
     \item The stouting strength RHO 
-    \item The lattice dimensions in /src/OpenAcc/geometry.h [this will
-        practically trigger a full recompilation].
+    \item The lattice dimensions: they must be known at {\sf configure} time.
 \end{itemize}
 Of course, changing the input file format requires to recompile the functions 
 to read it, in \verb|/src/Include/init.c|.
@@ -408,7 +408,20 @@ its content, and can be generated using the function
 \verb|src/RationalApprox/rationalapprox.h|.
 
 \subsubsection{ How to generate and check rational approximations}
-Use the tools in \verb|tools/|. A makefile should be there. 
+The sources of the tools are, guess what, in  the \verb|tools| directory.
+Notice that the program \verb|rgen| is used semi-automatically to generate the 
+rational approximation files. If the motecarlo program runs on a single MPI rank, 
+if a rational approximation file is not found it is created by an external call to \verb|rgen|.
+If the motecarlo program runs instead on multiple MPI ranks, \verb|rgen| will not be called: 
+instead, a bash script will be created names {\sf genappfiles.sh}, containing all the necessary commands (involving \verb|rgen|)
+to create and cache the rational approximation files. Notice that the commands 
+will be repeated {\sf nranrk} times. The wise way to use this script is 
+\begin{verbatim}
+ bash <(sort genappfiles.sh | uniq)
+\end{verbatim}
+so to remove duplicates.
+
+A brief description of the rational approximation tools follows:
 \begin{itemize}
     \item '\verb|rgen|' (\verb|rationalapprox_calc.c|) 
         the tool for generating them, it takes the tolerance (plus other
@@ -428,7 +441,7 @@ Use the tools in \verb|tools/|. A makefile should be there.
 
 \subsection{Gauge configuration files}
 For the format of the gauge configuration files, look in 
-\verb|src/OpenAcc/io.c: print_su3_soa() - read_su3_soa()| or similar.
+\verb|src/OpenAcc/io.c|  for functions named \verb|print| or \verb|read|, or similar.
 Notice there are two possible formats for the gauge configuration files: the 
 ASCII format, and the ILDG format. The first one is simple and is useful for 
 simplicity. The ILDG file format is a standard format used in Lattice QCD, 
@@ -443,12 +456,10 @@ wary of them, and check that they work as he would expect: debug tools are not
 tested as extensively as the production code. None the less, it seems pretty
 reasonable to add some work that has been done on this tools in the released 
 code.
-\subsection{ NORANDOM Mode}
+\subsection{ No random Mode}
 If you need your run to be reproducible for a whole molecular dynamics 
 trajectory, you don't trust the random number generatorand don't want to use 
-it, you can use
-\verb|#define NORANDOM|. It may also be useful to shorten the length of the 
-trajectory (to improve acceptance).
+it, you can set {\sf DoNoRandomTest } to 1. It may also be useful to shorten the length of the trajectory (to improve acceptance).
 At present random number generation is used in:
 \begin{itemize}
     \item The generation of a new configuration;
@@ -456,103 +467,115 @@ At present random number generation is used in:
         evolution;
     \item The generation of the momenta for the molecular dynamics evolution.
     \item It is also used to generate the pseudofermions in stochastic fermion 
-        measurements, however at present this aspect is not touched by 
-        \verb|#define NORANDOM|.
+        measurements, however this is our of the scope of ``no random mode''.
 \end{itemize}
-The only files where \verb|#define NORANDOM| has an effect are, at present, 
-\verb|/src/OpenAcc/main.c| and \verb|/src/OpenAcc/update_versatile.c|. In order 
-to activate NORANDOM mode, you can also add a suitable \verb|-DNORANDOM| in the 
-\verb|COMPILER_FLAGS| in the makefile (don't forget to also ``touch'' 
-\verb|main.c| and \verb|update_versatile.c| to trigger the compilation of those 
-files with \verb|make|).
+The only files where this flag has an effect are, at present, 
+\verb|/src/OpenAcc/main.c| and \verb|/src/OpenAcc/update_versatile.c|. 
 
 
-
-\subsection{The DbgTools directory}
-In this directory you can find various \emph{skeletons} for many testing needs:
+\subsection{The ``test\_and\_benchmarks'' directory}
+In this directory you can find the sources for the most important benchmarks:
 \begin{itemize}
     \item Tests and benchmarks for $D_{eo}$ and $D_{oe}$, the Dirac 
         operator (\verb|deo_doe_test.c|), in single an double precision.
     \item Test and benchmarks for the multishift inverter in single and double 
-precision.
-    \item Tests for some functions involved in stouting
-    \item (to be continued)
+precision (\verb|inverter_multishift_test.c|), in single and double precision. 
 \end{itemize}
-In the header file \verb|dbgtools.h| you can find the declarations of many 
-functions that print out or read from file various datatypes.
 
+\subsection{The DbgTools directory}
+In this directory you can find the sources for some low-level tests
+which are not maintained, but can hopefully be useful - either the code can be easily 
+adapted for your needs, or you can take inspiration from that. 
+In the header file \verb|dbgtools.h| you can find the declarations of many 
+functions that print out or read from file various datatypes, which instead can be expected 
+to work (for example, they are used in the \verb|deo_doe_test| benchmark).
 
 \section{Tuning}
 \label{tuning}
-Holy text report that optimal hybrid montecarlo acceptance should be 87.5\% or 
-so. 
+
+\subsection{Low-level optimization with the {\sf tile} OpenACC clause}
+
+At compile time it is possible to set the values of the {\sf tile } and {\sf gang} sizes 
+for the 4 most significant kernels - the ones pertaining to the 
+dirac operator, to the improved staples, to the normal staples, and to the computation of
+$\Sigma$ (an ingredient used during stouting).
+Finding the optimal values for the {\sf tile} and {\sf gang} clauses requires testing. 
+In the {\sf scripts} directory there are two scripts, namely 
+\verb|test_blocks_dirac_operator.sh| and 
+\verb|test_blocks_puregauge.sh|, which read two data files - 
+\verb|dirac_blocks.txt| and 
+\verb|puregauge_blocks.txt| respectively - and compile different version of the benchmarks, 
+so that they can be tested. Examples of the \verb|dirac_blocks.txt| and 
+\verb|puregauge_blocks.txt| can be found in the {\sf scripts} directory. 
+
+A possible use of these scripts is the following.
+\begin{enumerate}
+ \item Create a \verb|build| directory, build the program there (configure, make and 
+ make install, see before)
+ \item Create the \verb|dirac_blocks.txt| and/or \verb|puregauge_blocks.txt|, writing 
+ the blocks you want to test inside it
+ \item Run the command
+ \begin{verbatim}
+../scripts/test_blocks_dirac_operator.sh
+ \end{verbatim}
+ and/or
+ \begin{verbatim}
+../scripts/test_blocks_puregauge.sh  
+ \end{verbatim}
+\end{enumerate}
+ These scripts will create different versions of the benchmark executables. In order to run 
+ them, you may want to insert the executables in a suitable slurm or LSF script.
+ A tool to create slurm scripts is described in Chapter \ref{tests_and_benchmarks}.
+ 
+\subsection{Molecular dynamics parameters}
+Holy texts report that optimal hybrid montecarlo acceptance should be between 70\% and 80\%. 
 The probability for a new configuration to be accepted is related to the action 
 difference between the start and the end of the trajectory, which should be zero 
-in 
-perfect conditions. The reasons why it \emph{will} be different from zero are:
+in perfect conditions. The reasons why it \emph{will} be different from zero are:
 \begin{itemize}
     \item A mismatch between the 3 rational approximations used. A fast test could 
-        be done 
-        to check if the first one and the last one are in good agreement, just removing 
-        all 
-        molecular dynamics in between\footnote{At the moment, this result is NOT 
-            achieved by 
-        putting the relevant parameters in the input file to zero.}. 
+        be done to check if the first one and the last one are in good agreement, just removing all molecular dynamics in between
+        %\footnote{At the moment, this result is NOT achieved by putting the relevant %parameters in the input file to zero.}. 
+        % CHE MINCHIA VOLEVO DIRE?
     \item Errors in the integration of the trajectory.
 \end{itemize}
 As far as the first point is concerned: since we want our results to be 
-accurate, we 
-would like the last inversion to be as 
-``exact'' as possible, while we can save some computing time on the molecular 
-dynamics 
-inversions, which will be performed many times and whose precision (as long as 
-the last 
-action calculation is ``exact'') can be traded for speed. The first inversion 
-can be 
-done precisely since it will be performed only once. Optimization can thus be 
-made with
-the choice of the rational approximations used during molecular dynamics. There 
-is a 
-single parameter which must be tuned, which is the maximum error of the 
-approximation. 
-Reducing the error will determine an increase in the order of the approximation 
-and a 
-reduction in the target residue in the inversions. The higher the order, the 
-slower; 
+accurate, we would like the last inversion to be as 
+``exact'' as possible, while we can save some computing time on the molecular dynamics 
+inversions, which will be performed many times and whose precision (as long as the last 
+action calculation is ``exact'') can be traded for speed. The first inversion can be 
+done precisely since it will be performed only once. Optimization can thus be made with
+the choice of the rational approximations used during molecular dynamics. There is a 
+single parameter which must be tuned, which is the maximum error of the approximation. 
+Reducing the error will determine an increase in the order of the approximation and a 
+reduction in the target residue in the inversions. The higher the order, the slower; 
 the smaller the target residue, the slower. \\
-As far as the integration errors are concerned, the most basic observation is 
-that, for 
-the Omelyan 2nd order integrator, the action difference (which is an error) 
-should go 
-like $[t/n_{md}]^2$, where $n_{md}$ is the number of steps in the molecular 
-dynamics 
-trajectory, while $t$ is the molecular dynamics time\footnote{(Note for self) 
-this topic has been already discussed in 
-    the 
-literature, check}. While there is no way a priori to fix the parameters apart 
-from 
+As far as the integration errors are concerned, the most basic observation is that, for 
+the Omelyan 2nd order integrator, the action difference (which is an error) should go 
+like $[t/n_{md}]^2$, where $n_{md}$ is the number of steps in the molecular dynamics 
+trajectory, while $t$ is the molecular dynamics time
+\footnote{(Note for self) 
+this topic has been already discussed in the literature, check}. 
+While there is no way a priori to fix the parameters apart from 
 experience (read: look to another successful run), once a choice of the 
-parameters is 
-reached for which acceptance is satisfying, there are some possible rules of 
-thumb that 
-may help in optimizing $n_{md}$ and the number of gauge substeps $n_{gss}$:
+parameters is reached for which acceptance is satisfying, there are some 
+possible rules of thumb that may help in optimizing $n_{md}$ and the number 
+of gauge substeps $n_{gss}$:
 \begin{itemize}
     \item The norm of the fermion force times the number of gauge substeps should 
         be 
-        roughly equal to the norm of the gauge force. The value of both norms is 
-        calculated by 
-        the program and printed when the right level of verbosity is chosen;
+        roughly equal to the norm of the gauge force.
     \item The norm of the variation of the fermion force every half Omelyan macro 
         step 
         (which is $n_{gss}$ times a micro step), and the norm of the variation of the 
         gauge 
-        force every Omelyan micro step should be equal. These quantities are also 
-        printed at 
-        the same level of verbosity.
+        force every Omelyan micro step should be equal.
     \item (Not implemented) The same reasoning could be done with the maximum values 
         found.
 \end{itemize}
 
+Notice that informations about these quantities can be obtained by setting the appropriate flags in the setting file, in the section {\sf DebugSettings}, and the 
+data produced can be analysed with the {\sf analyse\_md\_info.sh} script.
 
 
 
@@ -560,9 +583,8 @@ may help in optimizing $n_{md}$ and the number of gauge substeps $n_{gss}$:
 
 
 
-
-\section{Input file reading (and advices for format modifications).}
-Input file reading is done in \verb|/src/Include/init.c|. The idea here is to 
+\section{Setting file reading (and advices for format modifications).}
+Setting file reading is done in \verb|/src/Include/setting_file_parser.c|. The idea here is to 
 read parameters from a file and store them into global variables (or, better, 
 into variables of limited number of global structures). The input file should 
 be composed by parameter ``macro groups'', with a name that is needed to find 
@@ -579,26 +601,33 @@ following things:
             \item Scan the file to find names of macro-groups of parameters, thus 
                 identifying for each group a type, an initial line and an ending line;
             \item For each of the groups found, it calls the appropriate parser (which 
-                is actually a wrapper) passing to it the correct \emph{global} data member, 
+                is actually a wrapper) passing to it the correct \emph{global} variable (which is a structure), 
                 the start file line and the end file line of the group. Every parser-wrapper 
                 defines an array of structures of the kind \verb|par_info|:
-                \begin{verbatim}
-                typedef struct par_info_t{
-                    void* par;
-                    int type; // 0 = int, 1 = double, 2 = string
-                    char* name;
-                    int is_optional;
-                    const void * default_value;
-                }par_info;
-                \end{verbatim}
+\begin{verbatim}
+//types that can be found in an input file
+enum dtype {TYPE_INT, TYPE_DOUBLE, TYPE_STR, NUM_TYPES};
+const char * type_strings[]={"(int)", "(double)", "(string)" };
+
+typedef struct par_info_t{
+
+    void* par;
+    enum dtype type;
+    const char* name;
+    const void* default_value;
+    const char* comment;
+
+}par_info;
+\end{verbatim}
                 Inside every parser-wrapper, this array is passed to a real parser that looks 
                 for the \verb|name| in the range of lines specified by the parser-wrapper, 
                 reads a value whose type is speficied in \verb|type|, and puts it into the 
                 variable pointed at by \verb|*par|. If no value specified by \verb|type| is 
-                found, and if \verb|is_optional| is zero, an error will be generated; if 
-                instead \verb|is_optional| is one, the default value read from the pointer 
-                \verb|*default_value| will be assigned to the variable pointer at by 
-                \verb|*par|.
+                found, the \verb|*default_value| is used instead, and a message is printed.
+                If no value is read and  \verb|defalt_value| is \verb|NULL|, an error will be generated,
+                but the read of the setting file will continue until the end in order to 
+                give print all the errors.
+                
         \end{enumerate}
     \item If it is not opened for any reason, it goes into ``help'' mode, and the 
         same chain of parser-wrappers and parser is called in help mode writing an 
@@ -606,15 +635,18 @@ following things:
 \end{enumerate}
 If you want to add another parameter ``macro group'', you have to add the name 
 to the \verb|par_macro_groups_names| list, increasing also \verb|NPMGTYPES|.
-You also need to create the correct parser-wrapper for it, and modify the 
-\verb|set_global_vars_and_fermions_from_input_file()| function to accomodate 
+You also need to create the correct parser-wrapper for it, and modify the \\
+\verb|set_global_vars_and_fermions_from_input_file()| \\function to accomodate 
 the reading of that parameter ``macro group''.\\
 If you want just to add a parameter to an existing group, you just have to 
 modify its parser-wrapper and possibly the structure that should hold the value 
 of that new parameter.
 
-\section{Configuration file reading}
+\section{Gauge Configuration file reading}
 All this is performed in \verb|src/OpenAcc/io.c|.
+Notice that in the case there are more than one MPI process the gauge configuration
+file is read by rank 0, and then split into different pieces which are sent to the 
+other ranks. The reverse happens when the gauge configuration is saved to disc.
 
 \subsection{ASCII Format}
 The ASCII format is really useful for checking and debugging, and at present is 
@@ -656,4 +688,39 @@ A tool for file conversion is \verb|/src/DbgTools/ildgtest.c|. You can add it
 to the list of arguments you pass to \verb|generate_makefile.py| in order to 
 build a makefile that will have, amongst other targets,\verb|ildgtest|.
 Modify the \verb|main()| to obtain your desired result.
+
+\section{External Fields, staggered phases and field-dependent observables}
+
+The gauge links {\bf must never} be stored in a state where they
+are multiplicated by the staggered phase. All the gauge links are just
+plain SU(3) matrices.
+
+This has some consequences. The staggered phases are always passed in the "external field".
+The external field also incorporates the effect of a static abelian
+field and the effect of a nonzero chemical potential.
+This means we need a different external field for each of the
+flavours.
+
+This necessity is propagated also in measurements of observables.
+
+Notice that most observables concerning the external field - magnetizations, 
+quark numbers, and susceptibilities - contain terms that come from the derivative 
+of the links w.r.t. the external field. Since usually the $U(1)$ phases are proportional 
+to the external field, in order to build the observable the easiest thing is to 
+compute the phases for two values of the field and then take the difference.
+This may be particularly convenient when considering that the mapping of lattice axes to physical axes 
+must be totally free.
+
+Note: at present, only the magnetization is implemented using this trick. The 
+quark number and quark number susceptibilities are instead stupidly implemented, requiring e.g. 4 different 
+implementations for the 4 possible orientations of the $\tau$ axis.
+
+\section{Jarzynski Mode}
+\label{JarzynskiMode}
+
+If the flag \verb|JarzynskiMode| is set to 1 (or -1) the value of the $z$-component of the magnetic field is incremented (decremented)
+by a little step after every molecular dynamics trajectory. It goes from an integer to the next (or the previous, if \verb|JarzynskiMode| is set to -1)
+in a number of steps that is specified by \verb|MaxConfIdIter|. 
+The number of measurements of fermionic quantities is set in the \verb|FermionMeasuresSettings| group.
+
 

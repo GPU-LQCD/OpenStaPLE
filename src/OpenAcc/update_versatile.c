@@ -1,4 +1,3 @@
-// se metro==1 allora fa il test di metropolis
 // se metro==0 allora non fa il test di metropolis --> termalizzazione
 #ifndef UPDATE_VERSATILE_C_
 #define UPDATE_VERSATILE_C_
@@ -50,10 +49,9 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
     su3_soa *tstout_conf_acc_arr = gstout_conf_acc_arr;
     su3_soa_f *tstout_conf_acc_arr_f = gstout_conf_acc_arr_f;
 #endif
-#ifdef NORANDOM
-    printf("MIP%02d: WELCOME! NORANDOM MODE. (UPDATE_SOLOACC_UNOSTEP_VERSATILE())\n",
+    if(debug_settings.do_norandom_test)
+        printf("MIP%02d: WELCOME! NORANDOM MODE. (UPDATE_SOLOACC_UNOSTEP_VERSATILE())\n",
             devinfo.myrank);
-#endif
 
 
 
@@ -105,17 +103,17 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
     // ESTRAZIONI RANDOM
     if(debug_settings.do_norandom_test){ // NORANDOM
         printf("NORANDOM mode, loading momenta from memory.\n");
-        if(read_thmat_soa(momenta,"momenta_norndtest")){
-            printf("GENERATING MOMENTA FILE FOR YOUR CONVENIENCE, RE-RUN THIS TEST\n");
+        if(read_thmat_soa_wrapper(momenta,"momenta_norndtest")){
+            printf("MPI%02d: GENERATING MOMENTA FILE FOR YOUR CONVENIENCE, RE-RUN THIS TEST\n",
+                    devinfo.myrank);
             generate_Momenta_gauss(momenta);
-            print_thmat_soa(momenta,"momenta_norndtest");
+            print_thmat_soa_wrapper(momenta,"momenta_norndtest");
         }
     }
     else generate_Momenta_gauss(momenta); // NORMAL, RANDOM
 
     printf("MPI%02d - Momenta generated/read : OK \n", devinfo.myrank);
 
-    //    read_thmat_soa(momenta,"momenta");
 #pragma acc update device(momenta[0:8])
     if(debug_settings.do_reversibility_test)
         copy_momenta_into_old(momenta,momenta_backup);
@@ -133,10 +131,10 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
                 sprintf(ps_index_str,"%d",ps_index);
                 strcpy(psferm_filename,"fermion_norndtest");
                 strcat(psferm_filename,ps_index_str);
-                if(read_vec3_soa(&ferm_phi_acc[ps_index],psferm_filename)){
+                if(read_vec3_soa_wrapper(&ferm_phi_acc[ps_index],psferm_filename)){
                     printf("GENERATING FERMION FILE FOR YOUR CONVENIENCE, RE-RUN THIS TEST\n");
                     generate_vec3_soa_gauss(&ferm_phi_acc[ps_index]);
-                    print_vec3_soa(&ferm_phi_acc[ps_index],psferm_filename);
+                    print_vec3_soa_wrapper(&ferm_phi_acc[ps_index],psferm_filename);
 
                 }
             }
@@ -172,14 +170,14 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
         if(verbosity_lv > 2 ) printf("Rat approx rescale (flav=%d)\n",iflav);
 
         if(debug_settings.do_norandom_test){ // NORANDOM
-            if(read_vec3_soa(kloc_p,"kloc_p_norndtest")){
+            if(read_vec3_soa_wrapper(kloc_p,"kloc_p_norndtest")){
                 generate_vec3_soa_gauss(kloc_p);
-                print_vec3_soa(kloc_p,"kloc_p_norndtest");
+                print_vec3_soa_wrapper(kloc_p,"kloc_p_norndtest");
                 printf("GENERATED kloc_p_norndtest FOR NORANDOM TEST, RE-RUN THIS TEST\n");
             }
-            if(read_vec3_soa(kloc_s,"kloc_s_norndtest")){
+            if(read_vec3_soa_wrapper(kloc_s,"kloc_s_norndtest")){
                 generate_vec3_soa_gauss(kloc_s);
-                print_vec3_soa(kloc_s,"kloc_s_norndtest");
+                print_vec3_soa_wrapper(kloc_s,"kloc_s_norndtest");
                 printf("GENERATED kloc_s_norndtest FOR NORANDOM TEST, RE-RUN THIS TEST\n");
             }
         }
@@ -431,7 +429,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
                 devinfo.myrank);
 
         save_conf_wrapper(tconf_acc,"conf_REVTEST",0,0); // conf_id_iter =0, not using ILDG
-        save_conf_wrapper(conf_acc_bkp,"conf_REVTEST_bkp",0,0);
+//        save_conf_wrapper(conf_acc_bkp,"conf_REVTEST_bkp",0,0);
 
 
 #ifdef MULTIDEVICE
@@ -466,14 +464,14 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
         for(int iflav = 0 ; iflav < alloc_info.NDiffFlavs ; iflav++){
             // generate gauss-randomly the fermion kloc_p that will be used in the computation of the max eigenvalue
             if(debug_settings.do_norandom_test){ // NORANDOM
-                if(read_vec3_soa(kloc_p,"kloc_p_norndtest")){
+                if(read_vec3_soa_wrapper(kloc_p,"kloc_p_norndtest")){
                     generate_vec3_soa_gauss(kloc_p);
-                    print_vec3_soa(kloc_p,"kloc_p_norndtest");
+                    print_vec3_soa_wrapper(kloc_p,"kloc_p_norndtest");
                     printf("GENERATED kloc_p_norndtest FOR NORANDOM TEST, RE-RUN THIS TEST\n");
                 }
-                if(read_vec3_soa(kloc_s,"kloc_s_norndtest")){
+                if(read_vec3_soa_wrapper(kloc_s,"kloc_s_norndtest")){
                     generate_vec3_soa_gauss(kloc_s);
-                    print_vec3_soa(kloc_s,"kloc_s_norndtest");
+                    print_vec3_soa_wrapper(kloc_s,"kloc_s_norndtest");
                     printf("GENERATED kloc_s_norndtest FOR NORANDOM TEST, RE-RUN THIS TEST\n");
                 }
             }

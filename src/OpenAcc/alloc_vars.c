@@ -21,7 +21,19 @@
 
 #define ALIGN 128
 global_su3_soa  * conf_rw; // the gauge configuration, only for read-write
+
+//used in debugging/testing
 global_vec3_soa  * ferm_rw; // a global fermion, only for read-write
+global_tamat_soa  * tamat_rw; // a global tamat, only for read-write
+global_thmat_soa  * thmat_rw; // a global thmat, only for read-write
+// a global dcomplex_soa, only for read-write
+global_dcomplex_soa *dcomplex_rw;
+// a global double_soa, only for read-write
+global_double_soa *double_rw; 
+
+
+
+
 su3_soa  * conf_acc; // the gauge configuration.
 su3_soa  * conf_acc_bkp; // the old stored conf that will be recovered 
 // if the metro test fails.
@@ -137,6 +149,29 @@ void mem_alloc_extended()
             alloc_info.NPS_tot, alloc_info.maxApproxOrder,alloc_info.maxNeededShifts);
     int allocation_check;  
 
+#ifdef MULTIDEVICE 
+    if(devinfo.myrank == 0){
+#endif 
+			  // These containers shall not be allocated on the device
+			  allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&conf_rw, ALIGN,8*sizeof(global_su3_soa));
+			  ALLOCCHECK(allocation_check, conf_rw);
+
+        // used in debugging/testing
+			  allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&ferm_rw, ALIGN,sizeof(global_vec3_soa));
+			  ALLOCCHECK(allocation_check, ferm_rw);
+        allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&tamat_rw, ALIGN,8*sizeof(global_tamat_soa));
+        ALLOCCHECK(allocation_check, tamat_rw);
+        allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&thmat_rw, ALIGN,8*sizeof(global_thmat_soa));
+        ALLOCCHECK(allocation_check, thmat_rw);
+        allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&dcomplex_rw, ALIGN,8*sizeof(global_dcomplex_soa));
+        ALLOCCHECK(allocation_check, dcomplex_rw);
+        allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&double_rw, ALIGN,8*sizeof(global_double_soa));
+        ALLOCCHECK(allocation_check, double_rw);
+
+#ifdef MULTIDEVICE
+    }
+#endif
+
 
 
     allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&mag_obs_re, ALIGN,
@@ -151,23 +186,12 @@ void mem_alloc_extended()
     ALLOCCHECK(allocation_check, mag_obs_im);
 #pragma acc enter data create(mag_obs_im[0:alloc_info.NDiffFlavs*8])
 
-    allocation_check = posix_memalign((void **)&topo_loc,ALIGN,
+    allocation_check = POSIX_MEMALIGN_WRAPPER((void **)&topo_loc,ALIGN,
 		    2*sizeof(double_soa));
 #pragma acc enter data create(topo_loc[0:2])  
 
 
-#ifdef MULTIDEVICE 
-    if(devinfo.myrank == 0){
-#endif
-        allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&conf_rw, ALIGN,8*sizeof(global_su3_soa));
-        ALLOCCHECK(allocation_check, conf_rw); // NOT ON DEVICE!!
-        allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&ferm_rw, ALIGN,sizeof(global_vec3_soa));
-        ALLOCCHECK(allocation_check, ferm_rw);
-#ifdef MULTIDEVICE
-    }
-#endif
-
-    //the double bracket in the setfree macro MUST be there(because of operators precedence)
+    //the double bracket in the setfree macro MUST be there (because of operators precedence)
     allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&aux_conf_acc, ALIGN, 8*sizeof(su3_soa)); 
     ALLOCCHECK(allocation_check, aux_conf_acc );
 #pragma acc enter data create(aux_conf_acc[0:8])
@@ -187,9 +211,8 @@ void mem_alloc_extended()
     allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&momenta, ALIGN, 8*sizeof(thmat_soa));  
     ALLOCCHECK(allocation_check, momenta ) ;
 #pragma acc enter data create(momenta[0:8])
-
+    alloc_info.revTestAllocations = debug_settings.do_reversibility_test;
     if(alloc_info.revTestAllocations){
-
         allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&momenta_backup, ALIGN, 8*sizeof(thmat_soa));
         ALLOCCHECK(allocation_check, momenta_backup ) ;
 #pragma acc enter data create(momenta_backup[0:8])
@@ -265,9 +288,11 @@ void mem_alloc_extended()
     ALLOCCHECK(allocation_check, ferm_out_acc) ;
 #pragma acc enter data create(ferm_out_acc[0:alloc_info.NPS_tot])
 
-    allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&ferm_shiftmulti_acc, ALIGN, alloc_info.maxNeededShifts*sizeof(vec3_soa)); 
-    ALLOCCHECK(allocation_check, ferm_shiftmulti_acc ) ;
+    if(alloc_info.maxNeededShifts){
+			allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&ferm_shiftmulti_acc, ALIGN, alloc_info.maxNeededShifts*sizeof(vec3_soa)); 
+			ALLOCCHECK(allocation_check, ferm_shiftmulti_acc ) ;
 #pragma acc enter data create(ferm_shiftmulti_acc[0:alloc_info.maxNeededShifts])
+    }
 
 
     allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&d_local_sums, ALIGN, 2*sizeof(double_soa)); 
@@ -294,10 +319,10 @@ void mem_free_core()
     printf("[CORE] Deallocation.\n");
     FREECHECK(kloc_r);                
 #pragma acc exit data delete(kloc_r)
-    FREECHECK(kloc_s);              
-#pragma acc exit data delete(kloc_s)
     FREECHECK(kloc_h);                
 #pragma acc exit data delete(kloc_h)
+    FREECHECK(kloc_s);              
+#pragma acc exit data delete(kloc_s)
     FREECHECK(kloc_p);                
 #pragma acc exit data delete(kloc_p)
     FREECHECK(aux1);                
@@ -326,8 +351,13 @@ void mem_free_extended()
 #ifdef MULTIDEVICE 
     if(devinfo.myrank == 0){
 #endif
-        FREECHECK(conf_rw); // NOT ON DEVICE
-        //  FREECHECK(ferm_rw);
+        // NOT ON DEVICE
+        FREECHECK(conf_rw);
+        FREECHECK(ferm_rw);
+        FREECHECK(tamat_rw);
+        FREECHECK(thmat_rw);
+        FREECHECK(dcomplex_rw);
+        FREECHECK(double_rw);
 #ifdef MULTIDEVICE
     }
 #endif
@@ -336,36 +366,26 @@ void mem_free_extended()
 #pragma acc exit data delete(mag_obs_re)
     FREECHECK(mag_obs_im);
 #pragma acc exit data delete(mag_obs_im)
-    FREECHECK(momenta);               
-#pragma acc exit data delete(momenta)               
-    if(alloc_info.revTestAllocations){
-        FREECHECK(momenta_backup);               
-#pragma acc exit data delete(momenta_backup)               
-    }
     FREECHECK(aux_conf_acc);          
 #pragma acc exit data delete(aux_conf_acc)          
     FREECHECK(auxbis_conf_acc);       
 #pragma acc exit data delete(auxbis_conf_acc)       
-
-
-    if(alloc_info.stoutAllocations){
-        FREECHECK(gstout_conf_acc_arr);   
-#pragma acc exit data delete(gstout_conf_acc_arr)   
-        FREECHECK(glocal_staples);        
-#pragma acc exit data delete(glocal_staples)        
-        FREECHECK(gipdot);              
-#pragma acc exit data delete(gipdot)              
-        FREECHECK(aux_ta);                
-#pragma acc exit data delete(aux_ta)                
-        FREECHECK(aux_th);                
-#pragma acc exit data delete(aux_th)                
-    }
-
-
+    // GAUGE EVOLUTION
+    FREECHECK(momenta);               
+#pragma acc exit data delete(momenta)               
     FREECHECK(conf_acc_bkp);          
-#pragma acc exit data delete(conf_acc_bkp)          
+    //alloc_info.revTestAllocations = debug_settings.do_reversibility_test;
+    if(alloc_info.revTestAllocations){
+        // we allocate it also on the device only if we have to compute
+        // differences with the reverse-evolved version
+#pragma acc exit data delete(conf_acc_bkp)  
+        FREECHECK(momenta_backup);               
+#pragma acc exit data delete(momenta_backup)               
+    }
     FREECHECK(ipdot_acc);  
 #pragma acc exit data delete(ipdot_acc)  
+
+    //alloc_info.diagnosticsAllocations = debug_settings.save_diagnostics;
     if(alloc_info.diagnosticsAllocations){
         FREECHECK(ipdot_g_old);           
 #pragma acc exit data delete(ipdot_g_old)           
@@ -373,19 +393,37 @@ void mem_free_extended()
 #pragma acc exit data delete(ipdot_f_old)           
     }
 
+    // STOUTING
+    if(alloc_info.stoutAllocations){
+        FREECHECK(gstout_conf_acc_arr);   
+#pragma acc exit data delete(gstout_conf_acc_arr)   
+        FREECHECK(glocal_staples);        
+#pragma acc exit data delete(glocal_staples)        
+        FREECHECK(gipdot);              
+#pragma acc exit data delete(gipdot)              
+        FREECHECK(aux_th);                
+#pragma acc exit data delete(aux_th)                
+        FREECHECK(aux_ta);                
+#pragma acc exit data delete(aux_ta)                
+    }
+    // FERMION ALLOCATIONS
+    FREECHECK(k_p_shiftferm);         
+#pragma acc exit data delete(k_p_shiftferm)         
     FREECHECK(ferm_chi_acc);          
 #pragma acc exit data delete(ferm_chi_acc)          
     FREECHECK(ferm_phi_acc);          
 #pragma acc exit data delete(ferm_phi_acc)          
     FREECHECK(ferm_out_acc);          
 #pragma acc exit data delete(ferm_out_acc)          
-      
-    FREECHECK(ferm_shiftmulti_acc);   
-#pragma acc exit data delete(ferm_shiftmulti_acc)   
-                                    
-    FREECHECK(k_p_shiftferm);         
-#pragma acc exit data delete(k_p_shiftferm)         
 
+    if(alloc_info.maxNeededShifts){
+        FREECHECK(ferm_shiftmulti_acc);   
+#pragma acc exit data delete(ferm_shiftmulti_acc)   
+    }
+    
+    // REDUCTIONS
+		FREECHECK(topo_loc);
+#pragma acc exit data delete(topo_loc)            
     FREECHECK(local_sums);            
 #pragma acc exit data delete(local_sums)            
     FREECHECK(d_local_sums);          

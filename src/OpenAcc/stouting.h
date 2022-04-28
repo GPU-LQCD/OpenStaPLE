@@ -11,7 +11,7 @@
 
 
 void exp_minus_QA_times_conf(__restrict const su3_soa * const tu,
-			     __restrict tamat_soa * const QA,
+			     __restrict const tamat_soa * QA,
                  __restrict su3_soa * const tu_out,
 			     __restrict su3_soa * const exp_aux);
 

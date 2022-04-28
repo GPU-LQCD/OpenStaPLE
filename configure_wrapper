@@ -1,0 +1,219 @@
+#!/usr/bin/python3
+'''
+ This script calls "configure" with the right arguments, which will be 
+ chosen depending on the special-arguments passed to this script.
+ 
+ Special arguments for this script:
+ debuggnu - if the argument 'debuggnu' is passed, none of the ones listed down here
+         may. Use this to debuggnu your code with gdb. No mpi.
+
+ Compilers: gcc,mpi,pgi (mutually exclusive)
+ Options for pgi: cc35, cc60, haswell, amd (mutually exclusive)
+ Options for pgi and cc*: cuda7.0, 7.5, 8.0, 9.0 and 10.0 (mutually exclusive)
+
+ Other arguments will be passed directly to "configure" (e.g. --prefix).
+ If --prefix is not specified, it is set to $(pwd).
+
+
+'''
+from sys import argv,exit,stderr,stdout
+from os import path,environ
+import subprocess
+
+
+basedir = path.dirname(argv[0])
+
+foundPrefix = False
+for arg in argv[1:]:
+    if '--prefix' in arg:
+        foundPrefix = True
+
+foundDebugSym = False
+for arg in argv[1:]:
+    if arg== '--debugsym':
+        foundDebugSym = True
+
+if foundDebugSym:
+    argv.remove('--debugsym')
+
+
+accepted_options = ['gcc','gcc-4','gcc-5','gcc-6','mpi','pgi','cc35','cc50','cc60','haswell',\
+        'amd','cuda7.0','cuda7.5','cuda8.0','cuda9.0','cuda10.0','debuggnu']
+
+n=None
+# flag compatibilities
+comp_matrix=[
+        [n,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],# gcc, default
+        [n,n,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],# gcc-4
+        [n,n,n,0,0,0,0,0,0,0,0,0,0,0,0,0,0],# gcc-5
+        [n,n,n,n,0,0,0,0,0,0,0,0,0,0,0,0,0],# gcc-6
+        [n,n,n,n,n,0,0,0,0,0,0,0,0,0,0,0,0],# mpi
+        [n,n,n,n,n,n,1,1,1,1,1,1,1,1,1,1,0],# pgi
+        [n,n,n,n,n,n,n,0,0,0,0,1,1,1,1,1,0],# cc35
+        [n,n,n,n,n,n,n,n,0,0,0,1,1,1,1,1,0],# cc50
+        [n,n,n,n,n,n,n,n,n,0,0,1,1,1,1,1,0],# cc60
+        [n,n,n,n,n,n,n,n,n,n,0,0,0,0,0,0,0],# haswell
+        [n,n,n,n,n,n,n,n,n,n,n,0,0,0,0,0,0],# amd
+        [n,n,n,n,n,n,n,n,n,n,n,n,0,0,0,0,0],# cuda7.0
+        [n,n,n,n,n,n,n,n,n,n,n,n,n,0,0,0,0],# cuda7.5
+        [n,n,n,n,n,n,n,n,n,n,n,n,n,n,0,0,0],# cuda8.0
+        [n,n,n,n,n,n,n,n,n,n,n,n,n,n,n,0,0],# cuda9.0
+        [n,n,n,n,n,n,n,n,n,n,n,n,n,n,n,n,0],# cuda10.0
+        [n,n,n,n,n,n,n,n,n,n,n,n,n,n,n,n,n]]# debuggnu
+
+
+all_ok = True
+
+# check for option incompatiblity
+for i,op in enumerate(accepted_options):
+    if op in argv:
+        for j,op2 in enumerate(accepted_options):
+            if j > i and op2 in argv and comp_matrix[i][j] == 0:
+                stderr.write("ERROR: options {} and {} not compatible.\n".
+                        format(op,op2))
+                all_ok = False
+
+if not all_ok :
+    exit(1)
+
+
+if 'debuggnu' in argv:
+    argv.remove('debuggnu')
+    CC='gcc'
+    CXX='g++'
+    CC_FLAGS='"-O0 -g -std=gnu99"'
+    LINKER_FLAGS='"-lm"'
+
+elif 'pgi' in argv:
+    argv.remove('pgi')
+
+    CC='pgcc'
+    CXX='pgc++'
+
+    if 'cc35' in argv:
+        argv.remove('cc35')
+        ta = 'tesla:cc35'  
+    elif 'cc50' in argv:
+        argv.remove('cc50')
+        ta = 'tesla:cc50'
+    elif 'cc60' in argv:
+        argv.remove('cc60')
+        ta = 'tesla:cc60'
+    elif 'haswell' in argv:
+        argv.remove('haswell')
+        ta = 'multicore'
+    elif 'amd' in argv:
+        argv.remove('amd')
+        ta = 'radeon:hawaii'
+    else:
+        stderr.write("No architecture selected.\n")
+        ta = None
+
+
+    if 'cuda7.0' in argv:
+        argv.remove('cuda7.0')
+        ta += ',cuda7.0'
+    elif 'cuda7.5' in argv:
+        argv.remove('cuda7.5')
+        ta += ',cuda7.5'
+    elif 'cuda8.0' in argv:
+        argv.remove('cuda8.0')
+        ta += ',cuda8.0'
+    elif 'cuda9.0' in argv:
+        argv.remove('cuda9.0')
+        ta += ',cuda9.0'
+    elif 'cuda10.0' in argv:
+        argv.remove('cuda10.0')
+        ta += ',cuda10.0'
+
+
+
+    if ta is not None:
+        mpiinc = environ['MPIINC'] if 'MPIINC' in environ else \
+                 environ['MPI_INCLUDE'] if 'MPI_INCLUDE' in environ else None
+        mpilib = environ['MPILIB'] if 'MPILIB' in environ else \
+                 environ['MPI_LIB'] if 'MPI_LIB' in environ else None
+        CC_FLAGS='"-acc=noautopar -v -O3 -Minfo=all -ta='+ta+' -DUSE_MPI_CUDA_AWARE '+\
+              ( '-I%s'%mpiinc if mpiinc is not None else '') + '"'
+        LINKER_FLAGS='"-acc=noautopar -v -O3 -Minfo=all -ta='+ta+' -lmpi '+\
+              ( '-L%s'%mpilib if mpilib is not None else '') + '"'
+    else:
+        stderr.write("Compiling with -O0 flags...")
+        CC_FLAGS='-O0'
+        LINKER_FLAGS='-O0 -lmpi'
+
+
+elif 'gcc' in argv:  # warning: this option defaults to gcc-7 on ubuntu 17.10
+                     # unfortunately code cannot be compiled woth gcc 7 due to a bug 
+                     # in the compiler
+    argv.remove('gcc')
+    CC='gcc'
+    CXX='g++'
+    CC_FLAGS='-O3 -std=gnu99'
+    LINKER_FLAGS='-lm'
+
+elif 'gcc-4' in argv: # on ubuntu systems, this is actually g??-4.8. Ubuntu only 
+                      # This is the default on coka (CENTOS 7.4) but it's just named gcc
+    argv.remove('gcc-4')
+    CC='gcc-4.8'
+    CXX='g++-4.8'
+    CC_FLAGS='-O3 -std=gnu99'
+    LINKER_FLAGS='-lm'
+
+elif 'gcc-5' in argv: # does not exists on coka (CENTOS 7.4), ubuntu only
+    argv.remove('gcc-5')
+    CC='gcc-5'
+    CXX='g++-5'
+    CC_FLAGS='-O3 -std=gnu99'
+    LINKER_FLAGS='-lm'
+
+elif 'gcc-6' in argv: # does not exists on coka (CENTOS 7.4), ubuntu only
+    argv.remove('gcc-6')
+    CC='gcc-6'
+    CXX='g++-6'
+    CC_FLAGS='-O3 -std=gnu99'
+    LINKER_FLAGS='-lm'
+
+
+
+elif 'mpi' in argv:
+    argv.remove('mpi')
+    CC='mpicc'
+    CXX='mpicxx'
+    CC_FLAGS='-O3 -std=gnu99'
+    LINKER_FLAGS='-lm'
+
+else : 
+    stderr.write("Compiler not specified\n")
+    exit(1)
+
+if foundDebugSym:
+    CC_FLAGS += ' -g '  
+
+executable = ("%s/configure" % (basedir))
+
+argCC =( 'CC=%s'%(CC))
+argCFLAGS = ('CFLAGS=%s'%(CC_FLAGS))
+argLDFLAGS = ('LDFLAGS=%s'%(LINKER_FLAGS))
+argCXX = ('CXX=%s'%(CXX))
+argCPPFLAGS = ('CXXFLAGS="-O3"')
+
+argsother = ' '.join(argv[1:])
+
+command = ' '.join([executable,argCC,argCFLAGS,argLDFLAGS,argCXX,argCPPFLAGS,argsother])
+
+
+if not foundPrefix: 
+    command += ' --prefix=$(pwd)'
+
+stderr.write(command+'\n')
+ans = input("Execute command? ")
+
+if ans.lower() in ['yes','y','ye']: 
+    try:
+        subprocess.check_call([command],shell = True)
+    except subprocess.CalledProcessError as e:
+        stderr.write("Call to {} failed with error {}.\n"
+                .format(executable,e.returncode))
+        if e.returncode == 77:
+            stderr.write("Maybe you need to load the correct modules, or compile options are wrong?\n")

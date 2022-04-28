@@ -60,12 +60,7 @@ int multishift_invert(__restrict const su3_soa * u,
     struct timeval t0,t1,t2,t3;
     int iter;
     double alpha, delta, lambda, omega, omega_save, gammag, fact;
-
-    // Added to lower the de-sync between processes
-    #ifdef MULTIDEVICE
-    MPI_Barrier(MPI_COMM_WORLD);
-    #endif 
-
+    
     gettimeofday(&t0, NULL);
     alpha=0.0;
     // trial solution out = 0, set all flag to 1                                                                                                           

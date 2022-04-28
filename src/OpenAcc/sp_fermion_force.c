@@ -60,7 +60,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime_f(  __restrict su3_soa_
     if(verbosity_lv > 2) printf("MPI%02d:\t\tSIGMA_PRIME --> SIGMA\n",
             devinfo.myrank);
     if(verbosity_lv > 5){// printing stuff
-#pragma acc update self(Sigma[0:8])
+#pragma acc update host(Sigma[0:8])
         printf("-------------Sigma[old]------------------\n");                                                                                             
         printf("Sigma[old]00 = %f + (%f)*I\n",crealf(Sigma[0].r0.c0[0]),cimagf(Sigma[0].r0.c0[0]));                                               
         printf("Sigma[old]01 = %f + (%f)*I\n",crealf(Sigma[0].r0.c1[0]),cimagf(Sigma[0].r0.c1[0]));                                               
@@ -103,7 +103,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime_f(  __restrict su3_soa_
     if(verbosity_lv > 4) printf("MPI%02d:\t\tcomputed Q  \n",
             devinfo.myrank);
     if(verbosity_lv > 5) {// printing stuff
-#pragma acc update self(QA[ 0:8])
+#pragma acc update host(QA[ 0:8])
         printf("-------------Q------------------\n");
         printf("Q00 = %f\n",QA[0].ic00[0]);
         printf("Q00 = %f\n",QA[0].ic11[0]);
@@ -121,7 +121,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime_f(  __restrict su3_soa_
             devinfo.myrank);
 
     if(verbosity_lv > 5) {// printing stuff
-#pragma acc update self(Lambda[0:8])
+#pragma acc update host(Lambda[0:8])
         printf("-------------LAMBDA------------------\n");
         printf("Lambda00 = %f\n",Lambda[0].rc00[0]);
         printf("Lambda00 = %f\n",Lambda[0].rc11[0]);
@@ -134,7 +134,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime_f(  __restrict su3_soa_
             devinfo.myrank);
 
     if(verbosity_lv > 5) {// printing stuff
-#pragma acc update self(Sigma[0:8])
+#pragma acc update host(Sigma[0:8])
         printf("-------------Sigma[new]------------------\n");                                                                                             
         printf("Sigma[new]00 = %f + (%f)*I\n",crealf(Sigma[0].r0.c0[0]),cimagf(Sigma[0].r0.c0[0]));                                               
         printf("Sigma[new]01 = %f + (%f)*I\n",crealf(Sigma[0].r0.c1[0]),cimagf(Sigma[0].r0.c1[0]));                                               
@@ -280,7 +280,7 @@ void fermion_force_soloopenacc_f(__restrict su3_soa_f    * tconf_acc,
             tipdot_acc);
 
     /*
-#pragma acc update self(tipdot_acc[0:8])
+#pragma acc update host(tipdot_acc[0:8])
 printf("-------------FFORCE------------------\n");
 printf("F00 = %f\n",tipdot_acc[0].rc00[0]);
 printf("F11 = %f\n",tipdot_acc[0].rc11[0]);

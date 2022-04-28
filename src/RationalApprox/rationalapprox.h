@@ -48,7 +48,6 @@ void rescale_rational_approximation(RationalApprox *in, RationalApprox *out, dou
 // to obtain out->lambda_max =1
 void renormalize_rational_approximation(RationalApprox *in, RationalApprox *out);
 
-
-double rational_approx_evaluate(RationalApprox* ra, double x);
+double rational_approx_evaluate(RationalApprox *in, double x);
 
 #endif

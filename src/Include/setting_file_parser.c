@@ -170,7 +170,8 @@ int scan_group_V(int ntagstofind, const char **strtofind,
         for(int itype =0; itype <ntagstofind; itype++){
             found_something = strstr(filelines[iline],strtofind[itype]);
             if(found_something){
-                printf("Found group %s on line %d\n",strtofind[itype], iline);
+                if(0==devinfo.myrank) printf("Found group %s on line %d\n",
+                        strtofind[itype], iline);
                 taglines[nres] = iline;
                 tagtypes[nres] = itype;
                 nres++;
@@ -531,11 +532,14 @@ int read_debug_info(debug_settings_t * dbg_settings,char filelines[MAXLINES][MAX
     const int do_norandom_test_def = 0; 
     const int rng_fakeness_level_def = 0 ;
     const int md_dbg_print_max_count_def = 0;
+    const int md_dbg_be_verbose_def = 0;
     const int print_bfield_dbginfo_def = 0;
     const int md_diag_print_every_def = 10000;
 
     const char SaveAllAtEnd_comment[] = "# Set this to 0 if you want the program not to save its state at the end\n\
 # (or it may overwrite some files and you won't be able to reproduce bugs/do other things)";
+    const char md_dbg_print_max_count_comment[] = "#Print gauge conf, momenta and ipdot intermediate results during MD evolution";
+    const char md_dbg_be_verbose_comment[] = "#More intermediate results will be printed";
     // see /Meas
     par_info gmp[]= {
         (par_info){(void*) &(dbg_settings->use_ildg),              TYPE_INT,"UseILDG"                , (const void*) &useildg_def,NULL},
@@ -546,7 +550,8 @@ int read_debug_info(debug_settings_t * dbg_settings,char filelines[MAXLINES][MAX
         (par_info){(void*) &(dbg_settings->do_reversibility_test), TYPE_INT,"DoRevTest"              , (const void*) &do_reversibility_test_def,NULL},
         (par_info){(void*) &(dbg_settings->do_norandom_test),      TYPE_INT,"DoNoRandomTest"         , (const void*) &do_norandom_test_def,NULL},
         (par_info){(void*) &(dbg_settings->rng_fakeness_level),    TYPE_INT,"RngFakenessLevel"       , (const void*) &rng_fakeness_level_def,NULL},
-        (par_info){(void*) &(dbg_settings->md_dbg_print_max_count),TYPE_INT,"MDDbgPrintMaxCount"     , (const void*) &md_dbg_print_max_count_def,NULL},
+        (par_info){(void*) &(dbg_settings->md_dbg_print_max_count),TYPE_INT,"MDDbgPrintMaxCount"     , (const void*) &md_dbg_print_max_count_def,md_dbg_print_max_count_comment},
+        (par_info){(void*) &(dbg_settings->md_dbg_be_verbose),     TYPE_INT,"MDDbgBeVerbose"         , (const void*) &md_dbg_be_verbose_def,md_dbg_be_verbose_comment},
         (par_info){(void*) &(dbg_settings->diagnostics_filename),  TYPE_STR,"SaveDiagnosticsFilename", (const void*) &diagnostics_filename_def,NULL},
         (par_info){(void*) &(dbg_settings->md_diag_print_every) ,  TYPE_INT,"PrintDiagInfoEvery",      (const void*) &md_diag_print_every_def,NULL},
             
@@ -711,7 +716,7 @@ int read_geometry(geom_parameters *gpar,char filelines[MAXLINES][MAXLINELENGTH],
     const int nx_def   = nd0; 
     const int ny_def   = nd1; 
     const int nz_def   = nd2; 
-    const int nt_def   = nd3; 
+    const int nt_def   = NRANKS_D3*LOC_N3; 
     const int xmap_def = 0;
     const int ymap_def = 1;
     const int zmap_def = 2;
@@ -939,7 +944,7 @@ int set_global_vars_and_fermions_from_input_file(const char* input_filename)
                         filelines,startline,endline);
                 break;
             default:
-                printf("TAG TYPE NOT RECOGNIZED\n");
+                if(0==devinfo.myrank)printf("TAG TYPE NOT RECOGNIZED\n");
                 return 1;
                 break;
         }
@@ -981,23 +986,27 @@ int set_global_vars_and_fermions_from_input_file(const char* input_filename)
         strcat(fm_par.fermionic_outfilename, hash_string);
         strcat(debug_settings.diagnostics_filename,hash_string);
 
-        //if(0==devinfo.myrank){
-        //    printf("Hash of all relevant settings: %s\n", hash_string );
+        if(0==devinfo.myrank){
+            printf("Hash of all relevant settings: %s\n", hash_string );
 
-        //    strcpy(input_to_rename_filename, input_filename);
-        //    strcat(input_to_rename_filename, hash_string );
-        //    
-        //    FILE * input2 = fopen(input_filename,"r");
-        //    FILE * input_renamed = fopen(input_to_rename_filename,"w"); 
-        //    printf("Creating copy of run configuration file (%s) \nwith hash appended in the name (%s)...\n", input_filename, input_to_rename_filename);
-        //    char ch;
-        //    while(( ch = fgetc(input2) ) != EOF)
-        //        fputc(ch, input_renamed);
+            strcpy(input_to_rename_filename, input_filename);
+            strcat(input_to_rename_filename, hash_string );
+            
+            FILE * input2 = fopen(input_filename,"r");
+            FILE * input_renamed = fopen(input_to_rename_filename,"w"); 
+            printf("Creating copy of run configuration file (%s) \nwith hash appended in the name (%s)...\n", input_filename, input_to_rename_filename);
+            char ch;
+            do{
+                ch = fgetc(input2); 
+                if(feof(input2)) break;
+                fputc((char)ch, input_renamed);
+            }
+            while(1);
 
-        //    fclose(input2);
-        //    fclose(input_renamed);
+            fclose(input2);
+            fclose(input_renamed);
 
-        //}
+        }
 
 
     }

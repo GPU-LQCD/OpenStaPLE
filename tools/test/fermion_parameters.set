@@ -1,0 +1,26 @@
+
+FlavourParameters
+Mass                          0.0018        #(double)
+Degeneracy                    1        #(int)
+PseudoFermions                1        #(int)
+Name                          up        #(string)
+Charge                        2        #(double)
+MuOverPiT                     1        #(double)
+
+FlavourParameters
+Mass                          0.0018        #(double)
+Degeneracy                    1        #(int)
+PseudoFermions                1        #(int)
+Name                          down        #(string)
+Charge                        -1        #(double)
+MuOverPiT                     1        #(double)
+
+FlavourParameters
+Mass                          0.0507        #(double)
+Degeneracy                    1        #(int)
+PseudoFermions                1        #(int)
+Name                          strange        #(string)
+Charge                        -1        #(double)
+MuOverPiT                     1        #(double)
+
+

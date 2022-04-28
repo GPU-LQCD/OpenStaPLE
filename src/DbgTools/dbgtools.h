@@ -8,11 +8,38 @@ extern int ipdot_f_reset; // flag to be set to 1 when md starts,
                    // if it is 1 force difference is not calculated.
 extern int ipdot_g_reset; // same
 
-void print_vec3_soa_wrapper(vec3_soa * const fermion,
-        const char* nomefile);
-int read_vec3_soa_wrapper(vec3_soa * fermion, 
-        const char* nomefile);
 
+// multi rank data structure read/write functions - for debug/testing
+// multi rank wrappers
+
+// gl3 / su3
+void print_gl3_soa_wrapper(const su3_soa * gl3, const char* nomefile);
+int read_gl3_soa_wrapper(su3_soa * gl3, const char* nomefile);
+
+// fermions
+void print_vec3_soa_wrapper(const vec3_soa * fermion, const char* nomefile);
+int read_vec3_soa_wrapper(vec3_soa * fermion, const char* nomefile);
+
+// tamat
+void print_tamat_soa_wrapper(const tamat_soa * tamat, const char* nomefile);
+int read_tamat_soa_wrapper(tamat_soa * tamat, const char* nomefile);
+
+// thmat
+void print_thmat_soa_wrapper(const thmat_soa * thmat, const char* nomefile);
+int read_thmat_soa_wrapper(thmat_soa * thmat, const char* nomefile);
+
+// dcomplex
+void print_dcomplex_soa_wrapper(const dcomplex_soa *dcarr,
+        const char* nomefile);
+int read_dcomplex_soa_wrapper(dcomplex_soa * dcarr, const char* nomefile);
+
+
+// double
+void print_double_soa_wrapper(const double_soa * darr, const char* nomefile);
+int read_double_soa_wrapper(double_soa * darr, const char* nomefile);
+
+
+// single rank functions
 void print_vec3_soa(vec3_soa * const fermion, const char* nomefile);
 int read_vec3_soa(vec3_soa * fermion, const char* nomefile);
 void print_su3_soa(su3_soa * const conf, const char* nomefile,int conf_id_iter);

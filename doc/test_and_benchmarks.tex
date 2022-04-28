@@ -1,26 +1,52 @@
 
-\chapter{Tests and benchmarks}
+\section{Tests and benchmarks}
+\label{tests_and_benchmarks}
 
-There are 4 tests that can be performed:
+There are 3 tests that can be performed:
 \begin{itemize}
  \item The Dirac operator test (\verb|deo_doe_test|);
  \item The multishift inverter test (\verb|inverter_multishift_test|):
  \item The pure gauge MD test (main program, \verb|main|);
- \item The full MD test with fermions (main program, \verb|main|).
 \end{itemize}
 
+There is a script that will produce all the necessary slurm scripts, that is \\
+\verb|scripts/prepare_slurm_benchmarks.sh|. \\ A way of calling it is the following:
+\begin{verbatim}
+cd build  # hopefully you already created this
+../scripts/prepare_slurm_benchmarks.sh geom_defines.txt
+\end{verbatim}
+This script will create 
+\begin{itemize}
+ \item the slurm scripts for the 3 tests described
+ \item the ``profiling-friendly'' versions of the 3 slurm scripts which perform order of 10 iterations.
+ \item the 2 setting files needed for benchmarking
+ \item other 2 setting files, ``profiling-friendly''
+\end{itemize}
 
-\section{Input file for benchmarks}
-In the \verb|benchmarks| a 
+A brief description of the benchmarks:
+\begin{itemize}
+ \item {Dirac operator test}: \\
+In the dirac operator test, first \verb|acc_Doe| is executed \verb|DeoDoeIterations| 
+times, then the same for \verb|acc_Deo|, then the same for the whole Dirac operator 
+which contains also a simple ({\sf saxpy} or {\sf daxpy}) linear combination step.
+Notice that this benchmark can also be used to test the correctness of modifications to the
+Dirac operator code.
+\item {Multishift inverter test}: \\
+The multishift inverter is called \verb|MultiShiftInverterRepetitions| times.
+The parameters in the setting file for the benchmark are set so that all shifts 
+will perform the same number of iterations (benchmark mode). The target residue is set very low so that the 
+inverter will never converge in practice, and will stop at the maximum number of allowed iterations.
+\item {Pure gauge test}: \\
+In this case, the full program \verb|main| is used without fermions. The molecular dynamics is run 
+in pure-gauge mode. Notice that stouting is performed, even if the fermion forces are exactly zero.
+The important parameters are all in the {\sf MDParameters} group.
+Notice that, with the diagnostics options, this test can be used to test the correcness
+of modifications to the pure gauge part of Molecular dynamics.
+\end{itemize}
 
-
-\subsection{Dirac operator test}
-
-
-\subsection{Multishift inverter test}
-
-
-\subsection{Pure gauge test}
-
-In this case, the full program \verb|main| can be used, and 
-
+The measured times in these benchmarks should be reproducible and ``gauge-configuration-invariant''.
+Tests of the full program of course are reproducible but not ``gauge-configuration-invariant'' due
+to the fact that, in normal conditions, the number of iterations in the multishift inverter varies 
+depending on the gauge configuration. It is possible to actually change that behaviour, so that 
+the multishift inverter will do a fixed number of iterations, but this possibility is at present not coded 
+in the program.

@@ -152,6 +152,14 @@ static inline void single_gl3_from_su3_soa( __restrict const su3_soa * const mat
 
 }
 #pragma acc routine seq
+static inline void single_gl3_from_global_su3_soa( __restrict const global_su3_soa * const mat, const int idx_mat, single_su3 * Omat){
+    single_su3_from_global_su3_soa(mat,idx_mat,Omat);
+    Omat->comp[2][0] = mat->r2.c0[idx_mat];
+    Omat->comp[2][1] = mat->r2.c1[idx_mat];
+    Omat->comp[2][2] = mat->r2.c2[idx_mat];
+
+}
+#pragma acc routine seq
 static inline void single_tamat_from_tamat_soa(__restrict const tamat_soa * in, int idx, single_tamat * out){
 
     out->ic00 = in->ic00[idx];
@@ -215,6 +223,14 @@ static inline void single_su3_subtinto_su3_soa( __restrict su3_soa * const mat, 
 static inline void single_gl3_into_su3_soa( __restrict su3_soa * const mat, const int idx_mat, single_su3 * Imat){
 
  single_su3_into_su3_soa(mat,idx_mat,Imat);
+  mat->r2.c0[idx_mat] = Imat->comp[2][0];
+  mat->r2.c1[idx_mat] = Imat->comp[2][1];
+  mat->r2.c2[idx_mat] = Imat->comp[2][2];
+}
+#pragma acc routine seq
+static inline void single_gl3_into_global_su3_soa( __restrict global_su3_soa * const mat, const int idx_mat, single_su3 * Imat){
+
+ single_su3_into_global_su3_soa(mat,idx_mat,Imat);
   mat->r2.c0[idx_mat] = Imat->comp[2][0];
   mat->r2.c1[idx_mat] = Imat->comp[2][1];
   mat->r2.c2[idx_mat] = Imat->comp[2][2];
@@ -301,6 +317,7 @@ static inline double detQ(single_thmat *Q){
         Q->rc11 * Q->c02 * conj(Q->c02));
 
 }
+
 #pragma acc routine seq
 static inline double det_i_times_QA(__restrict single_tamat * const QA){
 
@@ -436,7 +453,6 @@ static inline d_complex detSu3(single_su3 *m){
     m->comp[0][2]* m->comp[1][1] * m->comp[2][0] ;
 
 }
-
 #pragma acc routine seq
 static inline double Tr_i_times_QA_sq(__restrict single_tamat * const QA){
   // computes Tr( (i*QA)^2 )

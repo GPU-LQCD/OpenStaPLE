@@ -15,6 +15,7 @@
 #endif
 
 #include "../DbgTools/dbgtools.h" // DEBUG
+#include "../DbgTools/debugger_hook.h"
 #include "../Include/debug.h"
 #include "../Include/fermion_parameters.h"
 #include "../Include/montecarlo_parameters.h"
@@ -78,22 +79,10 @@ int main(int argc, char* argv[]){
     // READ input file.
 #ifdef MULTIDEVICE
     pre_init_multidev1D(&devinfo);
-    {
-        volatile int flag = 0;
-        if(0==devinfo.myrank && getenv("GDBHOOK")){
-            printf("MPI%02d: Thank you for using the GDB HOOK!\n",devinfo.myrank);
-            printf("         Waiting for user intervention.Please attach to process %d,\n",
-                    getpid());
-            printf("         [hint: gdb -p %d ] \n",  getpid());
-            printf("         and set the value of 'flag' to 1.\n");
-            printf("         You may have to use 'finish' a couple of times to go down the call stack.\n");
-            printf("         HAPPY HUNTING AND GOOD LUCK!!!!\n");
-            while(1 != flag)
-                sleep(1);
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-    }
+    gdbhook();
 #endif
+
+
 
     if(0==devinfo.myrank){
         printf("****************************************************\n");
@@ -171,6 +160,7 @@ int main(int argc, char* argv[]){
     printf("MPI%02d: Selecting device.\n", devinfo.myrank);
 #ifdef MULTIDEVICE
     select_init_acc_device(my_device_type, (devinfo.single_dev_choice + devinfo.myrank)%devinfo.proc_per_node);
+    // select_init_acc_device(my_device_type, devinfo.myrank%devinfo.proc_per_node);
 #else
     select_init_acc_device(my_device_type, devinfo.single_dev_choice);
 #endif
@@ -252,9 +242,14 @@ int main(int argc, char* argv[]){
         }
         else{
             // cold start
-            printf("MPI%02d - COMPILED IN NORANDOM MODE. A CONFIGURATION FILE NAMED\
-                    \"conf_norndtest\" MUST BE PRESENT\n",devinfo.myrank);
-            exit(1);
+            printf("MPI%02d: GENERATING CONFIGURATION FILE FOR YOUR CONVENIENCE, RE-RUN THIS TEST\n",
+                    devinfo.myrank);
+            generate_Conf_cold(conf_acc,mc_params.eps_gen);
+            printf("MPI%02d - Cold Gauge Conf Generated : OK \n",
+                    devinfo.myrank);
+            save_conf_wrapper(conf_acc,"conf_norndtest", conf_id_iter,
+                            debug_settings.use_ildg);
+            conf_id_iter=1;
         }
     }
     else{
@@ -269,7 +264,7 @@ int main(int argc, char* argv[]){
             generate_Conf_cold(conf_acc,mc_params.eps_gen);
             printf("MPI%02d - Cold Gauge Conf Generated : OK \n",
                     devinfo.myrank);
-            conf_id_iter=0;
+            conf_id_iter=1;
         }
     }
 
@@ -432,7 +427,7 @@ int main(int argc, char* argv[]){
             if(devinfo.myrank ==0 ){
                 printf("\n#################################################\n");
                 printf(  "   GENERATING CONF %d of %d, %dx%dx%dx%d,%1.3f \n",
-                        conf_id_iter,mc_params.ntraj+id_iter_offset,
+                        conf_id_iter,mc_params.ntraj+id_iter_offset-1,
                         geom_par.gnx,geom_par.gny,
                         geom_par.gnz,geom_par.gnt,
                         act_params.beta);
@@ -460,7 +455,7 @@ int main(int argc, char* argv[]){
                             acc_err);
                 }
             }
-#pragma acc update self(conf_acc[0:8])
+#pragma acc update host(conf_acc[0:8])
             id_iter++;
             conf_id_iter++;
             //-------------------------------------------------// 
@@ -759,7 +754,7 @@ int main(int argc, char* argv[]){
             }
 
             // program exits if MaxConfIdIter is reached
-            if(conf_id_iter > mc_params.MaxConfIdIter ){
+            if(conf_id_iter >= mc_params.MaxConfIdIter ){
 
                 printf("%s - MaxConfIdIter=%d reached, job done!",
                         devinfo.myrankstr, mc_params.MaxConfIdIter);
@@ -811,37 +806,13 @@ int main(int argc, char* argv[]){
 
 
 
-    if(0 == devinfo.myrank && debug_settings.SaveAllAtEnd){
-/*
-	    printf("Saving global program status...\n");
-	    printf("%d %f %f %d\n",
-			    mc_params.next_gps,
-			    mc_params.max_flavour_cycle_time,
-			    mc_params.max_update_time,
-			    mc_params.measures_done);
-
-	    printf("#mc_params.next_gps,mc_params.max_flavour_cycle_time,\n#mc_params.max_update_time,mc_params.measures_done\n");
-
-	    FILE * gps_file = fopen(mc_params.statusFileName, "w");  
-	    fprintf(gps_file,"%d %f %f %d\n",
-			    mc_params.next_gps,
-			    mc_params.max_flavour_cycle_time,
-			    mc_params.max_update_time,
-			    mc_params.measures_done);
-	    fprintf(gps_file,"#mc_params.next_gps,mc_params.max_flavour_cycle_time,\n#mc_params.max_update_time,mc_params.measures_done\n");
-	    fclose(gps_file);
-*/
+    if(0 == devinfo.myrank && debug_settings.SaveAllAtEnd)
 	    save_global_program_status(mc_params); // THIS FUNCTION IN SOME CASES DOES NOT WORK
-     }
-
-
-
 
     printf("MPI%02d: Double precision free [CORE]\n", devinfo.myrank);
     mem_free_core();
     printf("MPI%02d: Double precision free [EXTENDED]\n", devinfo.myrank);
     mem_free_extended();
-
 
     if(inverter_tricks.useMixedPrecision || md_parameters.singlePrecMD){
         printf("MPI%02d: Single precision free [CORE]\n", devinfo.myrank);

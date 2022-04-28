@@ -1,0 +1,4 @@
+# file to be used to compile the pure gauge MD test in different geometries
+# LINES CONTAINING '#' ARE IGNORED
+# IMPSTAPTILE0,1,2,3 STAPTILE0,1,2,3
+8 8 8 8 8 8 8 8

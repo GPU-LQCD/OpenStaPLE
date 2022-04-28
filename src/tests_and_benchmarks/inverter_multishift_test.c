@@ -216,12 +216,9 @@ int main(int argc, char* argv[]){
     }
 
 
-#ifdef MULTIDEVICE
-    communicate_fermion_borders_hostonly(ferm_chi_acc);
-#endif
 #pragma acc update device(ferm_chi_acc[0:1])
 
-    //    print_vec3_soa(ferm_chi_acc,myfermionname);
+    print_vec3_soa(ferm_chi_acc,myfermionname);
 
 
 
@@ -314,7 +311,7 @@ create(k_p_shiftferm_f[0:alloc_info.maxApproxOrder] )
     }
 
     if(test_settings.saveResults){
-#pragma acc update self(ferm_shiftmulti_acc[0:rationalApproxToUse->approx_order]) // update on host
+#pragma acc update host(ferm_shiftmulti_acc[0:rationalApproxToUse->approx_order]) // update on host
         for(r=0; r<rationalApproxToUse->approx_order; r++){
 
             char fermionname_shift[50];
@@ -366,7 +363,7 @@ create(k_p_shiftferm_f[0:alloc_info.maxApproxOrder] )
 
 
     if(test_settings.saveResults){
-#pragma acc update self(ferm_shiftmulti_acc_f[0:rationalApproxToUse->approx_order]) // update on host
+#pragma acc update host(ferm_shiftmulti_acc_f[0:rationalApproxToUse->approx_order]) // update on host
         for(r=0; r<rationalApproxToUse->approx_order; r++){
 
             char fermionname_shift[50];
