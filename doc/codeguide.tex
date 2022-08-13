@@ -410,9 +410,9 @@ its content, and can be generated using the function
 \subsubsection{ How to generate and check rational approximations}
 The sources of the tools are, guess what, in  the \verb|tools| directory.
 Notice that the program \verb|rgen| is used semi-automatically to generate the 
-rational approximation files. If the motecarlo program runs on a single MPI rank, 
+rational approximation files. If the montecarlo program runs on a single MPI rank, 
 if a rational approximation file is not found it is created by an external call to \verb|rgen|.
-If the motecarlo program runs instead on multiple MPI ranks, \verb|rgen| will not be called: 
+If the montecarlo program runs instead on multiple MPI ranks, \verb|rgen| will not be called: 
 instead, a bash script will be created names \textsf{ genappfiles.sh}, containing all the necessary commands (involving \verb|rgen|)
 to create and cache the rational approximation files. Notice that the commands 
 will be repeated \textsf{ nranrk} times. The wise way to use this script is 
