@@ -41,16 +41,16 @@ If you find any mistake, please report it to the author.
     \item tools: code and makefile for various utilities, for example to generate the rational approximations and test them and a tool to analyse the performance from information recorded during runs. This directory could also contain tools to convert configurations from a format to another and things like that; 
     \item scripts: basically, collections of commands that you would have to type too many times. 
     At the moment, there are scripts for benchmarking on SLURM clusters, to analyse the performance data produced during simulations,
-    and some utilities to test different {\sf tile} configurations.
+    and some utilities to test different \textsf{ tile} configurations.
     \item docs: where documentation should be.
 \end{itemize}
 \section{Compilation}
 \label{compilation}
-Compilation is done using Autotools, with the usual {\sf ./configure} , {\sf make} and {\sf make install}.
-In case the {\sf configure} script is not present, it can be created from {\sf configure.ac} 
-with the command{ \sf autoreconf --install} (notice that this step creates also the {\sf Makefile.in} in the subdirectories, 
-using also the information from the files named {\sf Makefile.am}). 
-There are a number of parameters that must be passed to {\sf configure} (the choice of the compiler and of the compiler flags), for which the user can find the python script {\sf configure\_wrapper} useful. For example,
+Compilation is done using Autotools, with the usual \textsf{ ./configure} , \textsf{ make} and \textsf{ make install}.
+In case the \textsf{ configure} script is not present, it can be created from \textsf{ configure.ac} 
+with the command \textsf{autoreconf --install} (notice that this step creates also the \textsf{ Makefile.in} in the subdirectories, 
+using also the information from the files named \textsf{ Makefile.am}). 
+There are a number of parameters that must be passed to \textsf{ configure} (the choice of the compiler and of the compiler flags), for which the user can find the python script \textsf{ configure\_wrapper} useful. For example,
 \begin{verbatim}
 ../configure_wrapper pgi cc35 cuda8.0
 \end{verbatim}
@@ -64,35 +64,35 @@ will produce the command
 
 \subsection{Generation of the single precision part of the code}
 The single-precision part of the code is generated automatically 
-by a python script ({\sf src/double\_to\_single\_transformer.py}).
+by a python script (\textsf{ src/double\_to\_single\_transformer.py}).
 
-It can be called with {\sf autoMode} to require minimum input. Otherwise, it can act on
+It can be called with \textsf{ autoMode} to require minimum input. Otherwise, it can act on
 single files, or on all files that are known to need the treatment (a list is included in the script).
 
 Notice that there may be some single precision sources or headers which are not just a 
 transformation of their double precision counterpart (at the moment, only 
-{\sf src/OpenAcc/sp\_fermion\_force.c}). The transformation script contains a list
+\textsf{ src/OpenAcc/sp\_fermion\_force.c}). The transformation script contains a list
 of these files, which are not touched unless explicitly stated.
 
-{\bf Notice} that this step is performed by {\sf configure}.
+{\bfseries Notice} that this step is performed by \textsf{ configure}.
 
 
 \subsection{The actual compilation}
 
 A peculiarity of this code is that, because of design decisions driven by 
 performance reasons, the lattice geometry must be konwn at compile time (and 
-if you change them, you need to re-run {\sf configure}, run {\sf make clean}, and recompile). 
+if you change them, you need to re-run \textsf{ configure}, run \textsf{ make clean}, and recompile). 
 At \verb|configure| time, it is \emph{necessary} to  specify the dimensions of the local lattice,
 the number of ranks in the 4th dimensions (the only one which can be 
 parallelized, since we adopted the \emph{salamino} setup), and some optimization parameters
-(for the OpenACC  {\sf tile} clause). This information must be written into a 
-{\sf geom\_defines.txt} file, an example of which is in the {\sf doc} directory.
-The {\sf configure} script will look for that file and read it, setting up the correct makefile.
+(for the OpenACC  \textsf{ tile} clause). This information must be written into a 
+\textsf{ geom\_defines.txt} file, an example of which is in the \textsf{ doc} directory.
+The \textsf{ configure} script will look for that file and read it, setting up the correct makefile.
 
 \subsection{Important notice}
 
-When compiling for a different geometry or different {\sf tile values}, \emph{you need} to execute 
-{\sf make clean} first, otherwise only the recently changed files  (if 
+When compiling for a different geometry or different \textsf{ tile values}, \emph{you need} to execute 
+\textsf{ make clean} first, otherwise only the recently changed files  (if 
 any) will be 
 compiled with the new geometry, which is different from the one for the rest of 
 the files. While the linker may do everything without raising any error, the results will be a 
@@ -116,7 +116,7 @@ Notice the use of the script \verb|scripts/interactive_cudawn.sh|.
 On the COKA cluster the modules to load are similar, but there is no need to access
 the machines interactively to have access to the compiler.
 
-Notice that the { \bf modules you load in execution must be compatible 
+Notice that the { \bfseries modules you load in execution must be compatible 
 with compilation settings and with the modules loaded during compilation}.
 Strange things may happen otherwise.
 
@@ -131,7 +131,7 @@ where $????$ stands of a reasonable number, which is larger than the largest
 data transfer you have to perform between the host and the device. The largest 
 single data transfer that can be performed is likely to be the gauge 
 configuration (it might be different though). \\
-{ \bf When running on GPUS, make sure you set \verb|PGI_ACC_BUFFERSIZE| to at 
+{ \bfseries When running on GPUS, make sure you set \verb|PGI_ACC_BUFFERSIZE| to at 
     least $576$ times the number of lattice sites. Unfortunately, the program WILL 
     NOT TELL YOU when this variable is too small, but the results will be wrong. 
 So, be careful.}
@@ -141,7 +141,7 @@ where it will fail as well.
 
 
 Once you have set all you need, launch 
-{\sf ./main $<$setting\_file$>$}. Here, the program 
+\textsf{ ./main $<$setting\_file$>$}. Here, the program 
 will  need some  files that you have to prepare in advance. Another section
 of this guide (\ref{filesneeded}) will tell you what you usually need to 
 prepare.
@@ -259,7 +259,7 @@ verbosity level \verb|VerbosityLv|.
 
 
 \item{Measures: \verb|GaugeMeasuresSettings|.} Now, only the name of the file
-for the {\bf basic} gauge measures is specified (plaquette, rectangle, real and imaginary part of the Polyakov loop). Notice that the name of the output 
+for the {\bfseries basic} gauge measures is specified (plaquette, rectangle, real and imaginary part of the Polyakov loop). Notice that the name of the output 
 file will be dependent on the relevant parameters of the input file, through a
 simple hash procedure (see \verb|src/Include/hash.c|.). Of course there are, in principle, a lot of observables that can be implemented. Now only the Polyakov
 loop and the topological charge are implemented but the topological charge 
@@ -330,11 +330,11 @@ The default value is 1, of course.
  \item \verb|DoRevTest| : Flag to run the reversibility test.
  \item \verb|DoNoRandomTest| : Enable a mode where no random numbers are used.
  \item \verb|RngFakenessLevel| : If set to zero, normal pseudorandom numbers are used. 
- If set to 1, in the initialization of fermions and momenta field is done taking using numbers that depend on the physical location, and once the initialization is finished, always the same number is returned (to know more for the variable {\sf rng\_fake\_gl\_index }). If set to 2, the random number generator always outputs $0.5$.
+ If set to 1, in the initialization of fermions and momenta field is done taking using numbers that depend on the physical location, and once the initialization is finished, always the same number is returned (to know more for the variable \textsf{ rng\_fake\_gl\_index }). If set to 2, the random number generator always outputs $0.5$.
  \item \verb|MDDbgPrintMaxCount| : The number of times various quantities are printed to files, like fermions, staples etc. This can be set to a number greater than zero to do a low-level check of the effect of a code change in molecular dynamics, and should allow to pinpoin the problem.
- \item \verb|SaveDiagnosticsFileName| : the name of the file where the performance measurement activated with the flag \verb|SaveDiagnostics| are saved. Notice that in {\sf scripts} there is a shell script, {\sf analyse\_md\_info.sh }, which can digest the data printed in this file (of course, if the diagnostics file format is changed, the analysis script may need to be updated).
+ \item \verb|SaveDiagnosticsFileName| : the name of the file where the performance measurement activated with the flag \verb|SaveDiagnostics| are saved. Notice that in \textsf{ scripts} there is a shell script, \textsf{ analyse\_md\_info.sh }, which can digest the data printed in this file (of course, if the diagnostics file format is changed, the analysis script may need to be updated).
  \item \verb|PrintDiagInfoEvery| : specifies how frequently the performance\&diagnostics
- measurements to save in the file have to be taken. Notice that measurements for the gauge forces will be taken {\sf GaugeSubSteps} times more often than the measurements for the fermion force, except in a multi-node setup.
+ measurements to save in the file have to be taken. Notice that measurements for the gauge forces will be taken \textsf{ GaugeSubSteps} times more often than the measurements for the fermion force, except in a multi-node setup.
 \end{itemize}
 
 \item{Other Test setting, for benchmarking: \verb|TestSettings|.}
@@ -384,7 +384,7 @@ version of the compiler.}:
 \begin{itemize}
     \item The type of gauge action. [triggers some long recompilation]
     \item The stouting strength RHO 
-    \item The lattice dimensions: they must be known at {\sf configure} time.
+    \item The lattice dimensions: they must be known at \textsf{ configure} time.
 \end{itemize}
 Of course, changing the input file format requires to recompile the functions 
 to read it, in \verb|/src/Include/init.c|.
@@ -413,9 +413,9 @@ Notice that the program \verb|rgen| is used semi-automatically to generate the
 rational approximation files. If the motecarlo program runs on a single MPI rank, 
 if a rational approximation file is not found it is created by an external call to \verb|rgen|.
 If the motecarlo program runs instead on multiple MPI ranks, \verb|rgen| will not be called: 
-instead, a bash script will be created names {\sf genappfiles.sh}, containing all the necessary commands (involving \verb|rgen|)
+instead, a bash script will be created names \textsf{ genappfiles.sh}, containing all the necessary commands (involving \verb|rgen|)
 to create and cache the rational approximation files. Notice that the commands 
-will be repeated {\sf nranrk} times. The wise way to use this script is 
+will be repeated \textsf{ nranrk} times. The wise way to use this script is 
 \begin{verbatim}
  bash <(sort genappfiles.sh | uniq)
 \end{verbatim}
@@ -459,7 +459,7 @@ code.
 \subsection{ No random Mode}
 If you need your run to be reproducible for a whole molecular dynamics 
 trajectory, you don't trust the random number generatorand don't want to use 
-it, you can set {\sf DoNoRandomTest } to 1. It may also be useful to shorten the length of the trajectory (to improve acceptance).
+it, you can set \textsf{ DoNoRandomTest } to 1. It may also be useful to shorten the length of the trajectory (to improve acceptance).
 At present random number generation is used in:
 \begin{itemize}
     \item The generation of a new configuration;
@@ -493,20 +493,20 @@ to work (for example, they are used in the \verb|deo_doe_test| benchmark).
 \section{Tuning}
 \label{tuning}
 
-\subsection{Low-level optimization with the {\sf tile} OpenACC clause}
+\subsection{Low-level optimization with the \textsf{ tile} OpenACC clause}
 
-At compile time it is possible to set the values of the {\sf tile } and {\sf gang} sizes 
+At compile time it is possible to set the values of the \textsf{ tile } and \textsf{ gang} sizes 
 for the 4 most significant kernels - the ones pertaining to the 
 dirac operator, to the improved staples, to the normal staples, and to the computation of
 $\Sigma$ (an ingredient used during stouting).
-Finding the optimal values for the {\sf tile} and {\sf gang} clauses requires testing. 
-In the {\sf scripts} directory there are two scripts, namely 
+Finding the optimal values for the \textsf{ tile} and \textsf{ gang} clauses requires testing. 
+In the \textsf{ scripts} directory there are two scripts, namely 
 \verb|test_blocks_dirac_operator.sh| and 
 \verb|test_blocks_puregauge.sh|, which read two data files - 
 \verb|dirac_blocks.txt| and 
 \verb|puregauge_blocks.txt| respectively - and compile different version of the benchmarks, 
 so that they can be tested. Examples of the \verb|dirac_blocks.txt| and 
-\verb|puregauge_blocks.txt| can be found in the {\sf scripts} directory. 
+\verb|puregauge_blocks.txt| can be found in the \textsf{ scripts} directory. 
 
 A possible use of these scripts is the following.
 \begin{enumerate}
@@ -574,8 +574,8 @@ of gauge substeps $n_{gss}$:
         found.
 \end{itemize}
 
-Notice that informations about these quantities can be obtained by setting the appropriate flags in the setting file, in the section {\sf DebugSettings}, and the 
-data produced can be analysed with the {\sf analyse\_md\_info.sh} script.
+Notice that informations about these quantities can be obtained by setting the appropriate flags in the setting file, in the section \textsf{ DebugSettings}, and the 
+data produced can be analysed with the \textsf{ analyse\_md\_info.sh} script.
 
 
 
@@ -691,7 +691,7 @@ Modify the \verb|main()| to obtain your desired result.
 
 \section{External Fields, staggered phases and field-dependent observables}
 
-The gauge links {\bf must never} be stored in a state where they
+The gauge links {\bfseries must never} be stored in a state where they
 are multiplicated by the staggered phase. All the gauge links are just
 plain SU(3) matrices.
 
