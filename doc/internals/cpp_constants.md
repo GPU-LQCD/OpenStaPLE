@@ -15,4 +15,4 @@ Check which gauge is used:
 Values that are not part of any category.
 
 #### COMMIT_HASH
-The current git head hash.
+The current git head hash. Collected by `configure.ac`.
