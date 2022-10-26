@@ -28,7 +28,7 @@ A brief description of the benchmarks:
  \item {Dirac operator test}: \\
 In the dirac operator test, first \verb|acc_Doe| is executed \verb|DeoDoeIterations| 
 times, then the same for \verb|acc_Deo|, then the same for the whole Dirac operator 
-which contains also a simple (\textsf{ saxpy} or \textsf{ daxpy}) linear combination step.
+which contains also a simple ({\sf saxpy} or {\sf daxpy}) linear combination step.
 Notice that this benchmark can also be used to test the correctness of modifications to the
 Dirac operator code.
 \item {Multishift inverter test}: \\
@@ -39,7 +39,7 @@ inverter will never converge in practice, and will stop at the maximum number of
 \item {Pure gauge test}: \\
 In this case, the full program \verb|main| is used without fermions. The molecular dynamics is run 
 in pure-gauge mode. Notice that stouting is performed, even if the fermion forces are exactly zero.
-The important parameters are all in the \textsf{ MDParameters} group.
+The important parameters are all in the {\sf MDParameters} group.
 Notice that, with the diagnostics options, this test can be used to test the correcness
 of modifications to the pure gauge part of Molecular dynamics.
 \end{itemize}
