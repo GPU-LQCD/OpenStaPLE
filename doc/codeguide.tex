@@ -62,6 +62,35 @@ will produce the command
  -lmpi -L${MPILIB}"  --prefix=$(pwd)
 \end{verbatim}
 
+\subsection{Select gauge action and set on/off parallel tempering}
+You have the possibility to choose (at compile time) the action used in the gluonic sector. You can choose between the Wilson discretization
+\begin{equation*}
+	S^W = -\frac{\beta}{3}\sum_{n \in \Lambda}\sum_{\mu < \nu} \text{ReTr}\left[P_{\mu\nu}(n)\right],
+\end{equation*}
+and the Tree Level Improved Symanzik discretization
+\begin{equation*}
+	S^S = -\frac{\beta}{3}\sum_{n \in \Lambda}\sum_{\mu < \nu}\left[\frac{5}{6}P_{\mu\nu}(n)-\frac{1}{12}R_{\mu\nu}(n)\right],
+\end{equation*}
+where $P_{\mu\nu}(n)$ and $R_{\mu\nu}(n)$ are, respectively, the plaquette and the $1\times2$ rectangle on the plane $\mu\nu$ starting at lattice point $n$.
+
+In the file \textsf{src/Include/common\_defines.tx}, choose
+\begin{verbatim}
+	#define GAUGE_ACT_WILSON
+\end{verbatim}
+for the $S^W$ gauge action, and
+\begin{verbatim}
+	#define GAUGE_ACT_TLSM
+\end{verbatim}
+for the $S^S$ gauge action, keeping the other one commented (for simplicity). The most common choice is \textsf{GAUGE\_ACT\_TLSM}, so do not create a pull request changing it please.
+
+You can also choose to activate/deactivate the parallel tempering on the boundary conditions. Again in \textsf{src/Include/common\_defines.tx}, the
+\begin{verbatim}
+	#define PAR_TEMP
+\end{verbatim}
+line should be uncommented to activate the mode, or commented to deactivate it. Please, notice that activating the mode when you do not will to use parallel tempering causes a slowing down, due to the redefinition of force computation.
+
+Further details on how to use the parallel tempering mode can be found in the (not yet existing) dedicated section.
+
 \subsection{Generation of the single precision part of the code}
 The single-precision part of the code is generated automatically 
 by a python script (\textsf{ src/double\_to\_single\_transformer.py}).

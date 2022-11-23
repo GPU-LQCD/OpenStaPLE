@@ -10,8 +10,8 @@
 
         OpenACC STAggered Parallel LatticeQCD Everywhere
 
-By E. Calore, M. Mesiti, F. Negro, G. Silvi 
-(and others, which can be added if they feel offended)
+By E. Calore, C. Bonanno, L. Maio, M. Mesiti, F. Negro and G. Silvi.
+(read AUTHORS for an updated contributor list)
 ```
 # An humorous intro to this code
 
