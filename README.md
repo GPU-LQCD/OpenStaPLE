@@ -57,6 +57,40 @@ cd build
 
 make && make install  # you may want to use make -j32 to be faster.
 ```
+**--- guide for an easy compilation on CINECA's Marconi 100 ---**
+
+On this cluster we use to load the following modules (up to 2022):
+- gnu/8.4.0
+- profile/global
+- /cineca/prod/opt/compilers/pgi/19.10/binary/modulefiles/openmpi/3.1.3/2019
+- pgi/19.10--binary
+- cuda/11.0
+
+In order to properly link the mpi libraries, you should define the following
+environment variables:
+```
+MPIINC="/cineca/prod/opt/compilers/pgi/19.10/binary/linuxpower/19.10/mpi/openmpi-3.1.3/include/"
+MPILIB="/cineca/prod/opt/compilers/pgi/19.10/binary/linuxpower/19.10/mpi/openmpi-3.1.3/lib/"
+```
+
+We realized a fast configuring and compiling script, which properly works on this cluster: ```build/script_compile_Open_StaPLE.sh```.
+To use it, edit the variables defined under the comment ```#SIMULATION PARAMETERS``` to choose action type
+and activate/deactivate parallel tempering (default choice: ```ACTION_TYPE='TLSM'``` and ```DO_PARALLEL_TEMPERING=0```, in place comments display alternative options).
+
+How to use it:
+
+Prerequisites:
+- load the aforementioned modules and define MPIINC and MPILIB as previously explained;
+- define the environmental variable LIBRARY_PATH containing the path to the mpfr lib/ folder.
+
+Then, just give the following commands:
+```
+mkdir build_test
+cd build_test
+
+<add the geom_defines.txt file>
+../build/script_compile_Open_StaPLE.sh
+```
 ### 1.2 Usage of the plain "configure" script
 
 You must also pass to configure:
