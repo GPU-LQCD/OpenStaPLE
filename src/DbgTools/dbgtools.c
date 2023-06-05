@@ -430,7 +430,7 @@ int read_gl3_soa_wrapper(su3_soa * gl3, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - reading global gl3\n",devinfo.myrank );
         error = read_gl_gl3(conf_rw, nomefile);
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
 
         if(!error) {
             send_lnh_subconf_to_buffer(conf_rw,gl3,0);
@@ -448,7 +448,7 @@ int read_gl3_soa_wrapper(su3_soa * gl3, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - receiving gl3\n",devinfo.myrank );
 
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
         if(!error){ 
             receive_lnh_subconf_from_master(gl3);
         }
@@ -502,7 +502,7 @@ int read_vec3_soa_wrapper(vec3_soa * fermion, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - reading global fermion \n",devinfo.myrank );
         error = read_gl_fermion(ferm_rw, nomefile);
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
 
         if(!error) {
             send_lnh_subfermion_to_buffer(ferm_rw,fermion,0);
@@ -520,7 +520,7 @@ int read_vec3_soa_wrapper(vec3_soa * fermion, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - receiving fermion \n",devinfo.myrank );
 
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
         if(!error){ 
             receive_lnh_subfermion_from_master(fermion);
         }
@@ -573,7 +573,7 @@ int read_tamat_soa_wrapper(tamat_soa * tamat, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - reading global tamat\n",devinfo.myrank );
         error = read_gl_tamat(tamat_rw, nomefile);
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
 
         if(!error) {
             send_lnh_subtamat_to_buffer(tamat_rw,tamat,0);
@@ -591,7 +591,7 @@ int read_tamat_soa_wrapper(tamat_soa * tamat, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - receiving tamat\n",devinfo.myrank );
 
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
         if(!error){ 
             receive_lnh_subtamat_from_master(tamat);
         }
@@ -643,7 +643,7 @@ int read_thmat_soa_wrapper(thmat_soa * thmat, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - reading global thmat\n",devinfo.myrank );
         error = read_gl_thmat(thmat_rw, nomefile);
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
 
         if(!error) {
             send_lnh_subthmat_to_buffer(thmat_rw,thmat,0);
@@ -661,7 +661,7 @@ int read_thmat_soa_wrapper(thmat_soa * thmat, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - receiving thmat\n",devinfo.myrank );
 
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
         if(!error){ 
             receive_lnh_subthmat_from_master(thmat);
         }
@@ -712,7 +712,7 @@ int read_dcomplex_soa_wrapper(dcomplex_soa * dcarr, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - reading global dcarr\n",devinfo.myrank );
         error = read_gl_dcomplex(dcomplex_rw, nomefile);
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
 
         if(!error) {
             send_lnh_subdcomplex_to_buffer(dcomplex_rw,dcarr,0);
@@ -730,7 +730,7 @@ int read_dcomplex_soa_wrapper(dcomplex_soa * dcarr, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - receiving dcarr\n",devinfo.myrank );
 
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
         if(!error){ 
             receive_lnh_subdcomplex_from_master(dcarr);
         }
@@ -782,7 +782,7 @@ int read_double_soa_wrapper(double_soa * darr, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - reading global darr\n",devinfo.myrank );
         error = read_gl_double(double_rw, nomefile);
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
 
         if(!error) {
             send_lnh_subdouble_to_buffer(double_rw,darr,0);
@@ -800,7 +800,7 @@ int read_double_soa_wrapper(double_soa * darr, const char* nomefile)
         if(verbosity_lv > 2)
             printf("MPI%02d - receiving darr\n",devinfo.myrank );
 
-        MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
         if(!error){ 
             receive_lnh_subdouble_from_master(darr);
         }

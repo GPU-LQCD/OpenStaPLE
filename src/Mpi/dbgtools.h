@@ -209,17 +209,17 @@ void send_lnh_subfermion_to_rank(const global_vec3_soa * gl_soa_fermion, int tar
     }
 
     //sending the subfermion
-    MPI_Send(target_vec3_soa, 3*2*LNH_SIZEH , MPI_DOUBLE, target_rank, tag, MPI_COMM_WORLD);
+    MPI_Send(target_vec3_soa, 3*2*LNH_SIZEH , MPI_DOUBLE, target_rank, tag, devinfo.mpi_comm);
 
 }
 static inline void recv_lnh_subfermion_from_master(lnh_vec3_soa * lnh_fermion, int tag){
 
-    MPI_Recv(lnh_fermion, 3*2*LNH_SIZEH,MPI_DOUBLE,0,tag,MPI_COMM_WORLD,MPI_STATUS_IGNORE );
+    MPI_Recv(lnh_fermion, 3*2*LNH_SIZEH,MPI_DOUBLE,0,tag,devinfo.mpi_comm,MPI_STATUS_IGNORE );
     // ^^ CHECK
 }
 static inline void send_lnh_subfermion_to_master(lnh_vec3_soa * lnh_fermion, int tag){
 
-    MPI_Send(lnh_fermion, 3*2*LNH_SIZEH,MPI_DOUBLE,0,tag,MPI_COMM_WORLD );
+    MPI_Send(lnh_fermion, 3*2*LNH_SIZEH,MPI_DOUBLE,0,tag,devinfo.mpi_comm );
     // ^^ CHECK
 }
 void recv_loc_subfermion_from_rank(const global_vec3_soa * gl_soa_fermion, int rank, int tag){
@@ -232,7 +232,7 @@ void recv_loc_subfermion_from_rank(const global_vec3_soa * gl_soa_fermion, int r
     // building sublattice duplicate, target_conf
     lnh_vec3_soa* origin_vec3_soa = malloc(sizeof(lnh_vec3_soa)); 
     //receive the subfermion
-    MPI_Recv(origin_vec3_soa, 3*2*LNH_SIZEH , MPI_DOUBLE, rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(origin_vec3_soa, 3*2*LNH_SIZEH , MPI_DOUBLE, rank, tag, devinfo.mpi_comm, MPI_STATUS_IGNORE);
     // ^^ CHECK
 
     int or_loc_xh,or_loc_y,or_loc_z,or_loc_t; //target-lnh coordinates
@@ -621,9 +621,9 @@ void send_lnh_subconf_to_buffer(global_su3_soa *gl_soa_conf, lnh_su3_soa *lnh_co
 
     /*
     //sending the subconfiguration
-    MPI_Send(target_su3_soa, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE, rank, 0, MPI_COMM_WORLD);
+    MPI_Send(target_su3_soa, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE, rank, 0, devinfo.mpi_comm);
     // In case we remove the third line, this is possibly the thing to do
-    //MPI_Send(target_su3_soa, 2*4*(6*2)*LNH_SIZEH,MPI_DOUBLE, rank, 0, MPI_COMM_WORLD);
+    //MPI_Send(target_su3_soa, 2*4*(6*2)*LNH_SIZEH,MPI_DOUBLE, rank, 0, devinfo.mpi_comm);
     //Or maybe do multiple sends in a more complicated way
     // ^^ CHECK
     */ // COMMENTED FOR TEST

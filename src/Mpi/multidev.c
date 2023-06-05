@@ -25,15 +25,16 @@ void pre_init_multidev1D(dev_info * mdi)
     MPI_Get_processor_name(mdi->processor_name,&(mdi->namelen));
 
     // associate to specific replica communication group
-    int replica_num = mdi->myrank_world/NRANKS_D3;
-    if(replica_num>1){
-      MPI_Comm_split(MPI_COMM_WORLD, replica_num, &(mdi->mpi_comm));
-      MPI_Comm_rank(mdi->mpi_comm,&(mpi->myrank));
-      MPI_Comm_size(mdi->mpi_comm,&(mpi->nranks));
+    if(mdi->nranks_world/NRANKS_D3>1){
+      mdi->replica_idx = mdi->myrank_world/NRANKS_D3;
+      MPI_Comm_split(MPI_COMM_WORLD, mdi->replica_idx, mdi->myrank_world, &(mdi->mpi_comm));
+      MPI_Comm_rank(mdi->mpi_comm,&(mdi->myrank));
+      MPI_Comm_size(mdi->mpi_comm,&(mdi->nranks));
     }else{
+      mdi->replica_idx=0;
       mdi->mpi_comm=MPI_COMM_WORLD;
-      mpi->myrank=mdi->myrank_world;
-      mpi->nranks=mdi->nranks_world;
+      mdi->myrank=mdi->myrank_world;
+      mdi->nranks=mdi->nranks_world;
     }
 
 

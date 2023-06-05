@@ -14,6 +14,7 @@ typedef struct dev_info_t{
     int single_dev_choice; // from input file
     int myrank_world, nranks_world;
     int myrank, nranks;
+    int replica_idx;
     MPI_Comm mpi_comm;
     char myrankstr[50];
     int nranks_read;

@@ -107,8 +107,8 @@ int main(int argc, char* argv[]){
 #endif
 
   if(argc!=2){
-    if(0==devinfo.myrank) print_geom_defines();
-    if(0==devinfo.myrank) printf("\n\nERROR! Use mpirun -n <num_tasks> %s input_file to execute the code!\n\n", argv[0]);
+    if(0==devinfo.myrank_world) print_geom_defines();
+    if(0==devinfo.myrank_world) printf("\n\nERROR! Use mpirun -n <num_tasks> %s input_file to execute the code!\n\n", argv[0]);
     exit(EXIT_FAILURE);			
   }
   
@@ -125,6 +125,8 @@ int main(int argc, char* argv[]){
 #endif
 
   int input_file_read_check = set_global_vars_and_fermions_from_input_file(argv[1]);
+
+//TODO: abort replicas communication group
     
 #ifdef MULTIDEVICE
   if(input_file_read_check){
@@ -141,10 +143,10 @@ int main(int argc, char* argv[]){
 		exit(1);
 	}
 
-	if(0==devinfo.myrank) print_geom_defines();
+	if(0==devinfo.myrank_world) print_geom_defines();
 	verbosity_lv = debug_settings.input_vbl;
 
-	if(0==devinfo.myrank){
+	if(0==devinfo.myrank_world){
 		if(0 != mc_params.JarzynskiMode){
 			printf("****************************************************\n");
 			printf("                   JARZYNSKI MODE              \n");
@@ -172,7 +174,7 @@ int main(int argc, char* argv[]){
 #endif
 
   // just printing headtitles
-  if(0==devinfo.myrank){
+  if(0==devinfo.myrank_world){
     if(0 != mc_params.JarzynskiMode){
       printf("****************************************************\n");
       printf("                   JARZYNSKI MODE              \n");
@@ -246,7 +248,8 @@ int main(int argc, char* argv[]){
   mem_alloc_extended();
  
   // single/double precision allocation
-  printf("\n   MPI%02d - Memory allocation (double) : OK \n\n\n",devinfo.myrank);
+  //TODO: extend print to all strings
+  printf("\n   MPI%02d:%02d - Memory allocation (double) : OK \n\n\n",devinfo.replica_idx,devinfo.myrank);
   if(inverter_tricks.useMixedPrecision || md_parameters.singlePrecMD){
     mem_alloc_core_f();
     printf("\n  MPI%02d - Memory allocation (float) [CORE]: OK \n\n\n",devinfo.myrank);
@@ -323,8 +326,10 @@ int main(int argc, char* argv[]){
     }
 #ifdef PAR_TEMP
     strcpy(mc_params.save_conf_name,aux_name_file);
+
+    //TODO: check consistency with rep->replicas_total_number and nranks_world/NRANKS_D3
     
-		if (0==devinfo.myrank) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
+		if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
 		rep->label[r]=r;
 		init_k(conf_acc[r],rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,r);
 		
@@ -354,7 +359,7 @@ int main(int argc, char* argv[]){
 
   int vec_aux_bound[3]={1,1,1};
 
-	if (0==devinfo.myrank) printf("Auxiliary confs defect initialization\n");
+	if (0==devinfo.myrank_world) printf("Auxiliary confs defect initialization\n");
   init_k(aux_conf_acc,1,0,vec_aux_bound,&def,1);
   init_k(auxbis_conf_acc,1,0,vec_aux_bound,&def,1);
 	#pragma acc update device(aux_conf_acc[0:8])
@@ -559,7 +564,7 @@ int main(int argc, char* argv[]){
 							new_backfield_parameters.bz = backfield_parameters.bz -
 								(double) id_iter/mc_params.MaxConfIdIter;
 
-						if(0==devinfo.myrank){
+						if(0==devinfo.myrank_world){
 
 							if(1 == mc_params.JarzynskiMode)
 								printf("\n\nJarzynskiMode - DIRECT - From bz=%f to bz=%f+1 in %d steps.\n",
@@ -646,7 +651,7 @@ int main(int argc, char* argv[]){
 																																		md_parameters.residue_metro,md_parameters.residue_md,
 																																		id_iter-id_iter_offset-accettate_therm[r],
 																																		accettate_metro[r],1,md_parameters.max_cg_iterations);
-							if(0==devinfo.myrank){
+							if(0==devinfo.myrank_world){
 								iterations[r] = id_iter-id_iter_offset-accettate_therm[r]+1;
 								double acceptance = (double) accettate_metro[r] / iterations[r];
 								double acc_err = sqrt((double)accettate_metro[r]*(iterations[r]-accettate_metro[r])/iterations[r])/iterations[r];
@@ -669,9 +674,9 @@ int main(int argc, char* argv[]){
 #ifdef PAR_TEMP
 						if(rep->replicas_total_number>1){
 							// conf swap
-							if (0==devinfo.myrank) {printf("CONF SWAP PROPOSED\n");}
+							if (0==devinfo.myrank_world) {printf("CONF SWAP PROPOSED\n");}
 							All_Conf_SWAP(conf_acc,aux_conf_acc,local_sums, &def, &swap_number,all_swap_vector,acceptance_vector, rep);
-							if (0==devinfo.myrank) {printf("Number of accepted swaps: %d\n", swap_number);}       
+							if (0==devinfo.myrank_world) {printf("Number of accepted swaps: %d\n", swap_number);}       
 							#pragma acc update host(conf_acc[0:rep->replicas_total_number][0:8])
                 
 							// periodic conf translation
@@ -707,7 +712,7 @@ int main(int argc, char* argv[]){
 						for(int i=0;i<rep->replicas_total_number;i++){
 							if(i<rep->replicas_total_number-1){
 								mean_acceptance=(double)acceptance_vector[i]/all_swap_vector[i];
-								if(0==devinfo.myrank){ printf("replica couple [%d/%d]: proposed %d, accepted %d, mean_acceptance %f\n",i,i+1,all_swap_vector[i],acceptance_vector[i],mean_acceptance);}
+								if(0==devinfo.myrank_world){ printf("replica couple [%d/%d]: proposed %d, accepted %d, mean_acceptance %f\n",i,i+1,all_swap_vector[i],acceptance_vector[i],mean_acceptance);}
 								if(rep->replicas_total_number>1){
 									fprintf(swap_acc_file,"%d\t",acceptance_vector[i]-acceptance_vector_old[i]);}
 							}
@@ -887,7 +892,7 @@ int main(int argc, char* argv[]){
 						update_time :mc_params.max_update_time;
 
 
-					if(0==devinfo.myrank){
+					if(0==devinfo.myrank_world){
 						printf("Tot time : %f sec (with measurements)\n", update_time);
 						if(debug_settings.save_diagnostics == 1){
 							FILE *foutfile = fopen(debug_settings.diagnostics_filename,"at");
@@ -919,7 +924,7 @@ int main(int argc, char* argv[]){
 								(double) (id_iter+0.5)/mc_params.MaxConfIdIter;
 
 
-						if(0==devinfo.myrank){
+						if(0==devinfo.myrank_world){
 
 							printf("JarzynskiMode, iteration %d/%d (%d max for this run) - MEASUREMENTS AT HALFWAY \n",
 										 id_iter,mc_params.MaxConfIdIter,mc_params.ntraj);
@@ -1151,6 +1156,6 @@ int main(int argc, char* argv[]){
   shutdown_multidev();
 #endif
     
-  if(0==devinfo.myrank){printf("The End\n");}
+  if(0==devinfo.myrank_world){printf("The End\n");}
   return(EXIT_SUCCESS);
 }
