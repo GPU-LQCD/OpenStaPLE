@@ -84,7 +84,7 @@ int main(int argc, char* argv[]){
  
   gettimeofday ( &(mc_params.start_time), NULL );
   
-  if(0==devinfo.myrank){
+  if(0==devinfo.myrank_world){
     printf("****************************************************\n");
 		if (argc!=2) printf("          COMPILATION INFO                        \n");
     if (argc==2) printf("          PRE INIT - READING SETTING  FILE          \n");
@@ -94,16 +94,16 @@ int main(int argc, char* argv[]){
   }
   
   if (GAUGE_ACTION == 1 ){
-    if(0==devinfo.myrank) printf("\nCOMPILED WITH TREE-LEVEL SYMANZIK IMPROVED GAUGE ACTION\n\n");
+    if(0==devinfo.myrank_world) printf("\nCOMPILED WITH TREE-LEVEL SYMANZIK IMPROVED GAUGE ACTION\n\n");
   }
   else{
-    if(0==devinfo.myrank) printf("COMPILED WITH WILSON GAUGE ACTION\n\n");
+    if(0==devinfo.myrank_world) printf("COMPILED WITH WILSON GAUGE ACTION\n\n");
   }
 
 #ifdef PAR_TEMP
-  if(0==devinfo.myrank) printf("COMPILED FOR PARALLEL TEMPERING ON BOUNDARY CONDITIONS\n\n");
+  if(0==devinfo.myrank_world) printf("COMPILED FOR PARALLEL TEMPERING ON BOUNDARY CONDITIONS\n\n");
 #else
-  if(0==devinfo.myrank) printf("COMPILED WITHOUT PARALLEL TEMPERING (1 REPLICA RUN)\n\n");
+  if(0==devinfo.myrank_world) printf("COMPILED WITHOUT PARALLEL TEMPERING (1 REPLICA RUN)\n\n");
 #endif
 
   if(argc!=2){
@@ -1063,10 +1063,10 @@ int main(int argc, char* argv[]){
         }
 #ifdef MULTIDEVICE
 
-        MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,devinfo.mpi_comm);
         printf("MPI%02d - Broadcast of run condition %d from master...\n",
 							 devinfo.myrank, mc_params.run_condition);
-        MPI_Bcast((void*)&(mc_params.next_gps),1,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*)&(mc_params.next_gps),1,MPI_INT,0,devinfo.mpi_comm);
         printf("MPI%02d - Broadcast of next global program status %d from master...\n",
 							 devinfo.myrank, mc_params.next_gps);
 

@@ -388,7 +388,7 @@ double calc_Delta_S_soloopenacc_SWAP(
   }
 #ifdef MULTIDEVICE
   MPI_Allreduce((void*)&result,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
   total_result = result;
 #endif
@@ -750,7 +750,7 @@ int metro_SWAP(su3_soa ** conf_acc,
 		else { // NORMAL, RANDOM
 			if(0==devinfo.myrank) p2=casuale();
 #ifdef MULTIDEVICE
-			MPI_Bcast((void*) &p2,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+			MPI_Bcast((void*) &p2,1,MPI_DOUBLE,0,devinfo.mpi_comm);
 #endif
 		}
 		if(verbosity_lv>8 && 0==devinfo.myrank) printf("p_metro = %.15lg, p_extracted= %.15lg\n", p1, p2);
@@ -774,7 +774,7 @@ void All_Conf_SWAP( su3_soa ** conf_acc,
   if(0==devinfo.myrank){swap_order=casuale();}
 
 #ifdef MULTIDEVICE
-  MPI_Bcast((void*) &swap_order,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+  MPI_Bcast((void*) &swap_order,1,MPI_DOUBLE,0,devinfo.mpi_comm);
 #endif
 
   int accepted=0;
@@ -821,7 +821,7 @@ void trasl_conf( __restrict const su3_soa *  const tconf_acc,
     
   if(0==devinfo.myrank){dir0=casuale();}
 #ifdef MULTIDEVICE
-  MPI_Bcast((void*) &dir0,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+  MPI_Bcast((void*) &dir0,1,MPI_DOUBLE,0,devinfo.mpi_comm);
   if(verbosity_lv>4)
     printf("MPI%02d dir0 : %f \n",devinfo.myrank,dir0);
 #endif

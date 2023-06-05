@@ -488,7 +488,7 @@ void fermion_measures( su3_soa * tconf_acc,
 
 
 #ifdef MULTIDEVICE
-	    MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,MPI_COMM_WORLD);
+	    MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,devinfo.mpi_comm);
 	    printf("MPI%02d - Broadcast of run condition %d from master...\n",
 			    devinfo.myrank, mc_params.run_condition);
 #endif

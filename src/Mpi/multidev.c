@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "./geometry_multidev.h"
 #include "../OpenAcc/geometry.h"
+#include "../Include/rep_info.h"
 
 #include "./multidev.h"
 
@@ -19,9 +20,22 @@ extern int verbosity_lv;
 void pre_init_multidev1D(dev_info * mdi)
 {
     MPI_Init(NULL,NULL);
-    MPI_Comm_rank(MPI_COMM_WORLD, &(mdi->myrank));
-    MPI_Comm_size(MPI_COMM_WORLD, &(mdi->nranks));
+    MPI_Comm_rank(MPI_COMM_WORLD, &(mdi->myrank_world));
+    MPI_Comm_size(MPI_COMM_WORLD, &(mdi->nranks_world));
     MPI_Get_processor_name(mdi->processor_name,&(mdi->namelen));
+
+    // associate to specific replica communication group
+    int replica_num = mdi->myrank_world/NRANKS_D3;
+    if(replica_num>1){
+      MPI_Comm_split(MPI_COMM_WORLD, replica_num, &(mdi->mpi_comm));
+      MPI_Comm_rank(mdi->mpi_comm,&(mpi->myrank));
+      MPI_Comm_size(mdi->mpi_comm,&(mpi->nranks));
+    }else{
+      mdi->mpi_comm=MPI_COMM_WORLD;
+      mpi->myrank=mdi->myrank_world;
+      mpi->nranks=mdi->nranks_world;
+    }
+
 
     if(mdi->nranks != NRANKS_D3){
         printf("#MPI%02d: NRANKS_D3 is different from nranks: no salamino? Exiting now\n",mdi->myrank);

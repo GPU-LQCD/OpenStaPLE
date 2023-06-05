@@ -157,7 +157,7 @@ double calc_momenta_action( const __restrict thmat_soa * const mom,
 
 #ifdef MULTIDEVICE
 	MPI_Allreduce((void*)&result,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
 #endif
@@ -204,7 +204,7 @@ double  calc_plaquette_soloopenacc(__restrict  su3_soa * const tconf_acc,
 
 #ifdef MULTIDEVICE
 	MPI_Allreduce((void*)&result,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
 #endif
@@ -231,7 +231,7 @@ double calc_force_norm(const __restrict tamat_soa * tipdot)
 	}  
 #ifdef MULTIDEVICE
 	MPI_Allreduce((void*)&result,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
 #endif
@@ -268,7 +268,7 @@ double calc_diff_force_norm(const __restrict tamat_soa * tipdot,
 
 #ifdef MULTIDEVICE
 	MPI_Allreduce((void*)&result,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
 #endif
@@ -305,7 +305,7 @@ double calc_sum_momenta_norm(const __restrict thmat_soa * tmomenta,
 
 #ifdef MULTIDEVICE
 	MPI_Allreduce((void*)&result,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
 #endif
@@ -345,7 +345,7 @@ double calc_diff_su3_soa_norm(const __restrict su3_soa * tconf,
 
 #ifdef MULTIDEVICE
 	MPI_Allreduce((void*)&result,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
 #endif

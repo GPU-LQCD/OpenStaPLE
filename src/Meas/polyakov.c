@@ -206,9 +206,9 @@ d_complex polyakov_loop0(__restrict const su3_soa * const u)
     double trr,tri;
 #ifdef MULTIDEVICE
      MPI_Allreduce((void*)&rel,(void*)&trr,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
      trr = rel;
      tri = iml;
@@ -290,9 +290,9 @@ d_complex polyakov_loop1(__restrict const su3_soa * const u)
     double trr,tri;
 #ifdef MULTIDEVICE
      MPI_Allreduce((void*)&rel,(void*)&trr,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
      trr = rel;
      tri = iml;
@@ -372,9 +372,9 @@ d_complex polyakov_loop2(__restrict const su3_soa * const u)
     double trr,tri;
 #ifdef MULTIDEVICE
      MPI_Allreduce((void*)&rel,(void*)&trr,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
      trr = rel;
      tri = iml;
@@ -455,9 +455,9 @@ d_complex polyakov_loop3(__restrict const su3_soa * const u)
     double trr,tri;
 #ifdef MULTIDEVICE
      MPI_Allreduce((void*)&rel,(void*)&trr,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
      trr = rel;
      tri = iml;

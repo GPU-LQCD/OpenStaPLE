@@ -12,7 +12,9 @@ typedef struct dev_info_t{
     // FROM MPI INIT AND SIMILAR
     
     int single_dev_choice; // from input file
+    int myrank_world, nranks_world;
     int myrank, nranks;
+    MPI_Comm mpi_comm;
     char myrankstr[50];
     int nranks_read;
 

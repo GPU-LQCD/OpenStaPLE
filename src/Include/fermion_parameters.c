@@ -191,7 +191,7 @@ int rat_approx_file_or_script_create(RationalApprox* rational_approx){
 						rational_approx->exponent_den, rational_approx->lambda_min);
 		fclose(bash_repair_commands);
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(devinfo.mpi_comm);
 	error_status = 1; // error cannot be corrected here.
 #else
 	char command[100];

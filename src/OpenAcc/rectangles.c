@@ -1901,7 +1901,7 @@ double calc_rettangolo_soloopenacc(__restrict const su3_soa * const tconf_acc,
   }
 #ifdef MULTIDEVICE
   MPI_Allreduce((void*)&temp,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
   total_result = temp;
 #endif 

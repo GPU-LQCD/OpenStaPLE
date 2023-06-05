@@ -203,7 +203,7 @@ void acc_Deo(__restrict const su3_soa * const u,
 
 		}
 	}
-	//    MPI_Barrier(MPI_COMM_WORLD);
+	//    MPI_Barrier(devinfo.mpi_comm);
 #else 
 	acc_Deo_unsafe(u, out, in, backfield);
 #endif
@@ -259,7 +259,7 @@ void acc_Doe(__restrict const su3_soa * const u,
 
 		}
 	}
-	//    MPI_Barrier(MPI_COMM_WORLD);
+	//    MPI_Barrier(devinfo.mpi_comm);
 #else 
 	acc_Doe_unsafe(u, out, in, backfield);
 #endif
