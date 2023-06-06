@@ -31,7 +31,7 @@ void stout_wrapper(__restrict const su3_soa * const tconf_acc,
 	int stoutsteps=(istopo & act_params.topo_action)?act_params.topo_stout_steps:act_params.stout_steps;
 		
 	if(verbosity_lv > 1) 
-		printf("MPI%02d:Stouting gauge conf %d times.\n",
+		printf("MPI%02d:%02d:Stouting gauge conf %d times.\n",devinfo.replica_idx,
 					 devinfo.myrank, stoutsteps);
 	if(stoutsteps > 0){
 		stout_isotropic(tconf_acc, tstout_conf_acc_arr, auxbis_conf_acc, 
@@ -41,10 +41,10 @@ void stout_wrapper(__restrict const su3_soa * const tconf_acc,
 #endif
 		if(verbosity_lv > 4){
 			check_unitarity_device(tstout_conf_acc_arr,&max_unitarity_deviation,&avg_unitarity_deviation);
-			printf("MPI%02d:(Stout wrapper,1/%d) Avg_unitarity_deviation : %e\n",
-						 devinfo.myrank,stoutsteps,avg_unitarity_deviation);
-			printf("MPI%02d:(Stout wrapper,1/%d) Max_unitarity_deviation : %e\n",
-						 devinfo.myrank,stoutsteps,max_unitarity_deviation);
+			printf("MPI%02d:%02d:(Stout wrapper,1/%d) Avg_unitarity_deviation : %e\n",
+						 devinfo.replica_idx,devinfo.myrank,stoutsteps,avg_unitarity_deviation);
+			printf("MPI%02d:%02d:(Stout wrapper,1/%d) Max_unitarity_deviation : %e\n",
+						 devinfo.replica_idx,devinfo.myrank,stoutsteps,max_unitarity_deviation);
 		}
 
 		for(int stoutlevel=1;stoutlevel < stoutsteps;
@@ -61,6 +61,7 @@ void stout_wrapper(__restrict const su3_soa * const tconf_acc,
 				check_unitarity_device(&tstout_conf_acc_arr[8*(stoutlevel-1)],
 															 &max_unitarity_deviation,&avg_unitarity_deviation);
 
+        //TODO: adapt all prints with replica index
 				printf("MPI%02d:(Stout wrapper,%d/%d) Avg_unitarity_deviation : %e\n",
 							 devinfo.myrank, stoutlevel+1,stoutsteps, 
 							 avg_unitarity_deviation);
@@ -85,7 +86,7 @@ void stout_isotropic(__restrict const su3_soa * const u, // input conf
 										 const int istopo) // istopo = {0,1} -> rho = {fermrho,toporho}
 {
 	if(verbosity_lv > 1) 
-		printf("MPI%02d: Isotropic stouting...\n",devinfo.myrank);
+		printf("MPI%02d:%02d: Isotropic stouting...\n",devinfo.replica_idx,devinfo.myrank);
 
 
 	set_su3_soa_to_zero(local_staples);
@@ -99,7 +100,7 @@ void stout_isotropic(__restrict const su3_soa * const u, // input conf
 	exp_minus_QA_times_conf(u,tipdot,uprime,auxiliary);
 
 	if(verbosity_lv > 1) 
-		printf("MPI%02d: Isotropic stouting done\n",devinfo.myrank);
+		printf("MPI%02d:%02d: Isotropic stouting done\n",devinfo.replica_idx,devinfo.myrank);
 }
 
 

@@ -43,6 +43,11 @@ typedef struct dev_info_t{
 
 extern dev_info devinfo;
 
+//TODO: generalize and write like this in all files
+//#define MPI_PRINTF(fmt) printf("MPI%02d:%02d - " (fmt) ,devinfo.replica_idx, devinfo.myrank); 
+#define MPI_PRINTF0(fmt) printf("MPI%02d:%02d - " fmt ,devinfo.replica_idx, devinfo.myrank);  
+#define MPI_PRINTF1(fmt,...) printf("MPI%02d:%02d - " fmt ,devinfo.replica_idx, devinfo.myrank, __VA_ARGS__);  
+
 
 #ifdef MULTIDEVICE
 

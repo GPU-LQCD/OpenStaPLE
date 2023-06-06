@@ -15,6 +15,7 @@
 
 #ifdef MULTIDEVICE
 #include <mpi.h>
+#include "../Mpi/multidev.h"
 #endif
 
 

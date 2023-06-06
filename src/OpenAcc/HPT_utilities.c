@@ -730,6 +730,7 @@ double calc_Delta_S_Symanzik_SWAP(__restrict const su3_soa * const u,
 }
 #endif
 
+//TODO: reimplement without explicit swap, but at the label level in world root
 int metro_SWAP(su3_soa ** conf_acc,
                __restrict su3_soa * const loc_plaq,
                dcomplex_soa * const tr_local_plaqs,
@@ -760,6 +761,7 @@ int metro_SWAP(su3_soa ** conf_acc,
   return accepted;
 }
 
+//TODO: reimplement without explicit swap, but at the label level in world root
 void All_Conf_SWAP( su3_soa ** conf_acc,
 										__restrict su3_soa * const loc_plaq,
 										dcomplex_soa * const tr_local_plaqs, 

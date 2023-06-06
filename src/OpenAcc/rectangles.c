@@ -10,6 +10,7 @@
 
 #ifdef MULTIDEVICE
 #include <mpi.h>
+#include "../Mpi/multidev.h"
 #endif
 
 double calc_loc_rectangles_2x1_nnptrick(__restrict const su3_soa * const u,

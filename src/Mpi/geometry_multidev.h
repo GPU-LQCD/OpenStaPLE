@@ -65,7 +65,7 @@
 #define MULTIDEVICE
 #endif
 
-#ifdef NREPLICAS 
+#if defined(NREPLICAS) && !defined(MULTIDEVICE)
 #if NREPLICAS > 1
 #define MULTIDEVICE
 #endif

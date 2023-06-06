@@ -188,7 +188,7 @@ int main(int argc, char* argv[]){
 
     // INITIALIZING GAUGE CONFIGURATION
     int conf_id_iter = 0;
-    if(!read_conf_wrapper(conf_acc[0],mc_params.save_conf_name,
+    if(!read_conf_wrapper(conf_acc,mc_params.save_conf_name,
                 &conf_id_iter,debug_settings.use_ildg)){
         // READS ALSO THE conf_id_iter
         printf("MPI%02d - Stored Gauge Conf \"%s\" Read : OK \n",
@@ -196,15 +196,15 @@ int main(int argc, char* argv[]){
 
     }
     else{
-        generate_Conf_cold(conf_acc[0],mc_params.eps_gen);
+        generate_Conf_cold(conf_acc,mc_params.eps_gen);
         printf("MPI%02d - Cold Gauge Conf Generated : OK \n",
                 devinfo.myrank);
-        save_conf_wrapper(conf_acc[0],mc_params.save_conf_name,0,debug_settings.use_ildg);
+        save_conf_wrapper(conf_acc,mc_params.save_conf_name,0,debug_settings.use_ildg);
         if(debug_settings.use_ildg)
             printf("MPI%02d: You're using ILDG format.\n", devinfo.myrank);
         conf_id_iter=0;
     }
-#pragma acc update device(conf_acc[0:1][0:8])
+#pragma acc update device(conf_acc[0:8])
 
 
     // init fermion
@@ -235,7 +235,7 @@ int main(int argc, char* argv[]){
         printf("Multiplication by Doe, %d times...\n", test_settings.deoDoeIterations);
     gettimeofday(&t0,NULL);
     for(r=0; r<test_settings.deoDoeIterations; r++)
-        acc_Doe(conf_acc[0], ferm_phi_acc, ferm_chi_acc, fermions_parameters[0].phases);
+        acc_Doe(conf_acc, ferm_phi_acc, ferm_chi_acc, fermions_parameters[0].phases);
     gettimeofday(&t1,NULL);
 
     if(test_settings.saveResults){
@@ -250,7 +250,7 @@ int main(int argc, char* argv[]){
         printf("Multiplication by Deo, %d times...\n", test_settings.deoDoeIterations);
     gettimeofday(&t2,NULL);
     for(r=0; r<test_settings.deoDoeIterations; r++)
-        acc_Deo(conf_acc[0], ferm_phi_acc, ferm_chi_acc,fermions_parameters[0].phases);
+        acc_Deo(conf_acc, ferm_phi_acc, ferm_chi_acc,fermions_parameters[0].phases);
     gettimeofday(&t3,NULL);
 
     if(test_settings.saveResults){
@@ -265,7 +265,7 @@ int main(int argc, char* argv[]){
         printf("Multiplication by M^\\dagM+m^2, %d times...\n", test_settings.deoDoeIterations);
     gettimeofday(&t4,NULL);
     for(r=0; r<test_settings.deoDoeIterations; r++)
-        fermion_matrix_multiplication(conf_acc[0], ferm_phi_acc, 
+        fermion_matrix_multiplication(conf_acc, ferm_phi_acc, 
                 ferm_chi_acc, kloc_s, &fermions_parameters[0]) ;
     gettimeofday(&t5,NULL);
 
@@ -293,7 +293,7 @@ int main(int argc, char* argv[]){
                 dt_dirac/test_settings.deoDoeIterations);
     }
     // conversion to single precision
-    convert_double_to_float_su3_soa(conf_acc[0],conf_acc_f[0]);
+    convert_double_to_float_su3_soa(conf_acc,conf_acc_f);
     convert_double_to_float_vec3_soa(ferm_chi_acc,ferm_chi_acc_f);
 
     // single precision
@@ -308,7 +308,7 @@ int main(int argc, char* argv[]){
         printf("Multiplication by Doe, %d times...\n", test_settings.deoDoeIterations);
     gettimeofday(&t0_f,NULL);
     for(r=0; r<test_settings.deoDoeIterations; r++)
-        acc_Doe_f(conf_acc_f[0], ferm_phi_acc_f, ferm_chi_acc_f, fermions_parameters[0].phases_f);
+        acc_Doe_f(conf_acc_f, ferm_phi_acc_f, ferm_chi_acc_f, fermions_parameters[0].phases_f);
     gettimeofday(&t1_f,NULL);
 
 
@@ -324,7 +324,7 @@ int main(int argc, char* argv[]){
         printf("Multiplication by Deo, %d times...\n", test_settings.deoDoeIterations);
     gettimeofday(&t2_f,NULL);
     for(r=0; r<test_settings.deoDoeIterations; r++)
-        acc_Deo_f(conf_acc_f[0], ferm_phi_acc_f, ferm_chi_acc_f, fermions_parameters[0].phases_f) ;
+        acc_Deo_f(conf_acc_f, ferm_phi_acc_f, ferm_chi_acc_f, fermions_parameters[0].phases_f) ;
     gettimeofday(&t3_f,NULL);
 
     if(test_settings.saveResults){
@@ -339,7 +339,7 @@ int main(int argc, char* argv[]){
         printf("Multiplication by M^\\dagM+m^2, %d times...\n", test_settings.deoDoeIterations);
     gettimeofday(&t4_f,NULL);
     for(r=0; r<test_settings.deoDoeIterations; r++)
-        fermion_matrix_multiplication_f(conf_acc_f[0], ferm_phi_acc_f, 
+        fermion_matrix_multiplication_f(conf_acc_f, ferm_phi_acc_f, 
                 ferm_chi_acc_f, kloc_s_f, &fermions_parameters[0]) ;
     gettimeofday(&t5_f,NULL);
 

@@ -39,13 +39,13 @@ void pre_init_multidev1D(dev_info * mdi)
 
 
     if(mdi->nranks != NRANKS_D3){
-        printf("#MPI%02d: NRANKS_D3 is different from nranks: no salamino? Exiting now\n",mdi->myrank);
-        printf("#MPI%02d: NRANKS_D3 = %d, nranks = %d\n",mdi->myrank, NRANKS_D3, mdi->nranks);
+        printf("#MPI%02d:%02d: NRANKS_D3 is different from nranks: no salamino? Exiting now\n",mdi->replica_idx,mdi->myrank);
+        printf("#MPI%02d:%02d: NRANKS_D3 = %d, nranks = %d\n",mdi->myrank, NRANKS_D3, mdi->replica_idx, mdi->nranks);
         exit(1);
     }
     
     if(verbosity_lv > 2){
-        printf("MPI%02d - Called MPI_Init\n",mdi->myrank);
+        printf("MPI%02d:%02d - Called MPI_Init\n",mdi->replica_idx,mdi->myrank);
     }
 
 

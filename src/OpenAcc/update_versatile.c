@@ -142,7 +142,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 	} // end for iflav
 	#pragma acc update device(ferm_phi_acc[0:alloc_info.NPS_tot])
 
-	gconf_as_fermionmatrix_f = conf_acc_f[0];
+	gconf_as_fermionmatrix_f = conf_acc_f;
 	// ^^^ WARNING: this works only for sequential replicas updating. If you want to parallelize it, use conf_acc_f[replica_id].
 #ifdef STOUT_FERMIONS
 	// dilation using stouted dirac operator
@@ -298,7 +298,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 
 		// conversion double to float
 
-		su3_soa_f * tconf_acc_f = conf_acc_f[0];
+		su3_soa_f * tconf_acc_f = conf_acc_f;
 		// ^^^ WARNING: this works only for sequential replicas updating. If you want to parallelize it, use conf_acc_f[replica_id].
 
 		printf("Converting mommenta...\n");
