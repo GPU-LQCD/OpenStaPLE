@@ -30,6 +30,9 @@ void pre_init_multidev1D(dev_info * mdi)
       MPI_Comm_split(MPI_COMM_WORLD, mdi->replica_idx, mdi->myrank_world, &(mdi->mpi_comm));
       MPI_Comm_rank(mdi->mpi_comm,&(mdi->myrank));
       MPI_Comm_size(mdi->mpi_comm,&(mdi->nranks));
+
+      int color = (mdi->myrank==0)? 0: MPI_UNDEFINED;
+      MPI_Comm_split(MPI_COMM_WORLD, color, mdi->replica_idx, &(mdi->mpi_comm_salamino));
     }else{
       mdi->replica_idx=0;
       mdi->mpi_comm=MPI_COMM_WORLD;

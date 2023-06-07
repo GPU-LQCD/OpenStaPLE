@@ -16,6 +16,7 @@ typedef struct dev_info_t{
     int myrank, nranks;
     int replica_idx;
     MPI_Comm mpi_comm;
+    MPI_Comm mpi_comm_salamino; //TODO: test if really necessary
     char myrankstr[50];
     int nranks_read;
 

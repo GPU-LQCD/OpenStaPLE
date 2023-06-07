@@ -333,7 +333,7 @@ int main(int argc, char* argv[]){
     
 		if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
 		rep->label[r]=r;
-		init_k(conf_acc,rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,r);
+		init_k(conf_acc,rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,0);
 		
 #ifdef MULTIDEVICE
     if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,1);
@@ -665,7 +665,7 @@ int main(int argc, char* argv[]){
 								iterations[r] = id_iter-id_iter_offset-accettate_therm[r]+1;
 								double acceptance = (double) accettate_metro[r] / iterations[r];
 								double acc_err = sqrt((double)accettate_metro[r]*(iterations[r]-accettate_metro[r])/iterations[r])/iterations[r];
-								printf("Estimated HMC acceptance for this run [replica %d]: %f +- %f\n. Iterations: %d",r,acceptance, acc_err, iterations[r]);
+								printf("Estimated HMC acceptance for this run [replica %d]: %f +- %f\n. Iterations: %d\n",r,acceptance, acc_err, iterations[r]);
 							}
 						}
 						#pragma acc update host(conf_acc[0:8])
@@ -689,7 +689,9 @@ int main(int argc, char* argv[]){
 							// conf swap
 							if (0==devinfo.myrank_world) {printf("CONF SWAP PROPOSED\n");}
               //TODO: reimplement without explicit swap, but at the label level in world root
-							All_Conf_SWAP(conf_acc,aux_conf_acc,local_sums, &def, &swap_number,all_swap_vector,acceptance_vector, rep);
+							//All_Conf_SWAP(conf_acc,aux_conf_acc,local_sums, &def, &swap_number,all_swap_vector,acceptance_vector, rep);
+              manage_replica_swaps(conf_acc, aux_conf_acc, local_sums, &def, &swap_number,all_swap_vector,acceptance_vector,rep);
+
 							if (0==devinfo.myrank_world) {printf("Number of accepted swaps: %d\n", swap_number);}       
 							#pragma acc update host(conf_acc[0:rep->replicas_total_number][0:8])
                 
