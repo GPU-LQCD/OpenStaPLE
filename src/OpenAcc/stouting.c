@@ -91,7 +91,7 @@ void stout_isotropic(__restrict const su3_soa * const u, // input conf
 	set_su3_soa_to_zero(local_staples);
 
 
-	calc_loc_staples_nnptrick_all(u,local_staples);
+	calc_loc_staples_nnptrick_all_onlyferms(u,local_staples);
 
 	RHO_times_conf_times_staples_ta_part(u,local_staples,tipdot,istopo);
 

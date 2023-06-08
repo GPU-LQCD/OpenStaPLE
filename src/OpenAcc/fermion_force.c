@@ -93,7 +93,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 
 	set_su3_soa_to_zero(TMP);
 
-	calc_loc_staples_nnptrick_all(U,TMP);
+	calc_loc_staples_nnptrick_all_onlyferms(U,TMP);
 	if(verbosity_lv > 4)printf("MPI%02d:\t\tcomputed staples  \n",
 														 devinfo.myrank);
 #ifdef MULTIDEVICE
