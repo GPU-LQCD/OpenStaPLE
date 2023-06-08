@@ -846,6 +846,14 @@ int read_replicas_numbers(rep_info * re,char filelines[MAXLINES][MAXLINELENGTH],
 		res=1;
 	}
 
+	// check number of replicas as in geom defines
+	if(re->replicas_total_number != NREPLICAS){
+		printf("ERROR: NREPLICAS in geom_defines does not match the value totalnumber in input file\n");
+		printf("NREPLICAS=%d, totalnumber=%d\n",NREPLICAS, re->replicas_total_number);
+		res=1;
+	}
+
+
 	// check that defect length is smaller than lattice size along the corresponding direction	
 	int perp_dir[4][3] = { {1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2} };
 	int lat_size[4];

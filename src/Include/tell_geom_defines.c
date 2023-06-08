@@ -6,6 +6,7 @@ void print_geom_defines(){
 	printf("#############################\n") ;
 	printf("#   PRINTING GEOM DEFINES   #\n") ;
 	printf("#############################\n") ;
+	printf("NREPLICAS    %d\n",NREPLICAS     );         
 	printf("LOC_N0       %d\n",LOC_N0       );         
 	printf("LOC_N1       %d\n",LOC_N1       );         
 	printf("LOC_N2       %d\n",LOC_N2       );         

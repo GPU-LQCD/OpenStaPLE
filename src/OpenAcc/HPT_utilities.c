@@ -1171,6 +1171,7 @@ double calc_S_Symanzik_defect(__restrict const su3_soa * const u,
 //  return accepted;
 //}
 
+//TODO: this needs to be fixed, probably
 int metro_SWAP_worldmaster(double Delta_S_SWAP){
   double p1,p2;
   int accepted = 0;
@@ -1250,9 +1251,9 @@ void manage_replica_swaps(
 										int * acceptance_vet, rep_info * hpt_params){
     double S_arr_prev[NREPLICAS];
     double S_arr_next[NREPLICAS];
-    for(int r=0; r<NREPLICAS; ++r){
-      S_arr_prev[r]=0.0;
-      S_arr_next[r]=0.0;
+    for(int lab=0; lab<NREPLICAS; ++lab){
+      S_arr_prev[lab]=0.0;
+      S_arr_next[lab]=0.0;
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -1262,8 +1263,8 @@ void manage_replica_swaps(
 
 
     if(devinfo.myrank_world==0){
-      for(int r=0; r<NREPLICAS; ++r){
-        MPI_PRINTF1(" S_arr_prev[%d]=%lg\n",r,S_arr_prev[r]);
+      for(int lab=0; lab<NREPLICAS; ++lab){
+        MPI_PRINTF1(" S_arr_prev[%d]=%lg\n",lab,S_arr_prev[lab]);
       }
     }
 
@@ -1277,13 +1278,8 @@ void manage_replica_swaps(
     }
     MPI_Bcast((void*)&swap_order,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
-
-//#ifdef MULTIDEVICE
-//  MPI_Bcast((void*) &swap_order,1,MPI_DOUBLE,0,devinfo.mpi_comm);
-//#endif
-
       int accepted=0;
-      int i_counter, j_counter;
+      int i_counter, j_counter; // labels
       int replicas_num_prev,replicas_num_next;
       for(i_counter=0;i_counter<replicas_number-1;i_counter++){
         if(swap_order<=0.5){ 
@@ -1305,17 +1301,19 @@ void manage_replica_swaps(
         //TODO: check whether one has to use a label filter for replicas somewhere
         
         // replicas_num_prev and replicas_num_next are tried for swap
-        if(replicas_num_prev==devinfo.replica_idx){
+        if(replicas_num_prev==hpt_params->label[devinfo.replica_idx]){
           // set defect as next
-          init_k(tconf_acc,hpt_params->cr_vec[replicas_num_next],hpt_params->defect_boundary,rep->defect_coordinates,&def,1);
+          init_k(tconf_acc,hpt_params->cr_vec[replicas_num_next],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
         }
-        if(replicas_num_next==devinfo.replica_idx){
+        if(replicas_num_next==hpt_params->label[devinfo.replica_idx]){
           // set defect as prev
-          init_k(tconf_acc,hpt_params->cr_vec[replicas_num_prev],hpt_params->defect_boundary,rep->defect_coordinates,&def,1);
+          init_k(tconf_acc,hpt_params->cr_vec[replicas_num_prev],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
         }
+        //TODO: possibly optimize by updating only defect info
+        #pragma acc update device(conf_acc[0:alloc_info.conf_acc_size])
 
-      for(int r=0; r<NREPLICAS; ++r){
-        S_arr_next[r]=0.0;
+      for(int lab=0; lab<NREPLICAS; ++lab){
+        S_arr_next[lab]=0.0;
       }
       compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
 
@@ -1323,8 +1321,8 @@ void manage_replica_swaps(
       MPI_Barrier(MPI_COMM_WORLD); //XXX: maybe superfluous
 
       if(devinfo.myrank_world==0){
-        for(int r=0; r<NREPLICAS; ++r){
-          MPI_PRINTF1("icounter: %d, S_arr_next[%d]=%lg\n",i_counter, r,S_arr_next[r]);
+        for(int lab=0; lab<NREPLICAS; ++lab){
+          MPI_PRINTF1("icounter: %d, S_arr_next[%d]=%lg\n",i_counter, lab,S_arr_next[lab]);
         }
 
 
@@ -1342,42 +1340,71 @@ void manage_replica_swaps(
                               -S_arr_prev[replicas_num_prev]
                               -S_arr_prev[replicas_num_next];
         accepted=metro_SWAP_worldmaster(Delta_S_SWAP);
-        if(verbosity_lv>8) printf("DELTA_S_SWAP(r1=%d,r2=%d):%.15lg\n",
-            replicas_num_prev, replicas_num_next, Delta_S_SWAP);
+        printf("DELTA_S_SWAP(r1=%d,r2=%d):%.15lg\n", replicas_num_prev, replicas_num_next, Delta_S_SWAP);
+        //if(verbosity_lv>8) printf("DELTA_S_SWAP(r1=%d,r2=%d):%.15lg\n",
 
         if(accepted){
           int aux_label;
-          aux_label=hpt_params->label[replicas_num_prev];
-          hpt_params->label[replicas_num_prev] = hpt_params->label[replicas_num_next];
-          hpt_params->label[replicas_num_next] = aux_label;
+          int ii,jj;
+//          aux_label=hpt_params->label[replicas_num_prev];
+//          hpt_params->label[replicas_num_prev] = hpt_params->label[replicas_num_next];
+//          hpt_params->label[replicas_num_next] = aux_label;
+          //TODO: possibly optimize with an inverse label map
+          for(int idx=0; idx<hpt_params->replicas_total_number; ++idx){
+            if(hpt_params->label[idx]==replicas_num_prev){
+              ii=idx;
+            }else if(hpt_params->label[idx]==replicas_num_next){
+              jj=idx;
+            }
+          }
+          MPI_PRINTF1("Swapping between %d and %d accepted\n",replicas_num_prev,replicas_num_next);
+          aux_label=hpt_params->label[ii];
+          hpt_params->label[ii] = hpt_params->label[jj];
+          hpt_params->label[jj] = aux_label;
         }
       }
 
       //TODO: maybe remove it since superfluous
       MPI_Bcast((void*)&(hpt_params->label[0]),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
+      MPI_Bcast((void*)&accepted,1,MPI_INT,0,MPI_COMM_WORLD);
 //      MPI_Bcast((void*)&hpt_params->cr_vec[0],NREPLICAS,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
-//      MPI_Barrier(MPI_COMM_WORLD);
-
-      if(!accepted && replicas_num_prev==devinfo.replica_idx){
+      if(!accepted && replicas_num_prev==hpt_params->label[devinfo.replica_idx]){
         // set defect as next
-        init_k(tconf_acc,hpt_params->cr_vec[replicas_num_prev],hpt_params->defect_boundary,rep->defect_coordinates,&def,1);
+        init_k(tconf_acc,hpt_params->cr_vec[replicas_num_prev],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
       }
-      if(!accepted && replicas_num_next==devinfo.replica_idx){
+      if(!accepted && replicas_num_next==hpt_params->label[devinfo.replica_idx]){
         // set defect as prev
-        init_k(tconf_acc,hpt_params->cr_vec[replicas_num_next],hpt_params->defect_boundary,rep->defect_coordinates,&def,1);
+        init_k(tconf_acc,hpt_params->cr_vec[replicas_num_next],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
       }
+      //TODO: possibly optimize by updating only defect info
+      #pragma acc update device(conf_acc[0:alloc_info.conf_acc_size])
 
       for(int r=0; r<NREPLICAS; ++r){
         S_arr_prev[r]=0.0;
       }
       compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_prev[0]);
 
+      //XXX: debug!
+      MPI_PRINTF1("before swapupdate: swap_num    =%d\n",*swap_num);
+      for(int labp=0; labp<rep->replicas_total_number; ++labp){
+        MPI_PRINTF1("before swapupdate: all_swap_vet[%d]  =%d (prev: %d, next %d)\n",labp,all_swap_vet[labp],replicas_num_prev ,  replicas_num_next);
+        MPI_PRINTF1("before swapupdate: acceptance_vet[%d]=%d (prev: %d, next %d)\n",labp,acceptance_vet[labp],replicas_num_prev ,  replicas_num_next);
+      }
+
 //      #pragma acc update device(conf_acc[0:8])
       *swap_num=*swap_num+1;
       int replicas_num_fixed = (swap_order<=0.5)? replicas_num_prev :  replicas_num_next;
       all_swap_vet[replicas_num_fixed]++;
       if(accepted==1) acceptance_vet[replicas_num_fixed]++;
+//      MPI_Bcast((void*)&(all_swap_vet),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
+
+      //XXX: debug!
+      MPI_PRINTF1("after  swapupdate: swap_num    =%d\n",*swap_num);
+      for(int labp=0; labp<rep->replicas_total_number; ++labp){
+        MPI_PRINTF1("after  swapupdate: all_swap_vet[%d]  =%d (prev: %d, next %d)\n",labp,all_swap_vet[labp],replicas_num_prev ,  replicas_num_next);
+        MPI_PRINTF1("after  swapupdate: acceptance_vet[%d]=%d (prev: %d, next %d)\n",labp,acceptance_vet[labp],replicas_num_prev ,  replicas_num_next);
+      }
 
       MPI_Barrier(MPI_COMM_WORLD); 
     }

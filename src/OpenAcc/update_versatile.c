@@ -101,8 +101,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 	if(debug_settings.do_norandom_test){ // NORANDOM
 		printf("NORANDOM mode, loading momenta from memory.\n");
 		if(read_thmat_soa_wrapper(momenta,"momenta_norndtest")){
-			printf("MPI%02d: GENERATING MOMENTA FILE FOR YOUR CONVENIENCE, RE-RUN THIS TEST\n",
-						 devinfo.myrank);
+			MPI_PRINTF0("GENERATING MOMENTA FILE FOR YOUR CONVENIENCE, RE-RUN THIS TEST\n");
 			generate_Momenta_gauss(momenta);
 			print_thmat_soa_wrapper(momenta,"momenta_norndtest");
 		}
@@ -242,7 +241,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 				action_ferm_in += real_scal_prod_global(&ferm_phi_acc[ps_index],&ferm_phi_acc[ps_index]);
 			}
 		} // end for iflav
-		printf("MPI%02d - Initial Action Computed : OK \n", devinfo.myrank);
+		MPI_PRINTF0("- Initial Action Computed : OK \n");
 	}
     
     
@@ -284,7 +283,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		RationalApprox *approx_md = &(fermions_parameters[iflav].approx_md);
 		RationalApprox *approx_md_mother = &(fermions_parameters[iflav].approx_md_mother);
 		rescale_rational_approximation(approx_md_mother,approx_md,minmaxeig[iflav]);
-		printf("MPI%02d: Rescaled Rational Approximation for flavour %d\n", devinfo.myrank, iflav);
+		MPI_PRINTF1("Rescaled Rational Approximation for flavour %d\n", iflav);
 		#pragma acc update device(approx_md[0:1])
 
 	}
@@ -294,14 +293,14 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 	gettimeofday(&md_start,NULL);
 	if(1 == md_parameters.singlePrecMD){
 		if(verbosity_lv > 1) 
-			printf("MPI%02d: SINGLE PRECISION MOLECULAR DYNAMICS...\n", devinfo.myrank);
+			MPI_PRINTF0("SINGLE PRECISION MOLECULAR DYNAMICS...\n");
 
 		// conversion double to float
 
 		su3_soa_f * tconf_acc_f = conf_acc_f;
 		// ^^^ WARNING: this works only for sequential replicas updating. If you want to parallelize it, use conf_acc_f[replica_id].
 
-		printf("Converting mommenta...\n");
+		printf("Converting momenta...\n");
 		convert_double_to_float_thmat_soa(momenta,momenta_f);
 		double act_mom_check_f = 0;
 		for(mu =0;mu<8;mu++)  act_mom_check_f += 
@@ -312,10 +311,8 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 
 		printf("Converting conf...\n");
 		convert_double_to_float_su3_soa(tconf_acc,tconf_acc_f);
-		double act_links_check_f = BETA_BY_THREE* calc_plaquette_soloopenacc_f(
-																																					 tconf_acc_f, aux_conf_acc_f, local_sums_f);
-		double act_links_check = BETA_BY_THREE*calc_plaquette_soloopenacc(tconf_acc,
-																																			aux_conf_acc,local_sums); // should not be necessary
+		double act_links_check_f = BETA_BY_THREE* calc_plaquette_soloopenacc_f(tconf_acc_f, aux_conf_acc_f, local_sums_f);
+		double act_links_check = BETA_BY_THREE*calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc,local_sums); // should not be necessary
 
 		double act_ferm_check_f = 0;
 		double act_ferm_check = 0; // should not be necessary
@@ -330,15 +327,11 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		}
 
 		if(verbosity_lv>1){
-			printf("MPI%02d: DOUBLE->SINGLE PRECISION conversion done.\n", 
-						 devinfo.myrank);
+			MPI_PRINTF0("DOUBLE->SINGLE PRECISION conversion done.\n");
 			if(verbosity_lv>3){
-				printf("MPI%02d: Mom action  (single/double precision): %lf / %lf \n",
-							 devinfo.myrank,act_mom_check_f,act_mom_check );
-				printf("MPI%02d: Link Action (single/double precision): %lf / %lf \n",
-							 devinfo.myrank,act_links_check_f,act_links_check );
-				printf("MPI%02d: Ferm Action (single/double precision): %lf / %lf \n",
-							 devinfo.myrank,act_ferm_check_f,act_ferm_check );
+				MPI_PRINTF1("Mom action  (single/double precision): %lf / %lf \n",act_mom_check_f,act_mom_check );
+				MPI_PRINTF1("Link Action (single/double precision): %lf / %lf \n",act_links_check_f,act_links_check );
+				MPI_PRINTF1("Ferm Action (single/double precision): %lf / %lf \n",act_ferm_check_f,act_ferm_check );
 			}
 		}
 
@@ -352,12 +345,12 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 																ip,
 																momenta_f,local_sums_f,res_md,max_cg);
 
-		if(verbosity_lv > 1) printf("MPI%02d: Single Precision Molecular Dynamics Completed \n",devinfo.myrank );
+		if(verbosity_lv > 1) MPI_PRINTF0("Single Precision Molecular Dynamics Completed \n" );
 
 		convert_float_to_double_thmat_soa(momenta_f,momenta);
 		convert_float_to_double_su3_soa(tconf_acc_f,tconf_acc);
 
-		if(verbosity_lv > 1) printf("MPI%02d: SINGLE -> DOUBLE PRECISION conversion done.\n",devinfo.myrank );
+		if(verbosity_lv > 1) MPI_PRINTF0("SINGLE -> DOUBLE PRECISION conversion done.\n");
 
 	} 
 	else{ // double precision md starts here
@@ -387,14 +380,14 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 
 	if(devinfo.myrank == 0){
 
-		printf("MPI%02d:Time needed for moledular dynamics: %f s, ",devinfo.myrank,mdtime);
+		MPI_PRINTF1("needed for moledular dynamics: %f s, ",mdtime);
 		printf("total CG-M iterations during MD: %d\n",multishift_iterations_md );
 	}
 
 	if(debug_settings.do_reversibility_test){
 
-		printf("MPI%02d: PERFORMING REVERSIBILITY TEST, DOUBLE PRECISION.\n", devinfo.myrank);
-		printf("MPI%02d: Inverting momenta.\n", devinfo.myrank);
+		MPI_PRINTF0("PERFORMING REVERSIBILITY TEST, DOUBLE PRECISION.\n");
+		MPI_PRINTF0("Inverting momenta.\n");
 
 		invert_momenta(momenta);
 
@@ -413,12 +406,10 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		// NOTEo: sum instead of difference must be calculated because momenta were inverted.
 		double momenta_error = calc_sum_momenta_norm(momenta,momenta_backup);
 
-		printf("MPI%02d: Reversibility test: Conf_error: %e , momenta_error %e \n",
-					 devinfo.myrank, conf_error, momenta_error);
+		MPI_PRINTF1("Reversibility test: Conf_error: %e , momenta_error %e \n", conf_error, momenta_error);
 
 
-		printf("MPI%02d: Since a reversibility test is being performed, no need to  go on. Exiting now.\n", 
-					 devinfo.myrank);
+		MPI_PRINTF0("Since a reversibility test is being performed, no need to  go on. Exiting now.\n");
 
 		save_conf_wrapper(tconf_acc,"conf_REVTEST",0,0); // conf_id_iter = 0, not using ILDG
 		// save_conf_wrapper(conf_acc_bkp,"conf_REVTEST_bkp",0,0);
@@ -432,8 +423,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		exit(0);
 	}
 
-	if(verbosity_lv > 1) printf("MPI%02d - MOLECULAR DYNAMICS COMPLETED \n", 
-															devinfo.myrank);
+	if(verbosity_lv > 1) MPI_PRINTF0("- MOLECULAR DYNAMICS COMPLETED \n");
 
 
 #ifdef STOUT_FERMIONS
@@ -600,8 +590,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 			// configuration accepted set_su3_soa_to_su3_soa(arg1,arg2) ===> arg2=arg1;
 			set_su3_soa_to_su3_soa(tconf_acc,conf_acc_bkp);
 		}else{
-			printf("MPI%02d,REJECTED   ---> [acc/iter] = [%i/%i] \n",
-						 devinfo.myrank,acc,iterazioni);
+			MPI_PRINTF1("  ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
 			// configuration rejected set_su3_soa_to_su3_soa(arg1,arg2) ===> arg2=arg1;
 			set_su3_soa_to_su3_soa(conf_acc_bkp,tconf_acc);
 			#pragma acc update device(tconf_acc[0:8])

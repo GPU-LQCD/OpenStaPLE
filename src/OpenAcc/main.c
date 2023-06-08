@@ -131,8 +131,6 @@ int main(int argc, char* argv[]){
 
   int input_file_read_check = set_global_vars_and_fermions_from_input_file(argv[1]);
 
-//TODO: abort replicas communication group
-    
 #ifdef MULTIDEVICE
   if(input_file_read_check){
     MPI_PRINTF0("input file reading failed, Aborting...\n");
@@ -332,7 +330,9 @@ int main(int argc, char* argv[]){
     //TODO: check consistency with rep->replicas_total_number and nranks_world/NRANKS_D3
     
 		if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
-		rep->label[r]=r;
+    for(int ri=0; ri<rep->replicas_total_number; ++ri){
+      rep->label[ri]=ri;
+    }
 		init_k(conf_acc,rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,0);
 		
 #ifdef MULTIDEVICE
@@ -409,7 +409,7 @@ int main(int argc, char* argv[]){
 
   int *accettate_therm;
   int *accettate_metro;
-  int *iterations;
+  int *iterations; // XXX: this might be useless (used only as a local variable, basically)
     
   int *accettate_therm_old;
   int *accettate_metro_old;
@@ -607,10 +607,11 @@ int main(int argc, char* argv[]){
 																 &avg_unitarity_deviation);
 					MPI_PRINTF1("Avg/Max unitarity deviation on device: %e / %e\n",avg_unitarity_deviation,max_unitarity_deviation);
             
-					for (int i=0;i<rep->replicas_total_number;i++){
-            accettate_therm_old [i]= accettate_therm[i];
-            accettate_metro_old [i]= accettate_metro[i];
+					for (int lab=0;lab<rep->replicas_total_number;lab++){
+            accettate_therm_old [lab]= accettate_therm[lab];
+            accettate_metro_old [lab]= accettate_metro[lab];
 					}
+          //TODO: check if synced between all ranks
 
 					if(devinfo.myrank ==0 ){
 						printf("\n#################################################\n");
@@ -633,7 +634,8 @@ int main(int argc, char* argv[]){
 //					for(int r=0;r<rep->replicas_total_number;r++)
          {
             int r=devinfo.replica_idx;
-						printf("REPLICA %d (label %d):\n",r,rep->label[r]);
+            int lab=rep->label[r];
+						printf("REPLICA %d (label %d):\n",r,lab);
 
 						// initial action
 			
@@ -643,33 +645,52 @@ int main(int argc, char* argv[]){
 #ifdef GAUGE_ACT_TLSM
 							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
 #endif
-							printf("ACTION BEFORE HMC STEP REPLICA %d: %.15lg\n", r, action);
+							printf("ACTION BEFORE HMC STEP REPLICA %d (lab %d): %.15lg\n", r, lab, action);
 						}
 
 						// HMC step
+            int which_mode=!(id_iter<mc_params.therm_ntraj); // 0: therm, 1: metro
+            int* accettate_which[2]={(int*)&accettate_therm[0],(int*)&accettate_metro[0]};
+            
+            for(int labp=0; labp<rep->replicas_total_number; ++labp){
+              if(lab!=labp){
+                accettate_which[which_mode][labp]=0;
+                iterations[labp]=0;
+              }
+            }
+            accettate_which[which_mode][lab] = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc,
+                                                                  md_parameters.residue_metro,md_parameters.residue_md,
+                                                                  id_iter-id_iter_offset-(which_mode==1? accettate_therm[lab] : 0),
+                                                                  accettate_which[which_mode][lab],which_mode,md_parameters.max_cg_iterations);
+//            //XXX: debug!
+//            for(int labp=0; labp<rep->replicas_total_number; ++labp){
+//              MPI_PRINTF1("before allreduce: accettate_therm[%d]    =%d\n",labp,accettate_therm[labp]);
+//              MPI_PRINTF1("before allreduce: accettate_metro[%d]    =%d\n",labp,accettate_metro[labp]);
+//              MPI_PRINTF1("before allreduce: accettate_which[%d][%d]=%d\n",which_mode,labp,accettate_which[which_mode][labp]);
+//            }
+
+            MPI_Allreduce(MPI_IN_PLACE,(void*)&(accettate_which[which_mode][0]),rep->replicas_total_number,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+            //TODO: check whether multiples of salamino slices 
+            
+//            //XXX: debug!
+//            for(int labp=0; labp<rep->replicas_total_number; ++labp){
+//              MPI_PRINTF1("after  allreduce: accettate_therm[%d]    =%d\n",labp,accettate_therm[labp]);
+//              MPI_PRINTF1("after  allreduce: accettate_metro[%d]    =%d\n",labp,accettate_metro[labp]);
+//              MPI_PRINTF1("after  allreduce: accettate_which[%d][%d]=%d\n",which_mode,labp,accettate_which[which_mode][labp]);
+//            }
 			
-						if(id_iter<mc_params.therm_ntraj){
-							//accettate_therm[r] = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc[r],
-							accettate_therm[r] = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc,
-																																		md_parameters.residue_metro,md_parameters.residue_md,
-																																		id_iter-id_iter_offset,
-																																		accettate_therm[r],0,md_parameters.max_cg_iterations);
-						}
-						else{
-							//accettate_metro[r] = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc[r],
-							accettate_metro[r] = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc,
-																																		md_parameters.residue_metro,md_parameters.residue_md,
-																																		id_iter-id_iter_offset-accettate_therm[r],
-																																		accettate_metro[r],1,md_parameters.max_cg_iterations);
-							if(0==devinfo.myrank){
-								iterations[r] = id_iter-id_iter_offset-accettate_therm[r]+1;
-								double acceptance = (double) accettate_metro[r] / iterations[r];
-								double acc_err = sqrt((double)accettate_metro[r]*(iterations[r]-accettate_metro[r])/iterations[r])/iterations[r];
-								printf("Estimated HMC acceptance for this run [replica %d]: %f +- %f\n. Iterations: %d\n",r,acceptance, acc_err, iterations[r]);
+						if(which_mode){
+							if(0==devinfo.myrank && lab==0){
+                //TODO: is iteration useful at main scope?
+								iterations[lab] = id_iter-id_iter_offset-accettate_therm[lab]+1;
+								double acceptance = (double) accettate_metro[lab] / iterations[lab];
+								double acc_err = sqrt((double)accettate_metro[lab]*(iterations[lab]-accettate_metro[lab])/iterations[lab])/iterations[lab];
+								printf("Estimated HMC acceptance for this run [replica %d (lab %d)]: %f +- %f\n. Iterations: %d\n",r,lab,acceptance, acc_err, iterations[lab]);
 							}
 						}
+
 						#pragma acc update host(conf_acc[0:8])
-//						#pragma acc update host(conf_acc[0:rep->replicas_total_number][0:8])
+            MPI_Allreduce(MPI_IN_PLACE,(void*)&iterations[0],rep->replicas_total_number,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
 
 						// final action
 
@@ -708,10 +729,9 @@ int main(int argc, char* argv[]){
 					conf_id_iter++;
             
 #ifdef PAR_TEMP
-					MPI_PRINTF0("- Printing acceptances - only by master rank...\n");
-					if(devinfo.myrank ==0){
+					MPI_PRINTF0("- Printing acceptances - only by master master rank...\n");
+					if(devinfo.myrank_world ==0){
                 
-            //TODO: make writing sequential on different replicas
 						if(rep->replicas_total_number>1){
 							file_label=fopen(acc_info->file_label_name,"at");
 							if(!file_label){file_label=fopen(acc_info->file_label_name,"wt");}
@@ -722,23 +742,23 @@ int main(int argc, char* argv[]){
 							swap_acc_file=fopen(acc_info->swap_file_name,"at");
 							if(!swap_acc_file){swap_acc_file=fopen(acc_info->swap_file_name,"wt");}
 
+              //TODO: send info to world master
 							fprintf(hmc_acc_file,"%d\t",conf_id_iter);
 							fprintf(swap_acc_file,"%d\t",conf_id_iter);
 							label_print(rep, file_label, conf_id_iter);
 						}
             // print acceptances
-						for(int i=0;i<rep->replicas_total_number;i++){
-							if(i<rep->replicas_total_number-1){
-								mean_acceptance=(double)acceptance_vector[i]/all_swap_vector[i];
+						for(int lab=0;lab<rep->replicas_total_number;lab++){
+							if(lab<rep->replicas_total_number-1){
+								mean_acceptance=(double)acceptance_vector[lab]/all_swap_vector[lab];
                 //TODO: make a gather of all acceptances into world master
-								if(0==devinfo.myrank_world){ printf("replica couple [%d/%d]: proposed %d, accepted %d, mean_acceptance %f\n",i,i+1,all_swap_vector[i],acceptance_vector[i],mean_acceptance);}
+								if(0==devinfo.myrank_world){ printf("replica couple [labels: %d/%d]: proposed %d, accepted %d, mean_acceptance %f\n",lab,lab+1,all_swap_vector[lab],acceptance_vector[lab],mean_acceptance);}
 								if(rep->replicas_total_number>1){
-									fprintf(swap_acc_file,"%d\t",acceptance_vector[i]-acceptance_vector_old[i]);}
+									fprintf(swap_acc_file,"%d\t",acceptance_vector[lab]-acceptance_vector_old[lab]);}
 							}
             
 							if(rep->replicas_total_number>1){
-                fprintf(hmc_acc_file,"%d\t", accettate_therm[i]+accettate_metro[i]
-                        -accettate_therm_old[i]-accettate_metro_old[i]);
+                fprintf(hmc_acc_file,"%d\t", accettate_therm[lab]+accettate_metro[lab] -accettate_therm_old[lab]-accettate_metro_old[lab]);
 							}
               
             }
@@ -758,7 +778,7 @@ int main(int argc, char* argv[]){
 #endif
           
 					// gauge stuff measures
-          if(devinfo.replica_idx==rep->label[0]){
+          if(0==rep->label[devinfo.replica_idx]){
             printf("===========GAUGE MEASURING============\n");
               
             plq  = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
@@ -843,8 +863,8 @@ int main(int argc, char* argv[]){
                 }else printf("Metro_iter %d   Plaquette= %.18lf    Rectangle = %.18lf\n",conf_id_iter,plq/GL_SIZE/6.0/3.0,rect/GL_SIZE/6.0/3.0/2.0);
 
                 fprintf(goutfile,"%d\t%d\t",conf_id_iter,
-                        accettate_therm[0]+accettate_metro[0]
-                        -accettate_therm_old[0]-accettate_metro_old[0]);
+                        accettate_therm[rep->label[0]]+accettate_metro[rep->label[0]]
+                        -accettate_therm_old[rep->label[0]]-accettate_metro_old[rep->label[0]]);
                       
                 fprintf(goutfile,"%.18lf\t%.18lf\t%.18lf\t%.18lf\n",
                         plq/GL_SIZE/6.0/3.0,
