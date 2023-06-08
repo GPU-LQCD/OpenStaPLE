@@ -691,7 +691,7 @@ int read_device_setting(dev_info * di,char filelines[MAXLINES][MAXLINELENGTH], i
 	if(!helpmode){
 #ifdef MULTIDEVICE
 		if(di->nranks_read != di->nranks){
-			printf("MPI%02d: ERROR: nranks from settings file ", di->myrank);
+			MPI_PRINTF0("ERROR: nranks from settings file ");
 			printf("and from MPI_Init() DIFFER!\n");
 			printf("settings: %d , MPI_Init(): %d\n",
 						 di->nranks_read, di->nranks);
@@ -909,7 +909,7 @@ int set_global_vars_and_fermions_from_input_file(const char* input_filename)
 	char filelines[MAXLINES][MAXLINELENGTH];
 	FILE *input = fopen(input_filename,"r");
 	if (input == NULL){
-		printf("MPI%02d: Could not open file %s \n",devinfo.myrank,input_filename );
+		MPI_PRINTF1("Could not open file %s \n",input_filename);
 		if(0==devinfo.myrank){
 			printf("Creating a template inputfile\n" );
 		}
@@ -1112,7 +1112,7 @@ int set_global_vars_and_fermions_from_input_file(const char* input_filename)
 
 		if(0==devinfo.myrank && totcheck )
 			printf("There are errors in some groups, exiting.\n");
-		printf("MPI%02d: Returning error 1...\n",devinfo.myrank);
+		MPI_PRINTF0("Returning error 1...\n");
 		return 1;
 
 	}

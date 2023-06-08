@@ -42,19 +42,19 @@ void pre_init_multidev1D(dev_info * mdi)
 
 
     if(mdi->nranks != NRANKS_D3){
-        printf("#MPI%02d:%02d: NRANKS_D3 is different from nranks: no salamino? Exiting now\n",mdi->replica_idx,mdi->myrank);
-        printf("#MPI%02d:%02d: NRANKS_D3 = %d, nranks = %d\n",mdi->myrank, NRANKS_D3, mdi->replica_idx, mdi->nranks);
+        MPI_PRINTF0("NRANKS_D3 is different from nranks: no salamino? Exiting now\n");
+        MPI_PRINTF1("NRANKS_D3 = %d, nranks = %d\n",mdi->myrank, NRANKS_D3);
         exit(1);
     }
 
     if(mdi->nranks_world != NREPLICAS*NRANKS_D3){
-        printf("#MPI%02d:%02d: NREPLICAS is different from nranks_world/nranks. Exiting now\n",mdi->replica_idx,mdi->myrank);
-        printf("#MPI%02d:%02d: NREPLICAS = %d, nranks_world/nranks = %d\n",NREPLICAS, mdi->nranks_world/mdi->nranks, mdi->replica_idx, mdi->nranks);
+        MPI_PRINTF0("NREPLICAS is different from nranks_world/nranks. Exiting now\n");
+        MPI_PRINTF1("NREPLICAS = %d, nranks_world/nranks = %d\n",NREPLICAS, mdi->nranks_world/mdi->nranks);
         exit(1);
     }
     
     if(verbosity_lv > 2){
-        printf("MPI%02d:%02d - Called MPI_Init\n",mdi->replica_idx,mdi->myrank);
+        MPI_PRINTF0("- Called MPI_Init\n");
     }
 
 
@@ -69,8 +69,7 @@ void init_multidev1D(dev_info * mdi)
 
     sprintf(mdi->myrankstr,"MPI%02d",mdi->myrank);
 
-    printf("#MPI%02d: of \"%02d\" tasks running on host \"%s\", local rank: %d, rankL: %d, rankR: %d\n",
-    mdi->myrank, mdi->nranks, mdi->processor_name, 
+    MPI_PRINTF1("of \"%02d\" tasks running on host \"%s\", local rank: %d, rankL: %d, rankR: %d\n", mdi->processor_name, 
     mdi->node_subrank, mdi->myrank_L, mdi->myrank_R); //SALAMINO
 
     mdi->myrank4int = xyzt_rank(mdi->myrank); // ALL RANKS
@@ -103,8 +102,8 @@ void init_multidev1D(dev_info * mdi)
     mdi->origin_0123[2]     = mdi->gl_loc_origin4int.d2;
     mdi->origin_0123[3]     = mdi->gl_loc_origin4int.d3;
     if(verbosity_lv > 2){
-        printf("MPI%02d - Finished init_multidev1D\n", mdi->myrank);   
-        printf("MPI%02d - Origin(%d,%d,%d,%d)",mdi->myrank,
+        MPI_PRINTF0("- Finished init_multidev1D\n");   
+        MPI_PRINTF1("- Origin(%d,%d,%d,%d)",
                 mdi->origin_0123[0],mdi->origin_0123[1],
                 mdi->origin_0123[2], mdi->origin_0123[3]);
    
@@ -121,7 +120,7 @@ void init_multidev1D(dev_info * mdi)
 void shutdown_multidev()
 {
 
-    printf("MPI%02d: Finalizing...\n",devinfo.myrank );
+    MPI_PRINTF0("Finalizing...\n" );
     MPI_Finalize();     
 
 }

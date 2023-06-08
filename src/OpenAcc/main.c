@@ -165,14 +165,15 @@ int main(int argc, char* argv[]){
   double mean_acceptance;
   int *acceptance_vector_old;
     
+  //TODO: in principle, these can be allocated on world master only (see src/OpenAcc/HPT_utilities.c)
   all_swap_vector=malloc(sizeof(int)*rep->replicas_total_number-1);
   acceptance_vector=malloc(sizeof(int)*rep->replicas_total_number-1);
   acceptance_vector_old=malloc(sizeof(int)*rep->replicas_total_number-1);
     
-  for(int i=0;i<rep->replicas_total_number-1;i++){
-    acceptance_vector[i]=0;
-    acceptance_vector_old[i]=0;
-    all_swap_vector[i]=0;
+  for(int lab=0;lab<rep->replicas_total_number-1;lab++){
+    acceptance_vector[lab]=0;
+    acceptance_vector_old[lab]=0;
+    all_swap_vector[lab]=0;
   }
 #endif
 
@@ -250,19 +251,18 @@ int main(int argc, char* argv[]){
   mem_alloc_extended();
  
   // single/double precision allocation
-  //TODO: extend print to all strings
-  printf("\n   MPI%02d:%02d - Memory allocation (double) : OK \n\n\n",devinfo.replica_idx,devinfo.myrank);
+  MPI_PRINTF0("- Memory allocation (double) : OK \n\n\n");
   if(inverter_tricks.useMixedPrecision || md_parameters.singlePrecMD){
     mem_alloc_core_f();
-    printf("\n  MPI%02d:%02d - Memory allocation (float) [CORE]: OK \n\n\n",devinfo.replica_idx,devinfo.myrank);
+    MPI_PRINTF0("- Memory allocation (float) [CORE]: OK \n\n\n");
   }
 
   if( md_parameters.singlePrecMD){
     mem_alloc_extended_f();
-    printf("\n  MPI%02d:%02d - Memory allocation (float) [EXTENDED]: OK \n\n\n",devinfo.replica_idx,devinfo.myrank);
+    MPI_PRINTF0("- Memory allocation (float) [EXTENDED]: OK \n\n\n");
   }
    
-  printf("\n  MPI%02d:%02d - Total allocated memory: %zu \n\n\n",devinfo.replica_idx,devinfo.myrank,max_memory_used);
+  MPI_PRINTF1("- Total allocated memory: %zu \n\n\n",max_memory_used);
   
 	gl_stout_rho=act_params.stout_rho;
 	gl_topo_rho=act_params.topo_rho;
@@ -327,8 +327,6 @@ int main(int argc, char* argv[]){
 #ifdef PAR_TEMP
     strcpy(mc_params.save_conf_name,aux_name_file);
 
-    //TODO: check consistency with rep->replicas_total_number and nranks_world/NRANKS_D3
-    
 		if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
     for(int ri=0; ri<rep->replicas_total_number; ++ri){
       rep->label[ri]=ri;
@@ -339,7 +337,6 @@ int main(int argc, char* argv[]){
     if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
 		
-		//#pragma acc update device(conf_acc[r:1][0:alloc_info.conf_acc_size])
 		#pragma acc update device(conf_acc[0:alloc_info.conf_acc_size])
 		if(md_parameters.singlePrecMD){
 			convert_double_to_float_su3_soa(conf_acc,conf_acc_f);
@@ -351,7 +348,6 @@ int main(int argc, char* argv[]){
 			}
 #endif
 			
-			//#pragma acc update host(conf_acc_f[r:1][0:alloc_info.conf_acc_size])
 			#pragma acc update host(conf_acc_f[0:alloc_info.conf_acc_size])
 		}
 #else
@@ -392,13 +388,9 @@ int main(int argc, char* argv[]){
 	
   double max_unitarity_deviation,avg_unitarity_deviation;
     
-//  for(int r=0;r<rep->replicas_total_number;r++){
-    {
-      check_unitarity_host(conf_acc,&max_unitarity_deviation,&avg_unitarity_deviation);
-      MPI_PRINTF1("Avg_unitarity_deviation on host: %e\n", avg_unitarity_deviation);
-      MPI_PRINTF1("Max_unitarity_deviation on host: %e\n", max_unitarity_deviation);
-    }
-
+  check_unitarity_host(conf_acc,&max_unitarity_deviation,&avg_unitarity_deviation);
+  MPI_PRINTF1("Avg_unitarity_deviation on host: %e\n", avg_unitarity_deviation);
+  MPI_PRINTF1("Max_unitarity_deviation on host: %e\n", max_unitarity_deviation);
 	
   // measures
     
@@ -422,12 +414,12 @@ int main(int argc, char* argv[]){
   iterations=malloc(sizeof(int)*rep->replicas_total_number);
     
   // inizialization to 0
-  for(int i=0;i<rep->replicas_total_number;i++){
-    accettate_metro[i]=0;
-    accettate_therm[i]=0;
-    iterations[i]=0;
-    accettate_therm_old[i]=0;
-    accettate_metro_old[i]=0;
+  for(int lab=0;lab<rep->replicas_total_number;lab++){
+    accettate_metro[lab]=0;
+    accettate_therm[lab]=0;
+    iterations[lab]=0;
+    accettate_therm_old[lab]=0;
+    accettate_metro_old[lab]=0;
   }
 	int swap_number=0;
 
@@ -631,11 +623,10 @@ int main(int argc, char* argv[]){
 		
 					// replicas update - hpt step
         
-//					for(int r=0;r<rep->replicas_total_number;r++)
          {
             int r=devinfo.replica_idx;
             int lab=rep->label[r];
-						printf("REPLICA %d (label %d):\n",r,lab);
+						printf("REPLICA %d (index %d):\n",lab,r);
 
 						// initial action
 			
@@ -645,7 +636,7 @@ int main(int argc, char* argv[]){
 #ifdef GAUGE_ACT_TLSM
 							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
 #endif
-							printf("ACTION BEFORE HMC STEP REPLICA %d (lab %d): %.15lg\n", r, lab, action);
+							printf("ACTION BEFORE HMC STEP REPLICA %d (idx %d): %.15lg\n", lab, r, action);
 						}
 
 						// HMC step
@@ -696,22 +687,17 @@ int main(int argc, char* argv[]){
 
 						if (verbosity_lv>10){
 							double action;
-							//action  = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc[r], aux_conf_acc, local_sums);
 							action  = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc, aux_conf_acc, local_sums);
 #ifdef GAUGE_ACT_TLSM
-							//action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc[r], aux_conf_acc, local_sums);
 							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
 #endif
-							printf("ACTION AFTER HMC STEP REPLICA %d (lab %d): %.15lg\n", r, lab, action);
+							printf("ACTION AFTER HMC STEP REPLICA %d (idx %d): %.15lg\n", lab, r, action);
 						}
 
 #ifdef PAR_TEMP
 						if(rep->replicas_total_number>1){
 							// conf swap
 							if (0==devinfo.myrank_world) {printf("CONF SWAP PROPOSED\n");}
-              //TODO: reimplement without explicit swap, but at the label level in world root
-							//All_Conf_SWAP(conf_acc,aux_conf_acc,local_sums, &def, &swap_number,all_swap_vector,acceptance_vector, rep);
-
               #pragma acc update host(conf_acc[0:alloc_info.conf_acc_size])
               manage_replica_swaps(conf_acc, aux_conf_acc, local_sums, &def, &swap_number,all_swap_vector,acceptance_vector,rep);
 
@@ -744,7 +730,6 @@ int main(int argc, char* argv[]){
 							swap_acc_file=fopen(acc_info->swap_file_name,"at");
 							if(!swap_acc_file){swap_acc_file=fopen(acc_info->swap_file_name,"wt");}
 
-              //TODO: send info to world master
 							fprintf(hmc_acc_file,"%d\t",conf_id_iter);
 							fprintf(swap_acc_file,"%d\t",conf_id_iter);
 							label_print(rep, file_label, conf_id_iter);
@@ -753,8 +738,7 @@ int main(int argc, char* argv[]){
 						for(int lab=0;lab<rep->replicas_total_number;lab++){
 							if(lab<rep->replicas_total_number-1){
 								mean_acceptance=(double)acceptance_vector[lab]/all_swap_vector[lab];
-                //TODO: make a gather of all acceptances into world master
-								if(0==devinfo.myrank_world){ printf("replica couple [labels: %d/%d]: proposed %d, accepted %d, mean_acceptance %f\n",lab,lab+1,all_swap_vector[lab],acceptance_vector[lab],mean_acceptance);}
+								printf("replica couple [labels: %d/%d]: proposed %d, accepted %d, mean_acceptance %f\n",lab,lab+1,all_swap_vector[lab],acceptance_vector[lab],mean_acceptance);
 								if(rep->replicas_total_number>1){
 									fprintf(swap_acc_file,"%d\t",acceptance_vector[lab]-acceptance_vector_old[lab]);}
 							}
@@ -897,7 +881,6 @@ int main(int argc, char* argv[]){
             }
   
 					if(conf_id_iter%mc_params.saveconfinterval==0){
-//						for(int r=0;r<rep->replicas_total_number;r++)
             {
               int r=devinfo.replica_idx;
 #ifdef PAR_TEMP        
@@ -1113,11 +1096,11 @@ int main(int argc, char* argv[]){
   } // closes if (0 != mc_params.ntraj)
     
   // saving gauge conf and RNG status to file
-//  for(int r=0;r<rep->replicas_total_number;r++)
   {
     int r=devinfo.replica_idx;
+    int lab=rep->label[r];
 #ifdef PAR_TEMP
-    snprintf(rep_str,20,"replica_%d",r); // initialize rep_str
+    snprintf(rep_str,20,"replica_%d",lab); // initialize rep_str
     strcat(mc_params.save_conf_name,rep_str); // append rep_str
 #endif
 		
@@ -1129,11 +1112,11 @@ int main(int argc, char* argv[]){
 #ifdef PAR_TEMP
     strcpy(mc_params.save_conf_name,aux_name_file);
 #endif
-	} // end replicas loop.
+	} // end replicas 
 	
 	if (debug_settings.SaveAllAtEnd){
 		MPI_PRINTF1("- Saving rng status in %s.\n", mc_params.RandGenStatusFilename);
-		saverand_tofile(mc_params.RandGenStatusFilename); //TODO: check logic
+		saverand_tofile(mc_params.RandGenStatusFilename);
 	}
 
   if(0 == devinfo.myrank && debug_settings.SaveAllAtEnd){
