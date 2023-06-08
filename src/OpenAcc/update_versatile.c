@@ -142,7 +142,6 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 	#pragma acc update device(ferm_phi_acc[0:alloc_info.NPS_tot])
 
 	gconf_as_fermionmatrix_f = conf_acc_f;
-	// ^^^ WARNING: this works only for sequential replicas updating. If you want to parallelize it, use conf_acc_f[replica_id].
 #ifdef STOUT_FERMIONS
 	// dilation using stouted dirac operator
 	// stouting... (already on device)
@@ -298,7 +297,6 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		// conversion double to float
 
 		su3_soa_f * tconf_acc_f = conf_acc_f;
-		// ^^^ WARNING: this works only for sequential replicas updating. If you want to parallelize it, use conf_acc_f[replica_id].
 
 		printf("Converting momenta...\n");
 		convert_double_to_float_thmat_soa(momenta,momenta_f);
@@ -585,8 +583,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 	if(metro==1){
 		if(accepted==1){
 			acc++;
-			printf("MPI%02d,ACCEPTED   ---> [acc/iter] = [%i/%i] \n",
-						 devinfo.myrank,acc,iterazioni);
+			MPI_PRINTF1("  ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
 			// configuration accepted set_su3_soa_to_su3_soa(arg1,arg2) ===> arg2=arg1;
 			set_su3_soa_to_su3_soa(tconf_acc,conf_acc_bkp);
 		}else{

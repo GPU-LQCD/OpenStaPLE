@@ -702,7 +702,7 @@ int main(int argc, char* argv[]){
 							//action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc[r], aux_conf_acc, local_sums);
 							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
 #endif
-							printf("ACTION AFTER HMC STEP REPLICA %d: %.15lg\n", r, action);
+							printf("ACTION AFTER HMC STEP REPLICA %d (lab %d): %.15lg\n", r, lab, action);
 						}
 
 #ifdef PAR_TEMP
@@ -711,13 +711,15 @@ int main(int argc, char* argv[]){
 							if (0==devinfo.myrank_world) {printf("CONF SWAP PROPOSED\n");}
               //TODO: reimplement without explicit swap, but at the label level in world root
 							//All_Conf_SWAP(conf_acc,aux_conf_acc,local_sums, &def, &swap_number,all_swap_vector,acceptance_vector, rep);
+
+              #pragma acc update host(conf_acc[0:alloc_info.conf_acc_size])
               manage_replica_swaps(conf_acc, aux_conf_acc, local_sums, &def, &swap_number,all_swap_vector,acceptance_vector,rep);
 
 							if (0==devinfo.myrank_world) {printf("Number of accepted swaps: %d\n", swap_number);}       
 							#pragma acc update host(conf_acc[0:rep->replicas_total_number][0:8])
                 
 							// periodic conf translation
-              if(r==0){
+              if(lab==0){
                 trasl_conf(conf_acc,auxbis_conf_acc);
               }
 						}
