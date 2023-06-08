@@ -15,6 +15,8 @@ double calc_loc_plaquettes_nnptrick(__restrict const su3_soa * const u,
 																		const int mu, const int nu);
 void calc_loc_staples_nnptrick_all(__restrict const su3_soa * const u,
 																	 __restrict su3_soa * const loc_stap);
+void calc_loc_staples_nnptrick_all_onlyferms(__restrict const su3_soa * const u,
+																						 __restrict su3_soa * const loc_stap);
 void calc_loc_staples_nnptrick_all_only_even(__restrict const su3_soa * const u,
 																						 __restrict su3_soa * const loc_stap);
 void calc_loc_staples_nnptrick_all_only_odd(__restrict const su3_soa * const u,

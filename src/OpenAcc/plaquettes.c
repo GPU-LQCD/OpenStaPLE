@@ -192,6 +192,73 @@ void calc_loc_staples_nnptrick_all(__restrict const su3_soa * const u,
   */
 } // closes routine
 
+// routine to compute the staples for each site on a given plane mu-nu and sum the result to the local stored staples
+void calc_loc_staples_nnptrick_all_onlyferms(__restrict const su3_soa * const u,
+																						 __restrict su3_soa * const loc_stap)
+{
+  //       r+mu-nu  r+mu   r+mu+nu
+  //          +<-----+----->+
+  //          |  1L  ^  1R  |
+  // mu    2L |      |      | 2R
+  // ^        V  3L  |  3R  V
+  // |        +----->+<-----+
+  // |       r-nu    r     r+nu
+  // +---> nu       
+  //            r is idxh in the following      
+
+	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
+	#pragma acc loop independent gang(STAPGANG3)
+  for(int d3=D3_HALO; d3<nd3-D3_HALO; d3++){
+		#pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
+    for(int d2=0; d2<nd2; d2++){
+      for(int d1=0; d1<nd1; d1++){
+				for(int d0=0; d0<nd0; d0++){
+					const int idxh = snum_acc(d0,d1,d2,d3); // r
+					const int parity = (d0+d1+d2+d3) % 2;
+					#pragma acc loop seq
+					for(int mu=0; mu<4; mu++){
+						const int dir_link = 2*mu + parity;
+						#pragma acc loop seq
+						for(int iter=0; iter<3; iter++){
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
+            
+							#pragma acc cache (nnp_openacc[idxh:8])
+
+							const int dir_mu_2R = 2*mu + !parity;
+							const int dir_mu_2L = 2*mu + !parity;
+							const int idx_pmu = nnp_openacc[idxh][mu][parity]; // r+mu
+							#pragma acc cache (nnm_openacc[idx_pmu:8])
+
+							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_3R = 2*nu +  parity;
+							const int dir_nu_1L = 2*nu +  parity;
+							const int dir_nu_3L = 2*nu + !parity;
+							const int idx_pnu = nnp_openacc[idxh][nu][parity]; // r+nu
+
+							// computation of the Right part of the staple
+							mat1_times_conj_mat2_times_conj_mat3_addto_mat4_absent_stag_phases_onlyferms(&u[dir_nu_1R], idx_pmu,
+																																													 &u[dir_mu_2R], idx_pnu,
+																																													 &u[dir_nu_3R], idxh,
+																																													 &loc_stap[dir_link], idxh);
+
+							const int idx_mnu = nnm_openacc[idxh][nu][parity]; // r-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity]; // r+mu-nu
+
+							// computation of the Left part of the staple
+							conj_mat1_times_conj_mat2_times_mat3_addto_mat4_absent_stag_phases_onlyferms(&u[dir_nu_1L], idx_pmu_mnu,
+																																													 &u[dir_mu_2L], idx_mnu,
+																																													 &u[dir_nu_3L], idx_mnu,
+																																													 &loc_stap[dir_link], idxh);
+						} // iter
+					} // mu
+				} // d0
+      } // d1
+    } // d2
+  } // d3
+} // closes routine
+
+
 #ifdef MULTIDEVICE
 void calc_loc_staples_nnptrick_all_bulk(__restrict const su3_soa * const u,
 																				__restrict su3_soa * const loc_stap )
