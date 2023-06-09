@@ -592,7 +592,7 @@ void rw_iterate_on_global_sites_lx_xyzt_axis_ordering(void (*single_element_rw)(
 																						else {
 																							x = xtmp;
 																							parity = (x+y+z+t)%2; // parity = (d0+d1+d2+d3)%2;
-#if defined(MULTIDEVICE) && defined(GAUGE_ACT_WILSON)
+#if (NRANKS_D3 > 1) && defined(GAUGE_ACT_WILSON)
 																							parity = !parity;
 #endif
 																						}
@@ -600,7 +600,7 @@ void rw_iterate_on_global_sites_lx_xyzt_axis_ordering(void (*single_element_rw)(
 																						int d[4];
 																						for(dir = 0; dir<4;dir++) d[dir] = xs[geom_par.d0123map[dir]];
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 																						int idxh_machine = gl_to_gl_snum(d[0],d[1],d[2],d[3]);
 #else
 																						int idxh_machine = snum_acc(d[0],d[1],d[2],d[3]);

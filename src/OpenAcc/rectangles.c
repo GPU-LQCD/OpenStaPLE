@@ -1052,7 +1052,7 @@ void calc_loc_improved_staples_typeABC_nnptrick_all(__restrict const su3_soa * c
   } // d3
 } // closes routine
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 void calc_loc_improved_staples_typeA_nnptrick_all_bulk(__restrict const su3_soa * const u,
 																											 __restrict su3_soa * const loc_stap )
 {
@@ -1900,7 +1900,7 @@ double calc_rettangolo_soloopenacc(__restrict const su3_soa * const tconf_acc,
       temp  += calc_loc_rectangles_1x2_nnptrick(tconf_acc,local_plaqs,tr_local_plaqs,mu,nu);
     }
   }
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
   MPI_Allreduce((void*)&temp,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else

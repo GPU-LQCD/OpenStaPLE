@@ -160,7 +160,7 @@ void acc_Deo(__restrict const su3_soa * const u,
 						 __restrict const vec3_soa * const in,
 						 __restrict const double_soa * const backfield)
 {
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	if(devinfo.async_comm_fermion){
 
 #if defined(USE_MPI_CUDA_AWARE) || defined(__GNUC__)
@@ -215,7 +215,7 @@ void acc_Doe(__restrict const su3_soa * const u,
 						 __restrict const vec3_soa * const in,
 						 __restrict const double_soa * const backfield)
 {
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	if(devinfo.async_comm_fermion){
 
 #if defined(USE_MPI_CUDA_AWARE) || defined(__GNUC__)

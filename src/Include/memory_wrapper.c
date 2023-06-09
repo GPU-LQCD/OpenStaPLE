@@ -44,7 +44,7 @@ void free_wrapper(void *memptr)
   if(all==NULL)
     {
       fprintf(stderr,"\n  MPI%02d - Failed to find pointer %p in the list while freeing \n\n\n",devinfo.myrank,memptr);
-      MPI_Abort(devinfo.mpi_comm,0);
+      MPI_Abort(MPI_COMM_WORLD,0);
     }
   
   memory_used-=all->size;

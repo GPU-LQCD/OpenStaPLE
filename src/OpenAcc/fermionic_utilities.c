@@ -25,7 +25,7 @@
 
 #include <stdlib.h>
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 #include <mpi.h>
 #include "../Mpi/multidev.h"
 
@@ -120,7 +120,7 @@ double l2norm2_global(const __restrict vec3_soa * const in_vect1)
 }
 
 
-#else // no MULTIDEVICE
+#else // no NRANKS_D3 > 1
 
 
 d_complex scal_prod_global(const __restrict vec3_soa * in_vect1,
@@ -174,7 +174,7 @@ double l2norm2_global( __restrict  const vec3_soa * in_vect1 )
 	return resR;
 }
 
-#endif
+#endif // NRANKS_D3 > 1
 
 // starting from here, only "embarassingly parallel" functions, not requiring any reduction.
 void combine_in1xfactor_plus_in2(__restrict const vec3_soa * in_vect1,

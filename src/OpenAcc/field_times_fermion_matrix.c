@@ -206,7 +206,7 @@ void acc_Deo_wf( __restrict const su3_soa * const u,
 								 __restrict const double_soa* field_im)   // or i dphi/dbz 
 {
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	acc_Deo_wf_unsafe(u, out, in, phases, field_re,field_im);
 	communicate_fermion_borders(out); // contains host-device communications
 #else 
@@ -224,7 +224,7 @@ void acc_Doe_wf( __restrict const su3_soa * const u,
 								 __restrict const double_soa* field_im)   // or i dphi/dbz 
 {
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	acc_Doe_wf_unsafe(u, out, in, phases,field_re,field_im);
 	communicate_fermion_borders(out); // contains host-device communications
 #else 

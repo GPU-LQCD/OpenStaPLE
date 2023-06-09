@@ -204,7 +204,7 @@ d_complex polyakov_loop0(__restrict const su3_soa * const u)
     free(loopplk0);
 
     double trr,tri;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
      MPI_Allreduce((void*)&rel,(void*)&trr,
              1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
@@ -288,7 +288,7 @@ d_complex polyakov_loop1(__restrict const su3_soa * const u)
     free(loopplk1);
 
     double trr,tri;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
      MPI_Allreduce((void*)&rel,(void*)&trr,
              1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
@@ -370,7 +370,7 @@ d_complex polyakov_loop2(__restrict const su3_soa * const u)
 
 
     double trr,tri;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
      MPI_Allreduce((void*)&rel,(void*)&trr,
              1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
@@ -453,7 +453,7 @@ d_complex polyakov_loop3(__restrict const su3_soa * const u)
     free(loopplk3);
 
     double trr,tri;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
      MPI_Allreduce((void*)&rel,(void*)&trr,
              1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,

@@ -36,7 +36,7 @@ void stout_wrapper(__restrict const su3_soa * const tconf_acc,
 	if(stoutsteps > 0){
 		stout_isotropic(tconf_acc, tstout_conf_acc_arr, auxbis_conf_acc, 
 										glocal_staples, gipdot, istopo);
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 		communicate_su3_borders(tstout_conf_acc_arr,TRANSFER_THICKNESS);
 #endif
 		if(verbosity_lv > 4){
@@ -53,7 +53,7 @@ void stout_wrapper(__restrict const su3_soa * const tconf_acc,
 			stout_isotropic(&(tstout_conf_acc_arr[8*(stoutlevel-1)]),
 											&(tstout_conf_acc_arr[8*stoutlevel]),auxbis_conf_acc,
 											glocal_staples,  gipdot, istopo);
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 			communicate_su3_borders(
 															&(tstout_conf_acc_arr[8*stoutlevel]),TRANSFER_THICKNESS);
 #endif

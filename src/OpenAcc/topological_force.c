@@ -159,7 +159,7 @@ void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, dou
     printf("\t\t\tMPI%02d - four_leaves(leaves,u)\n",devinfo.myrank);
   
   // compute leaves
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	communicate_su3_borders(u, GAUGE_HALO);  
 #endif
 
@@ -173,7 +173,7 @@ void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, dou
   
   antihermatize_unsafe(leaves);
   
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	communicate_gl3_borders(leaves, GAUGE_HALO);  
 #endif
 

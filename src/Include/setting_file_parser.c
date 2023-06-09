@@ -790,6 +790,7 @@ int read_replicas_numbers(rep_info * re,char filelines[MAXLINES][MAXLINELENGTH],
 #ifndef PAR_TEMP
 	re->replicas_total_number = 1;
 	alloc_info.num_replicas = re->replicas_total_number;
+	re->label=malloc(alloc_info.num_replicas*sizeof(int));
 #else      
 	alloc_info.num_replicas=re->replicas_total_number;
 	par_info rp1[3];

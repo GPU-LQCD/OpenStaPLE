@@ -106,7 +106,8 @@ void init_k(su3_soa * conf, double c_r, int def_axis, int * def_vec, defect_info
 					z = d[geom_par.zmap];
 					t = d[geom_par.tmap];
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+
 					x+= devinfo.origin_0123[geom_par.xmap]
 						- devinfo.halo_widths0123[geom_par.xmap]; // x is now physical x-coordinate for every MPI Rank, same for y,z and t
 					y+= devinfo.origin_0123[geom_par.ymap]
@@ -132,7 +133,7 @@ void init_k(su3_soa * conf, double c_r, int def_axis, int * def_vec, defect_info
 					// check if (x,y,z,t) is on defect
 					condition = (x >= x_mind) && (y >= y_mind) && (z >= z_mind) && (t >= t_mind) && (x < x_maxd) && (y < y_maxd) && (z < z_maxd) && (t < t_maxd);
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 					// check if site is NOT on the right halo (must use logic coords to this end)
 					condition_2 = ( d[0]<=nd[0]-devinfo.halo_widths0123[0] && d[1]<=nd[1]-devinfo.halo_widths0123[1]
 													&& d[2]<=nd[2]-devinfo.halo_widths0123[2] && d[3]<=nd[3]-devinfo.halo_widths0123[3]);
@@ -356,7 +357,7 @@ double calc_S_soloopenacc_defect(__restrict  su3_soa * const tconf_acc,
     result += C_ONE * calc_S_Symanzik_defect(tconf_acc,local_plaqs,tr_local_plaqs,mu,nu,def);
 #endif
   }
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
   MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
@@ -374,21 +375,22 @@ void compute_S_of_replicas(
   
   // reduce on all world ranks
   double S_val[NREPLICAS];
-  for(int r=0; r<NREPLICAS; ++r){
-    S_val[r]=0.0;
+  for(int lab=0; lab<NREPLICAS; ++lab){
+    S_val[lab]=0.0;
   }
   //double S_prev_loc=(double)(devinfo.nranks*devinfo.replica_idx+devinfo.myrank); 
   double S_loc=calc_S_soloopenacc_defect(tconf_acc,local_plaq, tr_local_plaqs,def);
 
   // master decides swap attempts and send command of actions recomputation
   
-  MPI_Barrier(MPI_COMM_WORLD);
-
-
   int rep_idx=devinfo.replica_idx;
 
+#if NRANKS_D3 > 1
   MPI_Reduce((void*)&S_loc,(void*)&(S_val[rep->label[rep_idx]]), 1,MPI_DOUBLE, MPI_SUM, 0, devinfo.mpi_comm);
-  
+#else
+	S_val[rep->label[rep_idx]]=S_loc;
+#endif
+	
   for(int lab=0; lab<NREPLICAS; ++lab){
     MPI_Reduce(&S_val[lab], &S_arr[lab], 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
   }
@@ -881,7 +883,7 @@ void manage_replica_swaps(
 void trasl_conf( __restrict const su3_soa *  const tconf_acc,
 								 __restrict const su3_soa *  const taux_conf){
     
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
   communicate_su3_borders(tconf_acc, GAUGE_HALO);
 	#pragma acc update self(tconf_acc[0:8])
 #endif
@@ -906,7 +908,7 @@ void trasl_conf( __restrict const su3_soa *  const tconf_acc,
   set_su3_soa_to_su3_soa_trasl( taux_conf,tconf_acc, dir);
 	#pragma acc update device(tconf_acc[0:8])  
     
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
   communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 	#pragma acc update self(tconf_acc[0:8])
 #endif

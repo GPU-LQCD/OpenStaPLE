@@ -2,6 +2,8 @@
 # Please do not write things that can be mistaken for the 
 # tile parameters.
 
+NREPLICAS 1
+
 LOC_N0 32 
 LOC_N1 32 
 LOC_N2 32 

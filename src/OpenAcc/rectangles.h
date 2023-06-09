@@ -46,7 +46,7 @@ void calc_loc_improved_staples_typeC_nnptrick_all(__restrict const su3_soa * con
 void calc_loc_improved_staples_typeABC_nnptrick_all(__restrict const su3_soa * const u,__restrict su3_soa * const loc_stap );
 
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 void calc_loc_improved_staples_typeA_nnptrick_all_bulk(__restrict const su3_soa * const u,
 																											 __restrict su3_soa * const loc_stap );
 

@@ -27,7 +27,7 @@ static inline int save_conf(global_su3_soa * const conf_rw, const char* nomefile
 														int conf_id_iter, int use_ildg)
 {
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 	if(devinfo.myrank != 0){
 		printf("MPI%02d: Rank is not allowed to use this function!\n",devinfo.myrank );
 		printf("ERROR: %s:%d\n",__FILE__, __LINE__);
@@ -55,7 +55,7 @@ static inline void save_conf_wrapper(su3_soa* conf, const char* nomefile,
 	printf("MPI%02d - Saving whole configuration...\n", devinfo.myrank);
 	int writeOutcome;
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 
 	if(devinfo.myrank == 0){
 		int irank;
@@ -95,7 +95,7 @@ static inline int read_conf(global_su3_soa * conf, const char* nomefile,
 														int * conf_id_iter, int use_ildg)
 {
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 	if(devinfo.myrank != 0){
 		printf("MPI%02d: Rank is not allowed to use this function!\n",devinfo.myrank );
 		printf("ERROR: %s:%d\n",__FILE__, __LINE__);
@@ -123,7 +123,7 @@ static inline int read_conf_wrapper(su3_soa* conf, const char* nomefile,
 {
 
 	int error =  0;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 
 	if(devinfo.myrank == 0){
 		if(verbosity_lv > 2)

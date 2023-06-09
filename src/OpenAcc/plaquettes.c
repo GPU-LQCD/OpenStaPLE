@@ -259,7 +259,7 @@ void calc_loc_staples_nnptrick_all_onlyferms(__restrict const su3_soa * const u,
 } // closes routine
 
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 void calc_loc_staples_nnptrick_all_bulk(__restrict const su3_soa * const u,
 																				__restrict su3_soa * const loc_stap )
 {

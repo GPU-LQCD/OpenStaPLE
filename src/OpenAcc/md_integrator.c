@@ -53,7 +53,7 @@
 #include "../Mpi/communications.h"
 #endif
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 
 #if defined(USE_MPI_CUDA_AWARE) || defined(__GNUC__)
 void multistep_2MN_gauge_async_bloc(su3_soa *tconf_acc_old, su3_soa *tconf_acc_new,
@@ -314,7 +314,7 @@ void multistep_2MN_gauge_bloc(su3_soa *tconf_acc,
 																	deltas_Omelyan,4);
 	gettimeofday ( &t[3], NULL );
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	communicate_su3_borders(tconf_acc,GAUGE_HALO);
 #endif
 	gettimeofday ( &t[4], NULL );
@@ -570,7 +570,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 					 devinfo.myrank, md, md_parameters.no_md);
 		// step for the Q
 		// Q' = exp[dt/2 *i P] Q
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 //#ifdef MULTIDEVICE
 		if(devinfo.async_comm_gauge)
 			multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
 		else 
@@ -603,7 +603,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 
 		// Step for the Q
 		// Q' = exp[dt/2 *i P] Q
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 //#ifdef MULTIDEVICE
 		if(devinfo.async_comm_gauge)
 			multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
 		else
@@ -657,7 +657,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 				 devinfo.myrank,md_parameters.no_md);
 	// step for the Q
 	// Q' = exp[dt/2 *i P] Q
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 //#ifdef MULTIDEVICE
 	if(devinfo.async_comm_gauge)
 		multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
 	else
@@ -695,7 +695,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
     
 	// step for the Q
 	// Q' = exp[dt/2 *i P] Q
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 //#ifdef MULTIDEVICE
 	if(devinfo.async_comm_gauge)
 		multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
 	else 

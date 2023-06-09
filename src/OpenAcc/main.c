@@ -98,6 +98,8 @@ int main(int argc, char* argv[]){
 #ifdef MULTIDEVICE
 	pre_init_multidev1D(&devinfo);
 	gdbhook();
+#else
+	devinfo.replica_idx=0;
 #endif
   
   if(0==devinfo.myrank_world){
@@ -296,11 +298,13 @@ int main(int argc, char* argv[]){
 #endif
 	
 //  for(int r=0;r<rep->replicas_total_number;r++){
-    {
-    int r=devinfo.replica_idx;
+	{
 #ifdef PAR_TEMP
+    int r=devinfo.replica_idx;
     snprintf(rep_str,20,"replica_%d",r);
 		strcat(mc_params.save_conf_name,rep_str);
+#else
+		int r=0;
 #endif
 		
     if(debug_settings.do_norandom_test){
@@ -324,16 +328,17 @@ int main(int argc, char* argv[]){
 				conf_id_iter=0;
       }
     }
+
+		// if not parallel tempering, this set label[0]=0. This is right if parallel tempering is off
+    for(int ri=0; ri<rep->replicas_total_number; ++ri)
+      rep->label[ri]=ri;
+
 #ifdef PAR_TEMP
     strcpy(mc_params.save_conf_name,aux_name_file);
-
 		if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
-    for(int ri=0; ri<rep->replicas_total_number; ++ri){
-      rep->label[ri]=ri;
-    }
 		init_k(conf_acc,rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,0);
 		
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
     if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
 		
@@ -341,7 +346,7 @@ int main(int argc, char* argv[]){
 		if(md_parameters.singlePrecMD){
 			convert_double_to_float_su3_soa(conf_acc,conf_acc_f);
 			//^^ NOTE: doing this because a K initialization for su3_soa_f doesn't exist. Please create it.
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 			if(devinfo.async_comm_gauge){
 				convert_double_to_float_su3_soa(&conf_acc[8],&conf_acc_f[8]);
 				//^^ NOTE: doing this because a K initialization for su3_soa_f doesn't exist. Please create it.
@@ -433,7 +438,7 @@ int main(int argc, char* argv[]){
     
   printf("PLAQUETTE END\n");
 
-#if !defined(GAUGE_ACT_WILSON) || !defined(MULTIDEVICE)
+#if !defined(GAUGE_ACT_WILSON) || !(NRANKS_D3 > 1)
   if(devinfo.replica_idx==0){
     rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums);
     MPI_PRINTF1("Therm_iter %d Rettangolo = %.18lf \n", conf_id_iter,rect/GL_SIZE/6.0/3.0/2.0);
@@ -446,58 +451,7 @@ int main(int argc, char* argv[]){
     poly =  (*polyakov_loop[geom_par.tmap])(conf_acc);
     MPI_PRINTF1("Therm_iter %d Polyakov Loop = (%.18lf, %.18lf)  \n", conf_id_iter,creal(poly),cimag(poly));
   }
-
-	// conf swap debug routine
-
-	/*printf("SWAP_DEBOIAG_GREPPA_QUI\n");
-		for(int i=0; i<(rep->replicas_total_number-1); i++) {
-		int rep_indx1=i;
-		int rep_indx2=i+1;
-		double delta_S_STUPID=0.0;
-
-		// action old
-		double S_1 = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc[rep_indx1], aux_conf_acc, local_sums);
-		double S_2 = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc[rep_indx2], aux_conf_acc, local_sums);
-		#ifdef GAUGE_ACT_TLSM
-		S_1 += - C_ONE * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc[rep_indx1], aux_conf_acc, local_sums);
-		S_2 += - C_ONE * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc[rep_indx2], aux_conf_acc, local_sums);
-		#endif
-		delta_S_STUPID -= (S_1 + S_2);  
-
-		// swap conf
-		replicas_swap(conf_acc[rep_indx1], conf_acc[rep_indx2], rep_indx1, rep_indx2, rep);
-		#pragma acc update device(conf_acc[0:rep->replicas_total_number][0:8])
-
-		// action new
-		S_1 = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc[rep_indx1], aux_conf_acc, local_sums);
-		S_2 = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc[rep_indx2], aux_conf_acc, local_sums);
-		#ifdef GAUGE_ACT_TLSM
-		S_1 += - C_ONE * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc[rep_indx1], aux_conf_acc, local_sums);
-		S_2 += - C_ONE * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc[rep_indx2], aux_conf_acc, local_sums);
-		#endif
-		delta_S_STUPID += (S_1 + S_2);
-
-		// go back
-		replicas_swap(conf_acc[rep_indx1], conf_acc[rep_indx2], rep_indx1, rep_indx2, rep);
-		#pragma acc update device(conf_acc[0:rep->replicas_total_number][0:8])
-
-		// compute delta_S_SWAP smart
-		double delta_S_SWAP = calc_Delta_S_soloopenacc_SWAP(conf_acc[rep_indx1], conf_acc[rep_indx2], aux_conf_acc, local_sums, &def);
-
-		// compare
-		if(0==devinfo.myrank) printf("(%d<->%d) %.15lg %.15lg\n", rep_indx1, rep_indx1+1, delta_S_SWAP, delta_S_STUPID);
-		}
-
-		// shut down program
-		mem_free_core();
-		mem_free_extended();
-		#ifdef MULTIDEVICE
-		shutdown_multidev();
-		#endif
-		exit(1);*/
-
-	// end debug
-
+	
   //Here we are in Jarzynski mode.
     
   if(0 == mc_params.ntraj && 0 == mc_params.JarzynskiMode ){ // measures only
@@ -511,7 +465,7 @@ int main(int argc, char* argv[]){
       printf("Gauge Measures:\n");
       plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
 
-#if !defined(GAUGE_ACT_WILSON) || !defined(MULTIDEVICE)
+#if !defined(GAUGE_ACT_WILSON) || !(NRANKS_D3 > 1)
       rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums);
 #else
       MPI_PRINTF0("multidevice rectangle computation with Wilson action not implemented\n");
@@ -660,8 +614,10 @@ int main(int argc, char* argv[]){
 //              MPI_PRINTF1("before allreduce: accettate_which[%d][%d]=%d\n",which_mode,labp,accettate_which[which_mode][labp]);
 //            }
 
+#ifdef PAR_TEMP
             MPI_Allreduce(MPI_IN_PLACE,(void*)&(accettate_which[which_mode][0]),rep->replicas_total_number,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
-            //TODO: check whether multiples of salamino slices 
+#endif
+						//TODO: check whether multiples of salamino slices 
             
 //            //XXX: debug!
 //            for(int labp=0; labp<rep->replicas_total_number; ++labp){
@@ -679,10 +635,9 @@ int main(int argc, char* argv[]){
 								printf("Estimated HMC acceptance for this run [replica %d (lab %d)]: %f +- %f\n. Iterations: %d\n",r,lab,acceptance, acc_err, iterations[lab]);
 							}
 						}
-
-						#pragma acc update host(conf_acc[0:8])
+#ifdef PAR_TEMP
             MPI_Allreduce(MPI_IN_PLACE,(void*)&iterations[0],rep->replicas_total_number,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
-
+#endif
 						// final action
 
 						if (verbosity_lv>10){
@@ -702,14 +657,14 @@ int main(int argc, char* argv[]){
               manage_replica_swaps(conf_acc, aux_conf_acc, local_sums, &def, &swap_number,all_swap_vector,acceptance_vector,rep);
 
 							if (0==devinfo.myrank_world) {printf("Number of accepted swaps: %d\n", swap_number);}       
-							#pragma acc update host(conf_acc[0:rep->replicas_total_number][0:8])
+							#pragma acc update host(conf_acc[0:8])
                 
 							// periodic conf translation
               if(lab==0){
                 trasl_conf(conf_acc,auxbis_conf_acc);
               }
 						}
-						#pragma acc update host(conf_acc[0:rep->replicas_total_number][0:8])
+						#pragma acc update host(conf_acc[0:8])
 #endif
 					}
 
@@ -768,7 +723,7 @@ int main(int argc, char* argv[]){
             printf("===========GAUGE MEASURING============\n");
               
             plq  = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
-#if !defined(GAUGE_ACT_WILSON) || !defined(MULTIDEVICE)
+#if !defined(GAUGE_ACT_WILSON) || !(NRANKS_D3 > 1)
             rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums);
 #else
             MPI_PRINTF0("multidevice rectangle computation with Wilson action not implemented\n");
@@ -1084,8 +1039,8 @@ int main(int argc, char* argv[]){
 						mc_params.run_condition = RUN_CONDITION_TERMINATE;
 					}
         }
-#ifdef MULTIDEVICE
 
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
         MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,devinfo.mpi_comm);
         MPI_PRINTF1("- Broadcast of run condition %d from master...\n", mc_params.run_condition);
         MPI_Bcast((void*)&(mc_params.next_gps),1,MPI_INT,0,devinfo.mpi_comm);

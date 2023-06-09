@@ -43,7 +43,7 @@ void calc_u1_phases_unb_no2pi(double_soa * phases,bf_param bf_pars,
 
 	}
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 
 	printf("MPI%02d: Origin coordinates: (x=%02d y=%02d z=%02d t=%02d)\n",
 				 devinfo.myrank ,  devinfo.origin_0123[geom_par.xmap],
@@ -70,7 +70,7 @@ void calc_u1_phases_unb_no2pi(double_soa * phases,bf_param bf_pars,
 																				z = d[geom_par.zmap];int tnz = geom_par.gnz;
 																				t = d[geom_par.tmap];int tnt = geom_par.gnt;
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 																				x+= devinfo.origin_0123[geom_par.xmap]
 																					- devinfo.halo_widths0123[geom_par.xmap];  
 																				y+= devinfo.origin_0123[geom_par.ymap]

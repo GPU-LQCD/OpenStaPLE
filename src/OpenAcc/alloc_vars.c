@@ -124,7 +124,7 @@ void mem_alloc_core(){
 
     
 	alloc_info.conf_acc_size = 8;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
 	if(devinfo.async_comm_gauge) alloc_info.conf_acc_size *=2 ; 
 #endif
 

@@ -86,7 +86,7 @@ void generate_vec3_soa_gauss(__restrict vec3_soa * const vect)
 																							vect->c2[t]=d_complex_gauss();
 																						}
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	communicate_fermion_borders_hostonly(vect);
 #endif
 }
@@ -203,7 +203,7 @@ void generate_Conf_cold(__restrict su3_soa * const conf,double factor)
 																								single_gl3_into_su3_soa(&conf[mu],t,&aux);
 
 																							}
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	communicate_su3_borders_hostonly(conf, HALO_WIDTH);
 #endif
 
@@ -243,7 +243,7 @@ void generate_vec3_soa_z2noise(__restrict vec3_soa * const vect)
 																								vect->c2[t]= -1.0 + 0.0*I;
 																							}
 																						}
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
 	communicate_fermion_borders_hostonly(vect);
 #endif
 
