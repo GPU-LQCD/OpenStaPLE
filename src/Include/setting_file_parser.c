@@ -673,7 +673,7 @@ int read_device_setting(dev_info * di,char filelines[MAXLINES][MAXLINELENGTH], i
 	const char nranks_read_comment[] = "# NRanks has been set at make time with the NR3 variable.";
 
 	par_info tp[]= {
-#ifndef MULTIDEVICE        
+#if !(NRANKS_D3 > 1)
 									(par_info){(void*) &(di->single_dev_choice),TYPE_INT,"device_choice",    NULL,                                 NULL},
 									(par_info){(void*) IGNORE_IT,               TYPE_INT,"AsyncFermionComms",(const void*) &async_comm_fermion_def,NULL},
 									(par_info){(void*) IGNORE_IT,               TYPE_INT,"AsyncGaugeComms",  (const void*) &async_comm_gauge_def,  NULL},
