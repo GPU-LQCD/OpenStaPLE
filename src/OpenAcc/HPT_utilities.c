@@ -742,7 +742,7 @@ void manage_replica_swaps(
     MPI_Bcast((void*)&swap_order,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
     int accepted=0;
-    int i_counter, j_counter; // indexes, not labels
+    int i_counter, j_counter; // labels, not indexes
     int rep_lab1,rep_lab2;
     for(i_counter=0;i_counter<replicas_number-1;i_counter++){
       // manages each pairs serially in a chained fashion
@@ -755,12 +755,12 @@ void manage_replica_swaps(
 
       if(swap_order<=0.5){ 
 //        MPI_PRINTF0("Swap order: 0->N_r-1\n"); //
-        rep_lab1=hpt_params->label[i_counter];
-        rep_lab2=hpt_params->label[i_counter+1];
+        rep_lab1=i_counter;
+        rep_lab2=i_counter+1;
       }else{
 //        MPI_PRINTF0("Swap order: N_r-1->0\n");
-        rep_lab1=hpt_params->label[replicas_number-i_counter-1];
-        rep_lab2=hpt_params->label[replicas_number-i_counter-2];
+        rep_lab1=replicas_number-i_counter-1;
+        rep_lab2=replicas_number-i_counter-2;
       }
 
 //        if(verbosity_lv>4) printf("proposing swap %d %d\n",i_counter,i_counter+1);      
@@ -806,10 +806,10 @@ void manage_replica_swaps(
 
       if (0==devinfo.myrank_world){
         // compute acceptance:
-        double Delta_S_SWAP =  S_arr_next[rep_lab1]
+        double Delta_S_SWAP =  -(S_arr_next[rep_lab1]
                               +S_arr_next[rep_lab2]
                               -S_arr_prev[rep_lab1]
-                              -S_arr_prev[rep_lab2];
+                              -S_arr_prev[rep_lab2]);
         accepted=metro_SWAP_worldmaster(Delta_S_SWAP);
         printf("DELTA_S_SWAP(lab1=%d,lab2=%d):%.15lg\n", rep_lab1, rep_lab2, Delta_S_SWAP);
         //if(verbosity_lv>8) printf("DELTA_S_SWAP(r1=%d,r2=%d):%.15lg\n",
