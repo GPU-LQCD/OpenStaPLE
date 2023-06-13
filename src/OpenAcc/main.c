@@ -660,6 +660,7 @@ int main(int argc, char* argv[]){
 							#pragma acc update host(conf_acc[0:8])
                 
 							// periodic conf translation
+              lab=rep->label[devinfo.replica_idx];
               if(lab==0){
                 trasl_conf(conf_acc,auxbis_conf_acc);
               }
