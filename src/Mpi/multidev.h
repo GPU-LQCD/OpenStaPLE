@@ -20,7 +20,6 @@ typedef struct dev_info_t{
 
 #ifdef MULTIDEVICE
     MPI_Comm mpi_comm;
-    MPI_Comm mpi_comm_salamino; //TODO: test if really necessary
     int async_comm_fermion;
     int async_comm_gauge;
 

@@ -490,7 +490,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 				recombine_shifted_vec3_to_vec3(ferm_shiftmulti_acc, &(ferm_chi_acc[ps_index]), &(ferm_phi_acc[ps_index]),&(fermions_parameters[iflav].approx_li));
 			}
 		} // end iflav
-		printf(" MPI%02d - Final Action Computed : OK \n", devinfo.myrank);
+		MPI_PRINTF0("- Final Action Computed : OK \n")
 
 		// I should not modify the action computation...well actually yes. I Should modify the way action is computed.
 		// I have only to change the gauge action
@@ -537,17 +537,12 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		// delta_S = action_new - action_old
 		delta_S  = - (-action_in+action_mom_in+action_ferm_in+action_topo_in) + (-action_fin+action_mom_fin+action_ferm_fin+action_topo_fin);
 		if(verbosity_lv > 2 && 0 == devinfo.myrank ){
-			printf("MPI%02d-iterazione %i:  Gauge_ACTION  (in and out) = %.18lf , %.18lf\n",
-						 devinfo.myrank,iterazioni,-action_in,-action_fin);
-			printf("MPI%02d-iterazione %i:  Topol_ACTION  (in and out) = %.18lf , %.18lf\n",
-						 devinfo.myrank,iterazioni,+action_topo_in,+action_topo_fin);
-			printf("MPI%02d-iterazione %i:  Momen_ACTION  (in and out) = %.18lf , %.18lf\n",
-						 devinfo.myrank,iterazioni,action_mom_in,action_mom_fin);
-			printf("MPI%02d-iterazione %i:  Fermi_ACTION  (in and out) = %.18lf , %.18lf\n",
-						 devinfo.myrank,iterazioni,action_ferm_in,action_ferm_fin);
+			MPI_PRINTF1("-iterazione %i:  Gauge_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,-action_in,-action_fin);
+			MPI_PRINTF1("-iterazione %i:  Topol_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,+action_topo_in,+action_topo_fin);
+			MPI_PRINTF1("-iterazione %i:  Momen_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,action_mom_in,action_mom_fin);
+			MPI_PRINTF1("-iterazione %i:  Fermi_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,action_ferm_in,action_ferm_fin);
 		}       
-		printf("MPI%02d-iterazione %i:  DELTA_ACTION = %.18lf. ",
-					 devinfo.myrank,iterazioni,delta_S);
+		MPI_PRINTF1("-iterazione %i:  DELTA_ACTION = %.18lf. ",iterazioni,delta_S);
 
 
 		if(debug_settings.do_norandom_test) // NORANDOM
@@ -564,7 +559,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 					if(0==devinfo.myrank)p2=casuale();
 #if NRANKS_D3 > 1 // #ifedf MULTIDEVICE
 					MPI_Bcast((void*) &p2,1,MPI_DOUBLE,0,devinfo.mpi_comm);
-					printf("MPI%02d p2 : %f, p1 %f \n",devinfo.myrank, p2,p1);
+					MPI_PRINTF1("p2 : %f, p1 %f \n", p2,p1);
 #endif
 				}
 				if(p2<p1)
@@ -583,11 +578,11 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 	if(metro==1){
 		if(accepted==1){
 			acc++;
-			MPI_PRINTF1("  ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
+			MPI_PRINTF1(" ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
 			// configuration accepted set_su3_soa_to_su3_soa(arg1,arg2) ===> arg2=arg1;
 			set_su3_soa_to_su3_soa(tconf_acc,conf_acc_bkp);
 		}else{
-			MPI_PRINTF1("  ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
+			MPI_PRINTF1(" ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
 			// configuration rejected set_su3_soa_to_su3_soa(arg1,arg2) ===> arg2=arg1;
 			set_su3_soa_to_su3_soa(conf_acc_bkp,tconf_acc);
 			#pragma acc update device(tconf_acc[0:8])
@@ -661,7 +656,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		fprintf(foutfile,"GCOMMTIME %e\n",gauge_mdtimes.communicationsTime       / gauge_mdtimes.count );
 		gaugeMdCountersReset(&gauge_mdtimes);
 #if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
-		if( ! devinfo.async_comm_fermion){
+		if( !devinfo.async_comm_fermion){
 			fprintf(foutfile,"FCOMMTIME %e\n", dirac_times.totTransferTime       / dirac_times.count );
 
 			diracCountersReset(&dirac_times);

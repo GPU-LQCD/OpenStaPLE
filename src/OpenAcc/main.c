@@ -404,27 +404,28 @@ int main(int argc, char* argv[]){
   double stout_topo_ch[meastopo_params.stoutmeasstep/meastopo_params.stout_measinterval+1];
   d_complex poly;
 
+  int rankloc_accettate_therm=0;
+  int rankloc_accettate_metro=0;
   int *accettate_therm;
   int *accettate_metro;
-  int *iterations; // XXX: this might be useless (used only as a local variable, basically)
     
   int *accettate_therm_old;
   int *accettate_metro_old;
   int id_iter_offset=conf_id_iter;
 
-  accettate_therm=malloc(sizeof(int)*rep->replicas_total_number);
-  accettate_metro=malloc(sizeof(int)*rep->replicas_total_number);
-  accettate_therm_old=malloc(sizeof(int)*rep->replicas_total_number);
-  accettate_metro_old=malloc(sizeof(int)*rep->replicas_total_number);
-  iterations=malloc(sizeof(int)*rep->replicas_total_number);
+  if(0==devinfo.myrank_world){
+    accettate_therm=malloc(sizeof(int)*rep->replicas_total_number);
+    accettate_metro=malloc(sizeof(int)*rep->replicas_total_number);
+    accettate_therm_old=malloc(sizeof(int)*rep->replicas_total_number);
+    accettate_metro_old=malloc(sizeof(int)*rep->replicas_total_number);
     
-  // inizialization to 0
-  for(int lab=0;lab<rep->replicas_total_number;lab++){
-    accettate_metro[lab]=0;
-    accettate_therm[lab]=0;
-    iterations[lab]=0;
-    accettate_therm_old[lab]=0;
-    accettate_metro_old[lab]=0;
+    // inizialization to 0
+    for(int lab=0;lab<rep->replicas_total_number;lab++){
+      accettate_therm[lab]=0;
+      accettate_metro[lab]=0;
+      accettate_therm_old[lab]=0;
+      accettate_metro_old[lab]=0;
+    }
   }
 	int swap_number=0;
 
@@ -553,11 +554,12 @@ int main(int argc, char* argv[]){
 																 &avg_unitarity_deviation);
 					MPI_PRINTF1("Avg/Max unitarity deviation on device: %e / %e\n",avg_unitarity_deviation,max_unitarity_deviation);
             
-					for (int lab=0;lab<rep->replicas_total_number;lab++){
-            accettate_therm_old [lab]= accettate_therm[lab];
-            accettate_metro_old [lab]= accettate_metro[lab];
-					}
-          //TODO: check if synced between all ranks
+          if(0==devinfo.myrank_world){
+            for (int lab=0;lab<rep->replicas_total_number;lab++){
+              accettate_therm_old [lab]= accettate_therm[lab];
+              accettate_metro_old [lab]= accettate_metro[lab];
+            }
+          }
 
 					if(devinfo.myrank ==0 ){
 						printf("\n#################################################\n");
@@ -576,7 +578,6 @@ int main(int argc, char* argv[]){
 #endif
 		
 					// replicas update - hpt step
-        
          {
             int r=devinfo.replica_idx;
             int lab=rep->label[r];
@@ -595,51 +596,63 @@ int main(int argc, char* argv[]){
 
 						// HMC step
             int which_mode=!(id_iter<mc_params.therm_ntraj); // 0: therm, 1: metro
-            int* accettate_which[2]={(int*)&accettate_therm[0],(int*)&accettate_metro[0]};
-            
-            for(int labp=0; labp<rep->replicas_total_number; ++labp){
-              if(lab!=labp){
-                accettate_which[which_mode][labp]=0;
-                iterations[labp]=0;
+            int *rankloc_accettate_which[2]={&rankloc_accettate_therm,(int*)&rankloc_accettate_metro};
+#ifdef PAR_TEMP
+            for(int ridx=0; ridx<rep->replicas_total_number; ++ridx){
+              for(int salarank=0; salarank<NRANKS_D3; ++salarank){
+                if(0==devinfo.myrank_world){
+                  if(ridx==0  && salarank==0){
+                    rankloc_accettate_therm=accettate_therm[lab];
+                    rankloc_accettate_metro=accettate_metro[lab];
+                  }else{
+                    MPI_Send((int*)&accettate_therm[rep->label[ridx]],1,MPI_INT,ridx*NRANKS_D3+salarank,salarank,MPI_COMM_WORLD);
+                    MPI_Send((int*)&accettate_metro[rep->label[ridx]],1,MPI_INT,ridx*NRANKS_D3+salarank,salarank+NRANKS_D3,MPI_COMM_WORLD);
+                  }
+                }else{
+                  if(ridx==devinfo.replica_idx && salarank==devinfo.myrank){
+                    MPI_Recv((int*)&rankloc_accettate_therm,1,MPI_INT,0,salarank,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                    MPI_Recv((int*)&rankloc_accettate_metro,1,MPI_INT,0,salarank+NRANKS_D3,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                  }
+                }
               }
             }
-            accettate_which[which_mode][lab] = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc,
-                                                                  md_parameters.residue_metro,md_parameters.residue_md,
-                                                                  id_iter-id_iter_offset-(which_mode==1? accettate_therm[lab] : 0),
-                                                                  accettate_which[which_mode][lab],which_mode,md_parameters.max_cg_iterations);
-//            //XXX: debug!
-//            for(int labp=0; labp<rep->replicas_total_number; ++labp){
-//              MPI_PRINTF1("before allreduce: accettate_therm[%d]    =%d\n",labp,accettate_therm[labp]);
-//              MPI_PRINTF1("before allreduce: accettate_metro[%d]    =%d\n",labp,accettate_metro[labp]);
-//              MPI_PRINTF1("before allreduce: accettate_which[%d][%d]=%d\n",which_mode,labp,accettate_which[which_mode][labp]);
-//            }
-
-#ifdef PAR_TEMP
-            MPI_Allreduce(MPI_IN_PLACE,(void*)&(accettate_which[which_mode][0]),rep->replicas_total_number,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
 #endif
-						//TODO: check whether multiples of salamino slices 
+
             
-//            //XXX: debug!
-//            for(int labp=0; labp<rep->replicas_total_number; ++labp){
-//              MPI_PRINTF1("after  allreduce: accettate_therm[%d]    =%d\n",labp,accettate_therm[labp]);
-//              MPI_PRINTF1("after  allreduce: accettate_metro[%d]    =%d\n",labp,accettate_metro[labp]);
-//              MPI_PRINTF1("after  allreduce: accettate_which[%d][%d]=%d\n",which_mode,labp,accettate_which[which_mode][labp]);
-//            }
-			
-						if(which_mode){
-							if(0==devinfo.myrank && lab==0){
-                //TODO: is iteration useful at main scope?
-								iterations[lab] = id_iter-id_iter_offset-accettate_therm[lab]+1;
-								double acceptance = (double) accettate_metro[lab] / iterations[lab];
-								double acc_err = sqrt((double)accettate_metro[lab]*(iterations[lab]-accettate_metro[lab])/iterations[lab])/iterations[lab];
-								printf("Estimated HMC acceptance for this run [replica %d (lab %d)]: %f +- %f\n. Iterations: %d\n",r,lab,acceptance, acc_err, iterations[lab]);
-							}
-						}
+            *rankloc_accettate_which[which_mode] = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc,
+                                                                  md_parameters.residue_metro,md_parameters.residue_md,
+                                                                  id_iter-id_iter_offset-(which_mode==1? rankloc_accettate_therm : 0),
+                                                                  *rankloc_accettate_which[which_mode],which_mode,md_parameters.max_cg_iterations);
 #ifdef PAR_TEMP
-            MPI_Allreduce(MPI_IN_PLACE,(void*)&iterations[0],rep->replicas_total_number,MPI_INT,MPI_SUM,MPI_COMM_WORLD);
+            //XXX: debug!
+            MPI_PRINTF1("Transmitting acceptances [local acceptance: which %d, accepted therm: %d, accepted metro: %d\n",which_mode, rankloc_accettate_therm, rankloc_accettate_metro);
+            MPI_PRINTF1("rankloc_accettate_which[%d]=%d\n",which_mode, *rankloc_accettate_which[which_mode]);
+            for(int ridx=0; ridx<rep->replicas_total_number; ++ridx){
+              if(0==devinfo.myrank_world){
+                if(ridx==0){
+                  accettate_therm[lab]=rankloc_accettate_therm;
+                  accettate_metro[lab]=rankloc_accettate_metro;
+                }else{
+                  MPI_Recv((int*)&accettate_therm[rep->label[ridx]],1,MPI_INT,ridx*NRANKS_D3,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                  MPI_Recv((int*)&accettate_metro[rep->label[ridx]],1,MPI_INT,ridx*NRANKS_D3,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+                }
+              }else{
+                if(ridx==devinfo.replica_idx && devinfo.myrank==0){
+                  MPI_Send((int*)&rankloc_accettate_therm,1,MPI_INT,0,0,MPI_COMM_WORLD);
+                  MPI_Send((int*)&rankloc_accettate_metro,1,MPI_INT,0,1,MPI_COMM_WORLD);
+                }
+              }
+            }
 #endif
-						// final action
+			
+						if(which_mode /* metro */ && 0==devinfo.myrank_world){
+								int iterations = id_iter-id_iter_offset-accettate_therm[0]+1;
+								double acceptance = (double) accettate_metro[0] / iterations;
+								double acc_err = sqrt((double)accettate_metro[0]*(iterations-accettate_metro[0])/iterations)/iterations;
+								printf("Estimated HMC acceptance for this run [replica %d]: %f +- %f\n. Iterations: %d\n",0,acceptance, acc_err, iterations);
+						}
 
+						// final action
 						if (verbosity_lv>10){
 							double action;
 							action  = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc, aux_conf_acc, local_sums);
@@ -660,10 +673,10 @@ int main(int argc, char* argv[]){
 							#pragma acc update host(conf_acc[0:8])
                 
 							// periodic conf translation
-              lab=rep->label[devinfo.replica_idx];
-              if(lab==0){
-                trasl_conf(conf_acc,auxbis_conf_acc);
-              }
+//              lab=rep->label[devinfo.replica_idx];
+//              if(lab==0){
+//                trasl_conf(conf_acc,auxbis_conf_acc);
+//              }
 						}
 						#pragma acc update host(conf_acc[0:8])
 #endif
@@ -720,6 +733,21 @@ int main(int argc, char* argv[]){
 #endif
           
 					// gauge stuff measures
+          int acceptance_to_print;
+          if(0==devinfo.myrank_world){
+            acceptance_to_print=accettate_therm[0]+accettate_metro[0]-accettate_therm_old[0]-accettate_metro_old[0];
+            int ridx_lab0;
+            for(ridx_lab0=0; 0!=rep->label[ridx_lab0]; ++ridx_lab0){} // finds index corresponding to label=0
+            if(ridx_lab0!=0){
+              MPI_Send((int*)&acceptance_to_print,1,MPI_INT,ridx_lab0*NRANKS_D3,0,MPI_COMM_WORLD);
+            }
+          }else{
+            if(0==rep->label[devinfo.replica_idx] && devinfo.myrank==0){
+              MPI_Recv((int*)&acceptance_to_print,1,MPI_INT,0,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            }
+          }
+
+
           if(0==rep->label[devinfo.replica_idx]){
             printf("===========GAUGE MEASURING============\n");
               
@@ -804,9 +832,7 @@ int main(int argc, char* argv[]){
                   printf("Rectangle = %.18lf\n",rect/GL_SIZE/6.0/3.0/2.0);
                 }else printf("Metro_iter %d   Plaquette= %.18lf    Rectangle = %.18lf\n",conf_id_iter,plq/GL_SIZE/6.0/3.0,rect/GL_SIZE/6.0/3.0/2.0);
 
-                fprintf(goutfile,"%d\t%d\t",conf_id_iter,
-                        accettate_therm[rep->label[0]]+accettate_metro[rep->label[0]]
-                        -accettate_therm_old[rep->label[0]]-accettate_metro_old[rep->label[0]]);
+                fprintf(goutfile,"%d\t%d\t",conf_id_iter,acceptance_to_print);
                       
                 fprintf(goutfile,"%.18lf\t%.18lf\t%.18lf\t%.18lf\n",
                         plq/GL_SIZE/6.0/3.0,
