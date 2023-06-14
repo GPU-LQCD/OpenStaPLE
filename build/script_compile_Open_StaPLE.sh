@@ -2,7 +2,6 @@
 
 # SIMULATION PARAMETERS
 ACTION_TYPE='TLSM'         # must be either 'WILSON' or 'TLSM'
-DO_PARALLEL_TEMPERING=1    # must be either 1==YES or 0==NO
 
 # LOCAL LIB PATH
 my_lib_path=$( echo "${LIBRARY_PATH}" | cut -d ':' -f 1 ) 
@@ -26,10 +25,6 @@ if [ "${ACTION_TYPE}" != 'TLSM' ] && [ "${ACTION_TYPE}" != 'WILSON' ]; then
 	exit 1
 fi
 
-# if [ "${DO_PARALLEL_TEMPERING}" -ne 0 ] && [ "${DO_PARALLEL_TEMPERING}" -ne 1 ]; then
-# 	echo "ERROR! PAR_TEMP set to ${PAR_TEMP} but must be either 1==YES or 0==NO"
-# 	exit 1
-# fi
 
 # COMMENT/UNCOMMENT DESIRED SIMULATION PARAMS
 commented=$( grep "#define GAUGE_ACT_${ACTION_TYPE}" ../src/Include/common_defines.h | cut -d '#' -f 1 )
@@ -41,23 +36,6 @@ else # desired action is uncommented
 	sed -i "s://#define GAUGE_ACT_${ACTION_TYPE}:#define GAUGE_ACT_${ACTION_TYPE}:g" ../src/Include/common_defines.h
 	sed -i "s:#define GAUGE_ACT_${OTHER_ACTION}://#define GAUGE_ACT_${OTHER_ACTION}:g" ../src/Include/common_defines.h
 fi
-
-# commented=$( grep "#define PAR_TEMP" ../src/Include/common_defines.h | cut -d '#' -f 1 )
-# if test -z "${commented}"; then # PAR_TEMP is uncommented
-# 	if [ "${DO_PARALLEL_TEMPERING}" -eq 1 ]; then
-# 		echo "PAR_TEMP already uncommented"
-# 	else
-# 		echo "PAR_TEMP will be commented"
-# 		sed -i "s:#define PAR_TEMP://#define PAR_TEMP:g" ../src/Include/common_defines.h
-# 	fi
-# else # PAR_TEMP is commented
-# 	if [ "${DO_PARALLEL_TEMPERING}" -eq 0 ]; then
-# 		echo "PAR_TEMP already commented"
-# 	else
-# 		echo "PAR_TEMP will be uncommented"
-# 		sed -i "s://#define PAR_TEMP:#define PAR_TEMP:g" ../src/Include/common_defines.h
-# 	fi
-# fi
 
 # CONFIGURE + COMPILE
 # if autotools are not built, build them
