@@ -22,7 +22,7 @@ void calc_loc_staples_nnptrick_all_only_even(__restrict const su3_soa * const u,
 void calc_loc_staples_nnptrick_all_only_odd(__restrict const su3_soa * const u,
 																						__restrict su3_soa * const loc_stap);
 
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 void calc_loc_staples_nnptrick_all_bulk(__restrict const su3_soa * const u,
 																				__restrict su3_soa * const loc_stap);
 

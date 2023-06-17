@@ -600,7 +600,7 @@ void rw_iterate_on_global_sites_lx_xyzt_axis_ordering(void (*single_element_rw)(
 																						int d[4];
 																						for(dir = 0; dir<4;dir++) d[dir] = xs[geom_par.d0123map[dir]];
 
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 																						int idxh_machine = gl_to_gl_snum(d[0],d[1],d[2],d[3]);
 #else
 																						int idxh_machine = snum_acc(d[0],d[1],d[2],d[3]);

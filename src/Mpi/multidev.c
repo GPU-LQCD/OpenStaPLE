@@ -25,7 +25,8 @@ void pre_init_multidev1D(dev_info * mdi)
     MPI_Get_processor_name(mdi->processor_name,&(mdi->namelen));
 
     // associate to specific replica communication group
-    if(mdi->nranks_world/NRANKS_D3>1){
+    mdi->num_replicas=mdi->nranks_world/NRANKS_D3;
+    if(mdi->num_replicas>1){
       mdi->replica_idx = mdi->myrank_world/NRANKS_D3;
       MPI_Comm_split(MPI_COMM_WORLD, mdi->replica_idx, mdi->myrank_world, &(mdi->mpi_comm));
       MPI_Comm_rank(mdi->mpi_comm,&(mdi->myrank));
@@ -40,22 +41,19 @@ void pre_init_multidev1D(dev_info * mdi)
 
     if(mdi->nranks != NRANKS_D3){
         MPI_PRINTF0("NRANKS_D3 is different from nranks: no salamino? Exiting now\n");
-        MPI_PRINTF1("NRANKS_D3 = %d, nranks = %d\n",mdi->myrank, NRANKS_D3);
+        MPI_PRINTF1("NRANKS_D3 = %d, nranks = %d\n",NRANKS_D3, mdi->nranks);
         exit(1);
     }
 
-    if(mdi->nranks_world != NREPLICAS*NRANKS_D3){
-        MPI_PRINTF0("NREPLICAS is different from nranks_world/nranks. Exiting now\n");
-        MPI_PRINTF1("NREPLICAS = %d, nranks_world/nranks = %d\n",NREPLICAS, mdi->nranks_world/mdi->nranks);
+    if(mdi->num_replicas != NREPLICAS){
+        MPI_PRINTF0("NREPLICAS is different from devinfo.num_replicas. Exiting now\n");
+        MPI_PRINTF1("NREPLICAS = %d, num_replicas = %d\n",NREPLICAS, mdi->num_replicas);
         exit(1);
     }
     
     if(verbosity_lv > 2){
         MPI_PRINTF0("- Called MPI_Init\n");
     }
-
-
-
 }
 
 void init_multidev1D(dev_info * mdi)
@@ -64,7 +62,11 @@ void init_multidev1D(dev_info * mdi)
     mdi->myrank_R = (mdi->myrank + 1 ) % mdi->nranks;       //SALAMINO
     mdi->node_subrank =  mdi->myrank % mdi->proc_per_node;   //SALAMINO
 
-    sprintf(mdi->myrankstr,"MPI%02d",mdi->myrank);
+    if(mdi->num_replicas>1){
+      sprintf(mdi->myrankstr,"MPI%02d",mdi->myrank);
+    }else{
+      sprintf(mdi->myrankstr,"MPI%02d:%02d",mdi->replica_idx,mdi->myrank);
+    }
 
     MPI_PRINTF1("of \"%02d\" tasks running on host \"%s\", replica index: %d, local rank: %d, rankL: %d, rankR: %d\n", mdi->nranks_world, mdi->processor_name, 
     mdi->replica_idx, mdi->node_subrank, mdi->myrank_L, mdi->myrank_R); //SALAMINO

@@ -308,7 +308,7 @@ void mom_exp_times_conf_soloopenacc(__restrict su3_soa * const conf,
 
 }
 
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 
 void set_su3_soa_to_zero_bulk(__restrict su3_soa * const matrix)
 {
@@ -603,7 +603,7 @@ void add_defect_coeffs_to_staple(__restrict const su3_soa * const u,
 	}
 }
 
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 // same as <add_defect_coeffs_to_staple> but only for links living on the bulk
 void add_defect_coeffs_to_staple_bulk(__restrict const su3_soa * const u,
 																			__restrict su3_soa * const loc_stap)

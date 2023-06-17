@@ -156,7 +156,7 @@ double calc_momenta_action( const __restrict thmat_soa * const mom,
 	}
 
 
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
@@ -203,7 +203,7 @@ double  calc_plaquette_soloopenacc(__restrict  su3_soa * const tconf_acc,
 		}
 	}
 
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
@@ -230,7 +230,7 @@ double calc_force_norm(const __restrict tamat_soa * tipdot)
 				result += half_tr_tamat_squared(&tipdot[mu],t);
 			}
 	}  
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
@@ -267,7 +267,7 @@ double calc_diff_force_norm(const __restrict tamat_soa * tipdot,
 			}
     }  
 
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
@@ -304,7 +304,7 @@ double calc_sum_momenta_norm(const __restrict thmat_soa * tmomenta,
 			}
     }  
 
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
@@ -344,7 +344,7 @@ double calc_diff_su3_soa_norm(const __restrict su3_soa * tconf,
 			}
     }  
 
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else

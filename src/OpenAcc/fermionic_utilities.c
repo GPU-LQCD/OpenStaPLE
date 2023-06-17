@@ -25,7 +25,7 @@
 
 #include <stdlib.h>
 
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 #include <mpi.h>
 #include "../Mpi/multidev.h"
 

@@ -6,7 +6,7 @@
 #include "../OpenAcc/struct_c_def.h"
 
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 #include <mpi.h>
 // fermion border communications (only FERMION HALO thick)
 void communicate_fermion_borders(vec3_soa *lnh_fermion);

@@ -109,7 +109,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
 		}
 
 		#pragma acc update device(tconf_acc[0:8])
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 
@@ -122,7 +122,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
 		}
 
 		#pragma acc update device(tconf_acc[0:8])      
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 	
@@ -133,7 +133,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
 			single_su3_into_su3_soa(&tconf_acc[dir_link], idxh, &sto);
 
 		#pragma acc update device(tconf_acc[0:8])
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 
@@ -279,7 +279,7 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
 		}
 
 		#pragma acc update device(tconf_acc[0:8])
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
       
@@ -293,7 +293,7 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
 		}
 
 		#pragma acc update device(tconf_acc[0:8])      
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 	
@@ -304,7 +304,7 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
 			single_su3_into_su3_soa(&tconf_acc[dir_link], idxh, &sto);
 
 		#pragma acc update device(tconf_acc[0:8])
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 
@@ -372,7 +372,7 @@ void calc_ipdot_gauge_soloopenacc(__restrict const su3_soa * const tconf_acc,
 	if(debug_settings.save_diagnostics == 1){
 		double  force_norm, diff_force_norm;
 		int printEvery = debug_settings.md_diag_print_every*md_parameters.gauge_scale;
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 		if(devinfo.nranks != 1 && devinfo.async_comm_gauge)
 			printEvery /= md_parameters.gauge_scale;
 #endif
@@ -387,7 +387,7 @@ void calc_ipdot_gauge_soloopenacc(__restrict const su3_soa * const tconf_acc,
 			diff_force_norm = calc_diff_force_norm(tipdot,ipdot_g_old)*BETA_BY_THREE;
 
 			double diff_force_norm_corrected = diff_force_norm;
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 			if(devinfo.nranks != 1 && devinfo.async_comm_gauge)
 				diff_force_norm_corrected /= (2*md_parameters.gauge_scale+1); 
 #endif
@@ -398,7 +398,7 @@ void calc_ipdot_gauge_soloopenacc(__restrict const su3_soa * const tconf_acc,
 				fprintf(foutfile,"%d\tGFHN %e\n%d\tDGFHN %e",
 								md_diag_count_gauge, force_norm,
 								md_diag_count_gauge, diff_force_norm_corrected);
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 				if(devinfo.nranks != 1 && devinfo.async_comm_gauge)
 					fprintf(foutfile,"  !!! [Not divided by (2ngs+1): %e ]", diff_force_norm);
 #endif
@@ -409,7 +409,7 @@ void calc_ipdot_gauge_soloopenacc(__restrict const su3_soa * const tconf_acc,
 				if(verbosity_lv > 1){
 					printf("\t\t\tGauge Force Half Norm: %e, Diff with previous: %e \n", 
 								 force_norm, diff_force_norm);
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 					if(devinfo.nranks != 1 && devinfo.async_comm_gauge)
 						printf("\t\t\t (Diff with end of previous gauge cycle)");
 #endif
@@ -423,7 +423,7 @@ void calc_ipdot_gauge_soloopenacc(__restrict const su3_soa * const tconf_acc,
 
 }
 
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 void calc_ipdot_gauge_soloopenacc_std_bulk(__restrict const su3_soa * const tconf_acc, 
 																					 __restrict su3_soa * const local_staples,
 																					 __restrict tamat_soa * const tipdot)

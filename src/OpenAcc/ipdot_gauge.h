@@ -23,7 +23,7 @@ void calc_ipdot_gauge_soloopenacc(__restrict const  su3_soa * const tconf_acc,
 																	__restrict su3_soa * const local_staples,
 																	__restrict tamat_soa * const tipdot);
 
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 void calc_ipdot_gauge_soloopenacc_std_bulk(__restrict const  su3_soa * const tconf_acc, 
 																					 __restrict su3_soa * const local_staples,
 																					 __restrict tamat_soa * const tipdot);

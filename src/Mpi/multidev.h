@@ -14,7 +14,7 @@ typedef struct dev_info_t{
     int single_dev_choice; // from input file
     int myrank_world, nranks_world;
     int myrank, nranks;
-    int replica_idx;
+    int replica_idx, num_replicas;
     char myrankstr[50];
     int nranks_read;
 
@@ -43,10 +43,21 @@ typedef struct dev_info_t{
 
 extern dev_info devinfo;
 
-//TODO: generalize and write like this in all files
-//#define MPI_PRINTF(fmt) printf("MPI%02d:%02d - " (fmt) ,devinfo.replica_idx, devinfo.myrank); 
-#define MPI_PRINTF0(fmt) printf("MPI%02d:%02d - " fmt ,devinfo.replica_idx, devinfo.myrank);  
-#define MPI_PRINTF1(fmt,...) printf("MPI%02d:%02d - " fmt ,devinfo.replica_idx, devinfo.myrank, __VA_ARGS__);  
+#define MPI_PRINTF0(fmt) { \
+  if(devinfo.num_replicas>1){ \
+    printf("MPI%02d:%02d - " fmt ,devinfo.replica_idx, devinfo.myrank); \
+  }else{ \
+    printf("MPI%02d - " fmt ,devinfo.myrank); \
+  }}
+#define MPI_PRINTF1(fmt,...) { \
+  if(devinfo.num_replicas>1){ \
+    printf("MPI%02d:%02d - " fmt ,devinfo.replica_idx, devinfo.myrank, __VA_ARGS__); \
+  }else{ \
+    printf("MPI%02d - " fmt ,devinfo.myrank, __VA_ARGS__); \
+  }}
+
+//TODO: this doesn't work for some reason (it works with gcc), find out why
+// #define MPI_PRINTF(fmt,...) printf("MPI%02d:%02d - " fmt ,devinfo.replica_idx, devinfo.myrank, ##__VA_ARGS__);  
 
 
 #ifdef MULTIDEVICE

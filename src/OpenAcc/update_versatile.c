@@ -557,7 +557,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 				if(debug_settings.do_norandom_test) p2=0; // NORANDOM
 				else{ // NORMAL, RANDOM
 					if(0==devinfo.myrank)p2=casuale();
-#if NRANKS_D3 > 1 // #ifedf MULTIDEVICE
+#if NRANKS_D3 > 1
 					MPI_Bcast((void*) &p2,1,MPI_DOUBLE,0,devinfo.mpi_comm);
 					MPI_PRINTF1("p2 : %f, p1 %f \n", p2,p1);
 #endif
@@ -655,7 +655,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		fprintf(foutfile,"GCOSTTIME %e\n",gauge_mdtimes.communicationsStartTime  / gauge_mdtimes.count );
 		fprintf(foutfile,"GCOMMTIME %e\n",gauge_mdtimes.communicationsTime       / gauge_mdtimes.count );
 		gaugeMdCountersReset(&gauge_mdtimes);
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 		if( !devinfo.async_comm_fermion){
 			fprintf(foutfile,"FCOMMTIME %e\n", dirac_times.totTransferTime       / dirac_times.count );
 

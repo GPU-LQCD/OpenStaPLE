@@ -96,12 +96,12 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 	calc_loc_staples_nnptrick_all_onlyferms(U,TMP);
 	if(verbosity_lv > 4)printf("MPI%02d:\t\tcomputed staples  \n",
 														 devinfo.myrank);
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_gl3_borders(TMP,1);
 #endif
 	RHO_times_conf_times_staples_ta_part(U,TMP,QA,istopo);
 
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_tamat_soa_borders(QA,1);
 #endif
 
@@ -119,7 +119,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 	}
 	compute_lambda(Lambda,Sigma,U,QA,TMP);
 
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_thmat_soa_borders(Lambda,1);
 #endif
 
@@ -155,7 +155,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 
 
 
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_gl3_borders(Sigma,1);
 #endif
 

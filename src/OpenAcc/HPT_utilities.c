@@ -106,7 +106,7 @@ void init_k(su3_soa * conf, double c_r, int def_axis, int * def_vec, defect_info
 					z = d[geom_par.zmap];
 					t = d[geom_par.tmap];
 
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 
 					x+= devinfo.origin_0123[geom_par.xmap]
 						- devinfo.halo_widths0123[geom_par.xmap]; // x is now physical x-coordinate for every MPI Rank, same for y,z and t
@@ -133,7 +133,7 @@ void init_k(su3_soa * conf, double c_r, int def_axis, int * def_vec, defect_info
 					// check if (x,y,z,t) is on defect
 					condition = (x >= x_mind) && (y >= y_mind) && (z >= z_mind) && (t >= t_mind) && (x < x_maxd) && (y < y_maxd) && (z < z_maxd) && (t < t_maxd);
 
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 					// check if site is NOT on the right halo (must use logic coords to this end)
 					condition_2 = ( d[0]<=nd[0]-devinfo.halo_widths0123[0] && d[1]<=nd[1]-devinfo.halo_widths0123[1]
 													&& d[2]<=nd[2]-devinfo.halo_widths0123[2] && d[3]<=nd[3]-devinfo.halo_widths0123[3]);
@@ -357,7 +357,7 @@ double calc_S_soloopenacc_defect(__restrict  su3_soa * const tconf_acc,
     result += C_ONE * calc_S_Symanzik_defect(tconf_acc,local_plaqs,tr_local_plaqs,mu,nu,def);
 #endif
   }
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
   MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
@@ -776,7 +776,7 @@ void manage_replica_swaps(
         // set defect as next
         MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",rep_lab1,hpt_params->cr_vec[rep_lab2]);
         init_k(tconf_acc,hpt_params->cr_vec[rep_lab2],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
         if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab2],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
       }
@@ -784,7 +784,7 @@ void manage_replica_swaps(
         // set defect as prev
         MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",rep_lab2,hpt_params->cr_vec[rep_lab1]);
         init_k(tconf_acc,hpt_params->cr_vec[rep_lab1],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
         if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab1],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
       }
@@ -799,16 +799,10 @@ void manage_replica_swaps(
       compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
 
       if(devinfo.myrank_world==0){
-//        for(int lab=0; lab<NREPLICAS; ++lab){
-//          MPI_PRINTF1("icounter: %d, S_arr_next[%d]=%lg\n",i_counter, lab,S_arr_next[lab]);
-//        }
-
         MPI_PRINTF1("All actions S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
             S_arr_next[rep_lab1], S_arr_next[rep_lab2], 
             S_arr_prev[rep_lab1], S_arr_prev[rep_lab2])
       }
-//      // All mpiranks access this  
-//      int do_perform_swap=1;
 
       if (0==devinfo.myrank_world){
         // compute acceptance:
@@ -824,7 +818,7 @@ void manage_replica_swaps(
           // search which indexes are associated the swapped labels
           int aux_label;
           int ii,jj; // indexes
-          //TODO: maybe optimize with an inverse label map
+          //XXX: maybe optimize with an inverse label map? Maybe not
           for(int idx=0; idx<replicas_number; ++idx){
             if(hpt_params->label[idx]==rep_lab1){
               ii=idx;
@@ -847,45 +841,26 @@ void manage_replica_swaps(
       if(!accepted && rep_lab1==hpt_params->label[devinfo.replica_idx]){
         // set defect as next
         init_k(tconf_acc,hpt_params->cr_vec[rep_lab1],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
         if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab1],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
       }
       if(!accepted && rep_lab2==hpt_params->label[devinfo.replica_idx]){
         // set defect as prev
         init_k(tconf_acc,hpt_params->cr_vec[rep_lab2],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
         if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab2],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
       }
       //TODO: possibly optimize by updating only defect info
       #pragma acc update device(tconf_acc[0:alloc_info.conf_acc_size])
 
-//      //XXX: debug!
-//      for(int idx=0; idx<rep->replicas_total_number; ++idx){
-//        MPI_PRINTF1("labels: label[%d]=%d\n",idx,hpt_params->label[idx]);
-//      }
-//      MPI_PRINTF1("before swapupdate: swap_num    =%d\n",*swap_num);
-//      for(int labp=0; labp<rep->replicas_total_number; ++labp){
-//        MPI_PRINTF1("labels: label[%d]=%d\n",labp,hpt_params->label[labp]);
-//        MPI_PRINTF1("before swapupdate: all_swap_vet[%d]  =%d (prev: %d, next %d)\n",labp,all_swap_vet[labp],rep_lab1 ,  rep_lab2);
-//        if(labp<rep->replicas_total_number-1){
-//          MPI_PRINTF1("before swapupdate: acceptance_vet[%d]=%d (prev: %d, next %d)\n",labp,acceptance_vet[labp],rep_lab1 ,  rep_lab2);
-//        }
-//      }
 
+      //TODO: these variables are managed by world master only, they could be deallocated for others
       *swap_num=*swap_num+1;
       int replicas_num_fixed = (swap_order<=0.5)? rep_lab1 :  rep_lab2;
       all_swap_vet[replicas_num_fixed]++;
       if(accepted==1) acceptance_vet[replicas_num_fixed]++;
-      //TODO: these arrays are managed by world master only, they could be deallocated for others
-
-//      //XXX: debug!
-//      MPI_PRINTF1("after  swapupdate: swap_num    =%d\n",*swap_num);
-//      for(int labp=0; labp<rep->replicas_total_number; ++labp){
-//        MPI_PRINTF1("after  swapupdate: all_swap_vet[%d]  =%d (prev: %d, next %d)\n",labp,all_swap_vet[labp],rep_lab1 ,  rep_lab2);
-//        MPI_PRINTF1("after  swapupdate: acceptance_vet[%d]=%d (prev: %d, next %d)\n",labp,acceptance_vet[labp],rep_lab1 ,  rep_lab2);
-//      }
 
       MPI_Barrier(MPI_COMM_WORLD); 
     }
@@ -895,7 +870,7 @@ void manage_replica_swaps(
 void trasl_conf( __restrict const su3_soa *  const tconf_acc,
 								 __restrict const su3_soa *  const taux_conf){
     
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
   communicate_su3_borders(tconf_acc, GAUGE_HALO);
 	#pragma acc update self(tconf_acc[0:8])
 #endif
@@ -906,7 +881,7 @@ void trasl_conf( __restrict const su3_soa *  const tconf_acc,
   int dir=0;
     
   if(0==devinfo.myrank){dir0=casuale();}
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
   MPI_Bcast((void*) &dir0,1,MPI_DOUBLE,0,devinfo.mpi_comm);
   if(verbosity_lv>4)
     printf("MPI%02d dir0 : %f \n",devinfo.myrank,dir0);
@@ -920,7 +895,7 @@ void trasl_conf( __restrict const su3_soa *  const tconf_acc,
   set_su3_soa_to_su3_soa_trasl( taux_conf,tconf_acc, dir);
 	#pragma acc update device(tconf_acc[0:8])  
     
-#if NRANKS_D3 > 1	//#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
   communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 	#pragma acc update self(tconf_acc[0:8])
 #endif

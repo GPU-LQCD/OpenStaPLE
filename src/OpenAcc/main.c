@@ -241,7 +241,7 @@ int main(int argc, char* argv[]){
 
   // init ferm params and read rational approx coeffs
   if(init_ferm_params(fermions_parameters)){
-    MPI_PRINTF0("- Finalizing...\n"); //cp
+    MPI_PRINTF0("Finalizing...\n"); //cp
 #ifdef MULTIDEVICE
     MPI_Finalize();
 #endif
@@ -253,18 +253,18 @@ int main(int argc, char* argv[]){
   mem_alloc_extended();
  
   // single/double precision allocation
-  MPI_PRINTF0("- Memory allocation (double) : OK \n\n\n");
+  MPI_PRINTF0("Memory allocation (double) : OK \n\n\n");
   if(inverter_tricks.useMixedPrecision || md_parameters.singlePrecMD){
     mem_alloc_core_f();
-    MPI_PRINTF0("- Memory allocation (float) [CORE]: OK \n\n\n");
+    MPI_PRINTF0("Memory allocation (float) [CORE]: OK \n\n\n");
   }
 
   if( md_parameters.singlePrecMD){
     mem_alloc_extended_f();
-    MPI_PRINTF0("- Memory allocation (float) [EXTENDED]: OK \n\n\n");
+    MPI_PRINTF0("Memory allocation (float) [EXTENDED]: OK \n\n\n");
   }
    
-  MPI_PRINTF1("- Total allocated memory: %zu \n\n\n",max_memory_used);
+  MPI_PRINTF1("Total allocated memory: %zu \n\n\n",max_memory_used);
   
 	gl_stout_rho=act_params.stout_rho;
 	gl_topo_rho=act_params.topo_rho;
@@ -274,7 +274,7 @@ int main(int argc, char* argv[]){
 
 	#pragma acc enter data copyin(nnp_openacc)
 	#pragma acc enter data copyin(nnm_openacc)
-  MPI_PRINTF0("- nn computation : OK\n");
+  MPI_PRINTF0("nn computation : OK\n");
   init_all_u1_phases(backfield_parameters,fermions_parameters);
 	#pragma acc update device(u1_back_phases[0:8*alloc_info.NDiffFlavs])
 	#pragma acc update device(mag_obs_re[0:8*alloc_info.NDiffFlavs])
@@ -284,10 +284,10 @@ int main(int argc, char* argv[]){
 		#pragma acc update device(u1_back_phases_f[0:8*alloc_info.NDiffFlavs])
   }
 
-  MPI_PRINTF0("- u1_backfield initialization (float & double): OK \n");
+  MPI_PRINTF0("u1_backfield initialization (float & double): OK \n");
 
   initialize_md_global_variables(md_parameters);
-  MPI_PRINTF0("- init md vars : OK \n");
+  MPI_PRINTF0("init md vars : OK \n");
 
 	
 #ifdef PAR_TEMP
@@ -309,22 +309,22 @@ int main(int argc, char* argv[]){
 		
     if(debug_settings.do_norandom_test){
       if(!read_conf_wrapper(conf_acc,"conf_norndtest",&conf_id_iter,debug_settings.use_ildg)){
-				MPI_PRINTF0("- Stored Gauge Conf conf_norndtest Read : OK\n");
+				MPI_PRINTF0("Stored Gauge Conf conf_norndtest Read : OK\n");
       }
       else{
 				// cold start
-				MPI_PRINTF0("- COMPILED IN NORANDOM MODE. A CONFIGURATION FILE NAMED \"conf_norndtest\" MUST BE PRESENT\n");
+				MPI_PRINTF0("COMPILED IN NORANDOM MODE. A CONFIGURATION FILE NAMED \"conf_norndtest\" MUST BE PRESENT\n");
 				exit(1);
       }
     }
     else{
       if(!read_conf_wrapper(conf_acc,mc_params.save_conf_name,
 														&conf_id_iter,debug_settings.use_ildg)){
-				MPI_PRINTF1("- Stored Gauge Conf \"%s\" Read : OK \n", mc_params.save_conf_name);
+				MPI_PRINTF1("Stored Gauge Conf \"%s\" Read : OK \n", mc_params.save_conf_name);
       }
       else{
 				generate_Conf_cold(conf_acc,mc_params.eps_gen);
-				MPI_PRINTF0("- Cold Gauge Conf Generated : OK \n");
+				MPI_PRINTF0("Cold Gauge Conf Generated : OK \n");
 				conf_id_iter=0;
       }
     }
@@ -338,7 +338,7 @@ int main(int argc, char* argv[]){
 		if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
 		init_k(conf_acc,rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,0);
 		
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
 		
@@ -346,7 +346,7 @@ int main(int argc, char* argv[]){
 		if(md_parameters.singlePrecMD){
 			convert_double_to_float_su3_soa(conf_acc,conf_acc_f);
 			//^^ NOTE: doing this because a K initialization for su3_soa_f doesn't exist. Please create it.
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 			if(devinfo.async_comm_gauge){
 				convert_double_to_float_su3_soa(&conf_acc[8],&conf_acc_f[8]);
 				//^^ NOTE: doing this because a K initialization for su3_soa_f doesn't exist. Please create it.
@@ -597,6 +597,11 @@ int main(int argc, char* argv[]){
 						// HMC step
             int which_mode=!(id_iter<mc_params.therm_ntraj); // 0: therm, 1: metro
             int *rankloc_accettate_which[2]={&rankloc_accettate_therm,(int*)&rankloc_accettate_metro};
+            int effective_iter = id_iter-id_iter_offset-(which_mode==1? rankloc_accettate_therm : 0);
+
+
+            // send acceptance values from all ranks and receives on world master
+            //TODO: this introduces some overhead, possibly optimize
 #ifdef PAR_TEMP
             for(int ridx=0; ridx<rep->replicas_total_number; ++ridx){
               for(int salarank=0; salarank<NRANKS_D3; ++salarank){
@@ -620,13 +625,11 @@ int main(int argc, char* argv[]){
 
             
             *rankloc_accettate_which[which_mode] = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc,
-                                                                  md_parameters.residue_metro,md_parameters.residue_md,
-                                                                  id_iter-id_iter_offset-(which_mode==1? rankloc_accettate_therm : 0),
+                                                                  md_parameters.residue_metro,md_parameters.residue_md, effective_iter,
                                                                   *rankloc_accettate_which[which_mode],which_mode,md_parameters.max_cg_iterations);
+
+            // sync acceptance array on world master
 #ifdef PAR_TEMP
-            //XXX: debug!
-            MPI_PRINTF1("Transmitting acceptances [local acceptance: which %d, accepted therm: %d, accepted metro: %d\n",which_mode, rankloc_accettate_therm, rankloc_accettate_metro);
-            MPI_PRINTF1("rankloc_accettate_which[%d]=%d\n",which_mode, *rankloc_accettate_which[which_mode]);
             for(int ridx=0; ridx<rep->replicas_total_number; ++ridx){
               if(0==devinfo.myrank_world){
                 if(ridx==0){
@@ -645,7 +648,7 @@ int main(int argc, char* argv[]){
             }
 #endif
 			
-						if(which_mode /* metro */ && 0==devinfo.myrank_world){
+						if(which_mode /* is metro */ && 0==devinfo.myrank_world){
 								int iterations = id_iter-id_iter_offset-accettate_therm[0]+1;
 								double acceptance = (double) accettate_metro[0] / iterations;
 								double acc_err = sqrt((double)accettate_metro[0]*(iterations-accettate_metro[0])/iterations)/iterations;
@@ -673,10 +676,10 @@ int main(int argc, char* argv[]){
 							#pragma acc update host(conf_acc[0:8])
                 
 							// periodic conf translation
-//              lab=rep->label[devinfo.replica_idx];
-//              if(lab==0){
-//                trasl_conf(conf_acc,auxbis_conf_acc);
-//              }
+              lab=rep->label[devinfo.replica_idx];
+              if(lab==0){
+                trasl_conf(conf_acc,auxbis_conf_acc);
+              }
 						}
 						#pragma acc update host(conf_acc[0:8])
 #endif
@@ -686,7 +689,7 @@ int main(int argc, char* argv[]){
 					conf_id_iter++;
             
 #ifdef PAR_TEMP
-					MPI_PRINTF0("- Printing acceptances - only by master master rank...\n");
+					MPI_PRINTF0("Printing acceptances - only by master master rank...\n");
 					if(devinfo.myrank_world ==0){
                 
 						if(rep->replicas_total_number>1){
@@ -771,7 +774,7 @@ int main(int argc, char* argv[]){
                 if(cs%meastopo_params.cool_measinterval==0)
                   cool_topo_ch[cs/meastopo_params.cool_measinterval]=compute_topological_charge(aux_conf_acc,auxbis_conf_acc,topo_loc);
               }
-              MPI_PRINTF0("- Printing cooled charge - only by master rank...\n");
+              MPI_PRINTF0("Printing cooled charge - only by master rank...\n");
               if(devinfo.myrank ==0){
                 FILE *cooloutfile = fopen(meastopo_params.pathcool,"at");
                 if(!cooloutfile){
@@ -798,7 +801,7 @@ int main(int argc, char* argv[]){
                 stout_topo_ch[topoindx]=compute_topological_charge(&gstout_conf_acc_arr[8*ss],auxbis_conf_acc,topo_loc);
               }
         
-              MPI_PRINTF0("- Printing stouted charge - only by master rank...\n");
+              MPI_PRINTF0("Printing stouted charge - only by master rank...\n");
               if(devinfo.myrank ==0){
                 FILE *stoutoutfile = fopen(meastopo_params.pathstout,"at");
                 if(!stoutoutfile){
@@ -817,7 +820,7 @@ int main(int argc, char* argv[]){
               }
             }//if stout end
 
-            MPI_PRINTF0("- Printing gauge obs - only by master rank...\n");
+            MPI_PRINTF0("Printing gauge obs - only by master rank...\n");
             if(devinfo.myrank ==0){
               FILE *goutfile = fopen(gauge_outfilename,"at");
               if(!goutfile){
@@ -852,13 +855,13 @@ int main(int argc, char* argv[]){
               strcpy(tempname,mc_params.store_conf_name);
               sprintf(serial,".%05d",conf_id_iter);
               strcat(tempname,serial);
-              MPI_PRINTF1("- Storing conf %s.\n", tempname);
+              MPI_PRINTF1("Storing conf %s.\n", tempname);
               save_conf_wrapper(conf_acc,tempname,conf_id_iter,
                                 debug_settings.use_ildg);
               strcpy(tempname,mc_params.RandGenStatusFilename);
               sprintf(serial,".%05d",conf_id_iter);
               strcat(tempname,serial);
-              MPI_PRINTF1("- Storing rng status in %s.\n" , tempname);
+              MPI_PRINTF1("Storing rng status in %s.\n" , tempname);
               saverand_tofile(tempname);
             }
   
@@ -870,7 +873,7 @@ int main(int argc, char* argv[]){
 							strcat(mc_params.save_conf_name,rep_str);
 #endif
 							if (debug_settings.SaveAllAtEnd){
-								MPI_PRINTF1("- Saving conf %s.\n", mc_params.save_conf_name);
+								MPI_PRINTF1("Saving conf %s.\n", mc_params.save_conf_name);
 								save_conf_wrapper(conf_acc,mc_params.save_conf_name, conf_id_iter,
 																	debug_settings.use_ildg);
 							}else
@@ -880,7 +883,7 @@ int main(int argc, char* argv[]){
 #endif
 						}
 						if (debug_settings.SaveAllAtEnd){
-							MPI_PRINTF1("- Saving rng status in %s.\n", mc_params.RandGenStatusFilename);
+							MPI_PRINTF1("Saving rng status in %s.\n", mc_params.RandGenStatusFilename);
 							saverand_tofile(mc_params.RandGenStatusFilename);
 						}
 					}
@@ -979,13 +982,13 @@ int main(int argc, char* argv[]){
 						strcpy(tempname,mc_params.RandGenStatusFilename);
 						sprintf(serial,".%05d",conf_id_iter);
 						strcat(tempname,serial);
-						MPI_PRINTF1("- Storing rng status in %s.\n" , tempname);
+						MPI_PRINTF1("Storing rng status in %s.\n" , tempname);
 						saverand_tofile(tempname);
 					} 
 
 					if(conf_id_iter%mc_params.saveconfinterval==0){
 						if( debug_settings.SaveAllAtEnd){
-							MPI_PRINTF1("- Saving rng status in %s.\n", mc_params.RandGenStatusFilename);
+							MPI_PRINTF1("Saving rng status in %s.\n", mc_params.RandGenStatusFilename);
 							saverand_tofile(mc_params.RandGenStatusFilename);
 						}
 						else MPI_PRINTF0("WARNING, \'SaveAllAtEnd\'=0,NOT SAVING/OVERWRITING RNG STATUS.\n\n\n");
@@ -1067,11 +1070,11 @@ int main(int argc, char* argv[]){
 					}
         }
 
-#if NRANKS_D3 > 1 // #ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
         MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,devinfo.mpi_comm);
-        MPI_PRINTF1("- Broadcast of run condition %d from master...\n", mc_params.run_condition);
+        MPI_PRINTF1("Broadcast of run condition %d from master...\n", mc_params.run_condition);
         MPI_Bcast((void*)&(mc_params.next_gps),1,MPI_INT,0,devinfo.mpi_comm);
-        MPI_PRINTF1("- Broadcast of next global program status %d from master...\n", mc_params.next_gps);
+        MPI_PRINTF1("Broadcast of next global program status %d from master...\n", mc_params.next_gps);
 
 #endif
       } // while id_iter loop ends here             
@@ -1087,7 +1090,7 @@ int main(int argc, char* argv[]){
 #endif
 		
     if (debug_settings.SaveAllAtEnd){
-      MPI_PRINTF1("- Saving conf %s.\n", mc_params.save_conf_name);
+      MPI_PRINTF1("Saving conf %s.\n", mc_params.save_conf_name);
       save_conf_wrapper(conf_acc,mc_params.save_conf_name, conf_id_iter,
 												debug_settings.use_ildg);
     }else MPI_PRINTF0("WARNING, \'SaveAllAtEnd\'=0,NOT SAVING/OVERWRITING CONF AND RNG STATUS.\n\n\n");
@@ -1097,7 +1100,7 @@ int main(int argc, char* argv[]){
 	} // end replicas 
 	
 	if (debug_settings.SaveAllAtEnd){
-		MPI_PRINTF1("- Saving rng status in %s.\n", mc_params.RandGenStatusFilename);
+		MPI_PRINTF1("Saving rng status in %s.\n", mc_params.RandGenStatusFilename);
 		saverand_tofile(mc_params.RandGenStatusFilename);
 	}
 
@@ -1135,12 +1138,12 @@ int main(int argc, char* argv[]){
 	#pragma acc exit data delete(gl_stout_rho)
 	#pragma acc exit data delete(gl_topo_rho)
 
-  MPI_PRINTF1("- Allocated memory before the shutdown: %zu \n\n\n",memory_used);
+  MPI_PRINTF1("Allocated memory before the shutdown: %zu \n\n\n",memory_used);
   struct memory_allocated_t *all=memory_allocated_base;
     
   while(all!=NULL)
     {
-      MPI_PRINTF1("- To be deallocated: %s having size %zu (or maybe is to be counted)\n\n\n",all->varname,all->size);
+      MPI_PRINTF1("To be deallocated: %s having size %zu (or maybe is to be counted)\n\n\n",all->varname,all->size);
       // free_wrapper(all->ptr);
       all=all->next;
     };
