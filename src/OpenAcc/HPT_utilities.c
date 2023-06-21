@@ -733,136 +733,254 @@ void manage_replica_swaps(
     MPI_Barrier(MPI_COMM_WORLD);
 
     // select relabeling and scatter coefficients to each mpirank
-    double swap_order;
-    int replicas_number = NREPLICAS;//hpt_params->replicas_total_number;
+    int swap_order;
+//    double even_first;
+
 
     if (0==devinfo.myrank_world){
-      swap_order=casuale();
+      swap_order=(casuale()<0.5)?1:0;
+      printf("swap order: %d\n",swap_order);
     }
-    MPI_Bcast((void*)&swap_order,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
-    int accepted=0;
-    int i_counter, j_counter; // labels, not indexes
-    int rep_lab1,rep_lab2;
-    for(i_counter=0;i_counter<replicas_number-1;i_counter++){
-      // manages each pairs serially in a chained fashion
+    MPI_Bcast((void*)&swap_order,1,MPI_INT,0,MPI_COMM_WORLD);
 
-      for(int lab=0; lab<NREPLICAS; ++lab){
-        S_arr_prev[lab]=0.0;
-      }
-      compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_prev[0]);
+    if(hpt_params->is_evenodd){
 
+      for(int evenodd_itr=0;evenodd_itr<2; ++evenodd_itr){
+          swap_order=(evenodd_itr+swap_order)%2;
+          if (0==devinfo.myrank_world){
+            printf("stage %d, swap order: %d\n",evenodd_itr, swap_order);
+          }
 
-      if(swap_order<=0.5){ 
-//        MPI_PRINTF0("Swap order: 0->N_r-1\n"); //
-        rep_lab1=i_counter;
-        rep_lab2=i_counter+1;
-      }else{
-//        MPI_PRINTF0("Swap order: N_r-1->0\n");
-        rep_lab1=replicas_number-i_counter-1;
-        rep_lab2=replicas_number-i_counter-2;
-      }
+          for(int lab=0; lab<NREPLICAS; ++lab){
+            S_arr_prev[lab]=0.0;
+          }
 
-//        if(verbosity_lv>4) printf("proposing swap %d %d\n",i_counter,i_counter+1);      
-      if(devinfo.myrank_world==0){
-//        for(int lab=0; lab<NREPLICAS; ++lab){
-//          MPI_PRINTF1("i_counter: %d, S_arr_prev[%d]=%lg\n",i_counter, lab,S_arr_prev[lab]);
-//        }
-        printf("proposing swap %d %d\n",rep_lab1,rep_lab2);      
-      }
-      
-      // rep_lab1 and rep_lab2 are tried for swap
-      if(rep_lab1==hpt_params->label[devinfo.replica_idx]){
-        // set defect as next
-        MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",rep_lab1,hpt_params->cr_vec[rep_lab2]);
-        init_k(tconf_acc,hpt_params->cr_vec[rep_lab2],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
+          compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_prev[0]);
+
+          int lab=hpt_params->label[devinfo.replica_idx];
+          int twin_lab = ((swap_order==0 && (lab)%2==0) || (swap_order==1 && (lab)%2==1))? lab+1 : lab-1;
+
+          int stay_still=(twin_lab<0 || twin_lab>=NREPLICAS)? 1 : 0;
+          MPI_PRINTF1("pairs: %d %d (are tried? %d)\n",lab,twin_lab,1-stay_still);
+          if(!stay_still){
+            MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",lab,hpt_params->cr_vec[twin_lab]);
+            init_k(tconf_acc,hpt_params->cr_vec[twin_lab],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
 #if NRANKS_D3 > 1
-        if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab2],rep->defect_boundary,rep->defect_coordinates,&def,1);
+            //TODO: possibly optimize by updating only defect info
+            if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[twin_lab],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
-      }
-      if(rep_lab2==hpt_params->label[devinfo.replica_idx]){
-        // set defect as prev
-        MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",rep_lab2,hpt_params->cr_vec[rep_lab1]);
-        init_k(tconf_acc,hpt_params->cr_vec[rep_lab1],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
-#if NRANKS_D3 > 1
-        if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab1],rep->defect_boundary,rep->defect_coordinates,&def,1);
-#endif
-      }
-      //TODO: possibly optimize by updating only defect info
-      #pragma acc update device(tconf_acc[0:alloc_info.conf_acc_size])
+            #pragma acc update device(tconf_acc[0:alloc_info.conf_acc_size])
+          }
 
-      MPI_Barrier(MPI_COMM_WORLD);
+          for(int lab=0; lab<NREPLICAS; ++lab){
+            S_arr_next[lab]=0.0;
+          }
 
-      for(int lab=0; lab<NREPLICAS; ++lab){
-        S_arr_next[lab]=0.0;
-      }
-      compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
+          compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
 
-      if(devinfo.myrank_world==0){
-        MPI_PRINTF1("All actions S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
-            S_arr_next[rep_lab1], S_arr_next[rep_lab2], 
-            S_arr_prev[rep_lab1], S_arr_prev[rep_lab2])
-      }
-
-      if (0==devinfo.myrank_world){
-        // compute acceptance:
-        double Delta_S_SWAP =  -(S_arr_next[rep_lab1]
-                              +S_arr_next[rep_lab2]
-                              -S_arr_prev[rep_lab1]
-                              -S_arr_prev[rep_lab2]);
-        accepted=metro_SWAP_worldmaster(Delta_S_SWAP);
-        printf("DELTA_S_SWAP(lab1=%d,lab2=%d):%.15lg\n", rep_lab1, rep_lab2, Delta_S_SWAP);
-        //if(verbosity_lv>8) printf("DELTA_S_SWAP(r1=%d,r2=%d):%.15lg\n",
-
-        if(accepted){
-          // search which indexes are associated the swapped labels
-          int aux_label;
-          int ii,jj; // indexes
-          //XXX: maybe optimize with an inverse label map? Maybe not
-          for(int idx=0; idx<replicas_number; ++idx){
-            if(hpt_params->label[idx]==rep_lab1){
-              ii=idx;
-            }else if(hpt_params->label[idx]==rep_lab2){
-              jj=idx;
+          if(devinfo.myrank_world==0){
+            for(int lbs=swap_order; lbs<NREPLICAS; lbs+=2){
+                int lbs_twin_lab = ((swap_order==0 && lbs%2==0) || (swap_order==1 && lbs%2==1))? lbs+1 : lbs-1;
+                MPI_PRINTF1("All actions S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
+                S_arr_next[lbs], S_arr_next[lbs_twin_lab], 
+                S_arr_prev[lbs], S_arr_prev[lbs_twin_lab])
             }
           }
-          MPI_PRINTF1("Swap between %d and %d accepted\n",rep_lab1,rep_lab2);
-          aux_label=hpt_params->label[ii];
-          hpt_params->label[ii] = hpt_params->label[jj];
-          hpt_params->label[jj] = aux_label;
+
+          int swap_labs_accepted[NREPLICAS];
+          for(int lbsh=0; lbsh<NREPLICAS; lbsh++){
+            swap_labs_accepted[lbsh]=0;
+          }
+
+          if (0==devinfo.myrank_world){
+            // compute acceptance:
+            for(int lbs=swap_order; lbs<NREPLICAS; lbs+=2){
+              int lbs_twin_lab = ((swap_order==0 && lbs%2==0) || (swap_order==1 && lbs%2==1))? lbs+1 : lbs-1;
+              int lbs_stay_still=(lbs_twin_lab<0 || lbs_twin_lab>=NREPLICAS)? 1 : 0;
+              if(lbs_stay_still){
+                swap_labs_accepted[lbs]=0;
+                continue;
+              }
+              double Delta_S_SWAP =-(S_arr_next[lbs]
+                                    +S_arr_next[lbs_twin_lab]
+                                    -S_arr_prev[lbs]
+                                    -S_arr_prev[lbs_twin_lab]);
+              swap_labs_accepted[lbs]=metro_SWAP_worldmaster(Delta_S_SWAP);
+              swap_labs_accepted[lbs_twin_lab]=swap_labs_accepted[lbs];
+              printf("DELTA_S_SWAP(lab1=%d,lab2=%d):%.15lg\n", lbs, lbs_twin_lab, Delta_S_SWAP);
+            //if(verbosity_lv>8) printf("DELTA_S_SWAP(r1=%d,r2=%d):%.15lg\n",
+              if(swap_labs_accepted[lbs]){
+                // search which indexes are associated the swapped labels
+                int aux_label;
+                int ii,jj; // indexes
+                //XXX: maybe optimize with an inverse label map? Maybe not
+                for(int idx=0; idx<NREPLICAS; ++idx){
+                  if(hpt_params->label[idx]==lbs){
+                    ii=idx;
+                  }else if(hpt_params->label[idx]==lbs_twin_lab){
+                    jj=idx;
+                  }
+                }
+                MPI_PRINTF1("Swap between %d and %d accepted\n",lbs,lbs_twin_lab);
+                aux_label=hpt_params->label[ii];
+                hpt_params->label[ii] = hpt_params->label[jj];
+                hpt_params->label[jj] = aux_label;
+              }
+            }
+          }
+
+
+          MPI_Bcast((void*)&(hpt_params->label[0]),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
+          MPI_Bcast((void*)&swap_labs_accepted[0],NREPLICAS,MPI_INT,0,MPI_COMM_WORLD); // each replica must know if pairs are swapped
+
+          if(!stay_still && !(swap_labs_accepted[lab])){
+            init_k(tconf_acc,hpt_params->cr_vec[lab],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
+#if NRANKS_D3 > 1
+            if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[lab],rep->defect_boundary,rep->defect_coordinates,&def,1);
+#endif
+            //TODO: possibly optimize by updating only defect info
+            #pragma acc update device(tconf_acc[0:alloc_info.conf_acc_size])
+          }
+
+          //TODO: these variables are managed by world master only, they could be deallocated for others
+          if(0==devinfo.myrank_world){
+            // compute acceptance:
+            *swap_num=*swap_num+1;
+            for(int lbs=swap_order; lbs<NREPLICAS; lbs+=2){
+              int lbs_twin_lab = ((swap_order==0 && lbs%2==0) || (swap_order==1 && lbs%2==1))? lbs+1 : lbs-1;
+              int lbs_stay_still=(lbs_twin_lab<0 || lbs_twin_lab>=NREPLICAS)? 1 : 0;
+              if(lbs_stay_still)
+                continue;
+              int replicas_num_fixed = (lbs_twin_lab<lbs)? lbs_twin_lab : lbs;
+               // (swap_order==1)? lbs :  lbs_twin_lab;
+              all_swap_vet[replicas_num_fixed]++;
+              if(swap_labs_accepted[lbs]==1) acceptance_vet[replicas_num_fixed]++;
+            }
+          }
+        MPI_Barrier(MPI_COMM_WORLD); 
+      }
+
+    }else{
+      int accepted=0;
+      int i_counter, j_counter; // labels, not indexes
+      int rep_lab1,rep_lab2;
+      for(i_counter=0;i_counter<NREPLICAS-1;i_counter++){
+        // manages each pairs serially in a chained fashion
+
+        for(int lab=0; lab<NREPLICAS; ++lab){
+          S_arr_prev[lab]=0.0;
         }
-      }
+        compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_prev[0]);
 
-      MPI_Bcast((void*)&(hpt_params->label[0]),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
-      MPI_Bcast((void*)&accepted,1,MPI_INT,0,MPI_COMM_WORLD); // each replica must know if pairs are swapped
 
-      // if swap not accepted, the involved replicas must update their defect information 
-      // back to their previous state (prev with prev and next with next)
-      if(!accepted && rep_lab1==hpt_params->label[devinfo.replica_idx]){
-        // set defect as next
-        init_k(tconf_acc,hpt_params->cr_vec[rep_lab1],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
+        if(swap_order==1){ 
+  //        MPI_PRINTF0("Swap order: 0->N_r-1\n"); //
+          rep_lab1=i_counter;
+          rep_lab2=i_counter+1;
+        }else{
+  //        MPI_PRINTF0("Swap order: N_r-1->0\n");
+          rep_lab1=NREPLICAS-i_counter-1;
+          rep_lab2=NREPLICAS-i_counter-2;
+        }
+
+        if(devinfo.myrank_world==0){
+          printf("proposing swap %d %d\n",rep_lab1,rep_lab2);      
+        }
+        
+        // rep_lab1 and rep_lab2 are tried for swap
+        if(rep_lab1==hpt_params->label[devinfo.replica_idx]){
+          // set defect as next
+          MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",rep_lab1,hpt_params->cr_vec[rep_lab2]);
+          init_k(tconf_acc,hpt_params->cr_vec[rep_lab2],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
 #if NRANKS_D3 > 1
-        if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab1],rep->defect_boundary,rep->defect_coordinates,&def,1);
+          if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab2],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
-      }
-      if(!accepted && rep_lab2==hpt_params->label[devinfo.replica_idx]){
-        // set defect as prev
-        init_k(tconf_acc,hpt_params->cr_vec[rep_lab2],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
+        }
+        if(rep_lab2==hpt_params->label[devinfo.replica_idx]){
+          // set defect as prev
+          MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",rep_lab2,hpt_params->cr_vec[rep_lab1]);
+          init_k(tconf_acc,hpt_params->cr_vec[rep_lab1],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
 #if NRANKS_D3 > 1
-        if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab2],rep->defect_boundary,rep->defect_coordinates,&def,1);
+          if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab1],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
+        }
+        //TODO: possibly optimize by updating only defect info
+        #pragma acc update device(tconf_acc[0:alloc_info.conf_acc_size])
+
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        for(int lab=0; lab<NREPLICAS; ++lab){
+          S_arr_next[lab]=0.0;
+        }
+        compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
+
+        if(devinfo.myrank_world==0){
+          MPI_PRINTF1("All actions S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
+              S_arr_next[rep_lab1], S_arr_next[rep_lab2], 
+              S_arr_prev[rep_lab1], S_arr_prev[rep_lab2])
+        }
+
+        if (0==devinfo.myrank_world){
+          // compute acceptance:
+          double Delta_S_SWAP =  -(S_arr_next[rep_lab1]
+                                +S_arr_next[rep_lab2]
+                                -S_arr_prev[rep_lab1]
+                                -S_arr_prev[rep_lab2]);
+          accepted=metro_SWAP_worldmaster(Delta_S_SWAP);
+          printf("DELTA_S_SWAP(lab1=%d,lab2=%d):%.15lg\n", rep_lab1, rep_lab2, Delta_S_SWAP);
+          //if(verbosity_lv>8) printf("DELTA_S_SWAP(r1=%d,r2=%d):%.15lg\n",
+
+          if(accepted){
+            // search which indexes are associated the swapped labels
+            int aux_label;
+            int ii,jj; // indexes
+            //XXX: maybe optimize with an inverse label map? Maybe not
+            for(int idx=0; idx<NREPLICAS; ++idx){
+              if(hpt_params->label[idx]==rep_lab1){
+                ii=idx;
+              }else if(hpt_params->label[idx]==rep_lab2){
+                jj=idx;
+              }
+            }
+            MPI_PRINTF1("Swap between %d and %d accepted\n",rep_lab1,rep_lab2);
+            aux_label=hpt_params->label[ii];
+            hpt_params->label[ii] = hpt_params->label[jj];
+            hpt_params->label[jj] = aux_label;
+          }
+        }
+
+        MPI_Bcast((void*)&(hpt_params->label[0]),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
+        MPI_Bcast((void*)&accepted,1,MPI_INT,0,MPI_COMM_WORLD); // each replica must know if pairs are swapped
+
+        // if swap not accepted, the involved replicas must update their defect information 
+        // back to their previous state (prev with prev and next with next)
+        if(!accepted && rep_lab1==hpt_params->label[devinfo.replica_idx]){
+          // set defect as next
+          init_k(tconf_acc,hpt_params->cr_vec[rep_lab1],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
+#if NRANKS_D3 > 1
+          if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab1],rep->defect_boundary,rep->defect_coordinates,&def,1);
+#endif
+        }
+        if(!accepted && rep_lab2==hpt_params->label[devinfo.replica_idx]){
+          // set defect as prev
+          init_k(tconf_acc,hpt_params->cr_vec[rep_lab2],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
+#if NRANKS_D3 > 1
+          if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab2],rep->defect_boundary,rep->defect_coordinates,&def,1);
+#endif
+        }
+        //TODO: possibly optimize by updating only defect info
+        #pragma acc update device(tconf_acc[0:alloc_info.conf_acc_size])
+
+
+        //TODO: these variables are managed by world master only, they could be deallocated for others
+        *swap_num=*swap_num+1;
+        int replicas_num_fixed = (swap_order==1)? rep_lab1 :  rep_lab2;
+        all_swap_vet[replicas_num_fixed]++;
+        if(accepted==1) acceptance_vet[replicas_num_fixed]++;
+
+        MPI_Barrier(MPI_COMM_WORLD); 
       }
-      //TODO: possibly optimize by updating only defect info
-      #pragma acc update device(tconf_acc[0:alloc_info.conf_acc_size])
-
-
-      //TODO: these variables are managed by world master only, they could be deallocated for others
-      *swap_num=*swap_num+1;
-      int replicas_num_fixed = (swap_order<=0.5)? rep_lab1 :  rep_lab2;
-      all_swap_vet[replicas_num_fixed]++;
-      if(accepted==1) acceptance_vet[replicas_num_fixed]++;
-
-      MPI_Barrier(MPI_COMM_WORLD); 
     }
 }
 
