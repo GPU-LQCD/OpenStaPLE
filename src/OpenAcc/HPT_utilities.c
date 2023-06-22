@@ -745,15 +745,14 @@ void manage_replica_swaps(
     MPI_Bcast((void*)&swap_order,1,MPI_INT,0,MPI_COMM_WORLD);
 
     if(hpt_params->is_evenodd){
-
       for(int evenodd_itr=0;evenodd_itr<2; ++evenodd_itr){
           swap_order=(evenodd_itr+swap_order)%2;
           if (0==devinfo.myrank_world){
             printf("stage %d, swap order: %d\n",evenodd_itr, swap_order);
           }
 
-          for(int lab=0; lab<NREPLICAS; ++lab){
-            S_arr_prev[lab]=0.0;
+          for(int lb=0; lb<NREPLICAS; ++lb){
+            S_arr_prev[lb]=0.0;
           }
 
           compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_prev[0]);
@@ -773,18 +772,30 @@ void manage_replica_swaps(
             #pragma acc update device(tconf_acc[0:alloc_info.conf_acc_size])
           }
 
-          for(int lab=0; lab<NREPLICAS; ++lab){
-            S_arr_next[lab]=0.0;
+          for(int lb=0; lb<NREPLICAS; ++lb){
+            S_arr_next[lb]=0.0;
           }
 
           compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
 
+          //XXX: debug
           if(devinfo.myrank_world==0){
             for(int lbs=swap_order; lbs<NREPLICAS; lbs+=2){
                 int lbs_twin_lab = ((swap_order==0 && lbs%2==0) || (swap_order==1 && lbs%2==1))? lbs+1 : lbs-1;
-                MPI_PRINTF1("All actions S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
-                S_arr_next[lbs], S_arr_next[lbs_twin_lab], 
-                S_arr_prev[lbs], S_arr_prev[lbs_twin_lab])
+                if(lbs_twin_lab<0 || lbs_twin_lab>=NREPLICAS)
+                  continue;
+                int min_lab, max_lab;
+                if(lbs_twin_lab>lbs){
+                  min_lab=lbs;
+                  max_lab=lbs_twin_lab;
+                }else{
+                  min_lab=lbs_twin_lab;
+                  max_lab=lbs;
+                }
+                MPI_PRINTF1("All actions (lab1: %d <-> lab2: %d): S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
+                    min_lab,max_lab,
+                S_arr_next[min_lab], S_arr_next[max_lab], 
+                S_arr_prev[min_lab], S_arr_prev[max_lab])
             }
           }
 
@@ -802,27 +813,35 @@ void manage_replica_swaps(
                 swap_labs_accepted[lbs]=0;
                 continue;
               }
-              double Delta_S_SWAP =-(S_arr_next[lbs]
-                                    +S_arr_next[lbs_twin_lab]
-                                    -S_arr_prev[lbs]
-                                    -S_arr_prev[lbs_twin_lab]);
-              swap_labs_accepted[lbs]=metro_SWAP_worldmaster(Delta_S_SWAP);
-              swap_labs_accepted[lbs_twin_lab]=swap_labs_accepted[lbs];
-              printf("DELTA_S_SWAP(lab1=%d,lab2=%d):%.15lg\n", lbs, lbs_twin_lab, Delta_S_SWAP);
+              int min_lab, max_lab;
+              if(lbs_twin_lab>lbs){
+                min_lab=lbs;
+                max_lab=lbs_twin_lab;
+              }else{
+                min_lab=lbs_twin_lab;
+                max_lab=lbs;
+              }
+              double Delta_S_SWAP =-(S_arr_next[min_lab]
+                                    +S_arr_next[max_lab]
+                                    -S_arr_prev[min_lab]
+                                    -S_arr_prev[max_lab]);
+              swap_labs_accepted[min_lab]=metro_SWAP_worldmaster(Delta_S_SWAP);
+              swap_labs_accepted[max_lab]=swap_labs_accepted[min_lab];
+              printf("DELTA_S_SWAP(lab1=%d,lab2=%d):%.15lg\n", min_lab, max_lab, Delta_S_SWAP);
             //if(verbosity_lv>8) printf("DELTA_S_SWAP(r1=%d,r2=%d):%.15lg\n",
-              if(swap_labs_accepted[lbs]){
+              if(swap_labs_accepted[min_lab]){
                 // search which indexes are associated the swapped labels
                 int aux_label;
                 int ii,jj; // indexes
                 //XXX: maybe optimize with an inverse label map? Maybe not
                 for(int idx=0; idx<NREPLICAS; ++idx){
-                  if(hpt_params->label[idx]==lbs){
+                  if(hpt_params->label[idx]==min_lab){
                     ii=idx;
-                  }else if(hpt_params->label[idx]==lbs_twin_lab){
+                  }else if(hpt_params->label[idx]==max_lab){
                     jj=idx;
                   }
                 }
-                MPI_PRINTF1("Swap between %d and %d accepted\n",lbs,lbs_twin_lab);
+                MPI_PRINTF1("Swap between %d and %d accepted\n",min_lab,max_lab);
                 aux_label=hpt_params->label[ii];
                 hpt_params->label[ii] = hpt_params->label[jj];
                 hpt_params->label[jj] = aux_label;
@@ -834,6 +853,7 @@ void manage_replica_swaps(
           MPI_Bcast((void*)&(hpt_params->label[0]),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
           MPI_Bcast((void*)&swap_labs_accepted[0],NREPLICAS,MPI_INT,0,MPI_COMM_WORLD); // each replica must know if pairs are swapped
 
+          // lab is the old lab
           if(!stay_still && !(swap_labs_accepted[lab])){
             init_k(tconf_acc,hpt_params->cr_vec[lab],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
 #if NRANKS_D3 > 1
@@ -852,7 +872,7 @@ void manage_replica_swaps(
               int lbs_stay_still=(lbs_twin_lab<0 || lbs_twin_lab>=NREPLICAS)? 1 : 0;
               if(lbs_stay_still)
                 continue;
-              int replicas_num_fixed = (lbs_twin_lab<lbs)? lbs_twin_lab : lbs;
+              int replicas_num_fixed = (lbs_twin_lab<lbs)? lbs_twin_lab : lbs; // always writes info of swap on the minimum label
                // (swap_order==1)? lbs :  lbs_twin_lab;
               all_swap_vet[replicas_num_fixed]++;
               if(swap_labs_accepted[lbs]==1) acceptance_vet[replicas_num_fixed]++;
