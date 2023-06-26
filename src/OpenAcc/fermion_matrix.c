@@ -16,6 +16,7 @@
 #include "./matvecmul.h"
 #include "../tests_and_benchmarks/test_and_benchmarks.h"
 
+//TODO: check if this can be changed to NRANKS_D3 > 1
 #ifdef MULTIDEVICE
 #include "../Mpi/communications.h"
 #endif 
@@ -160,7 +161,7 @@ void acc_Deo(__restrict const su3_soa * const u,
 						 __restrict const vec3_soa * const in,
 						 __restrict const double_soa * const backfield)
 {
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	if(devinfo.async_comm_fermion){
 
 #if defined(USE_MPI_CUDA_AWARE) || defined(__GNUC__)
@@ -203,7 +204,7 @@ void acc_Deo(__restrict const su3_soa * const u,
 
 		}
 	}
-	//    MPI_Barrier(MPI_COMM_WORLD);
+	//    MPI_Barrier(devinfo.mpi_comm);
 #else 
 	acc_Deo_unsafe(u, out, in, backfield);
 #endif
@@ -215,7 +216,7 @@ void acc_Doe(__restrict const su3_soa * const u,
 						 __restrict const vec3_soa * const in,
 						 __restrict const double_soa * const backfield)
 {
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	if(devinfo.async_comm_fermion){
 
 #if defined(USE_MPI_CUDA_AWARE) || defined(__GNUC__)
@@ -259,7 +260,7 @@ void acc_Doe(__restrict const su3_soa * const u,
 
 		}
 	}
-	//    MPI_Barrier(MPI_COMM_WORLD);
+	//    MPI_Barrier(devinfo.mpi_comm);
 #else 
 	acc_Doe_unsafe(u, out, in, backfield);
 #endif

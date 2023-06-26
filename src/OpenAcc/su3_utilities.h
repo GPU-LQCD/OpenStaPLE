@@ -1642,7 +1642,7 @@ static inline void mom_exp_times_conf_soloopenacc_loc_split(const __restrict thm
 
 }
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 
 void set_su3_soa_to_zero_bulk(__restrict su3_soa * const matrix);
 
@@ -1690,7 +1690,7 @@ void mom_exp_times_conf_soloopenacc_d3c(__restrict const su3_soa * const conf_ol
 void add_defect_coeffs_to_staple(__restrict const su3_soa * const u,
 																 __restrict su3_soa * const loc_stap);
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 void add_defect_coeffs_to_staple_bulk(__restrict const su3_soa * const u,
 																			__restrict su3_soa * const loc_stap);
 

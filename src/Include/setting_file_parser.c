@@ -673,7 +673,7 @@ int read_device_setting(dev_info * di,char filelines[MAXLINES][MAXLINELENGTH], i
 	const char nranks_read_comment[] = "# NRanks has been set at make time with the NR3 variable.";
 
 	par_info tp[]= {
-#ifndef MULTIDEVICE        
+#ifndef MULTIDEVICE
 									(par_info){(void*) &(di->single_dev_choice),TYPE_INT,"device_choice",    NULL,                                 NULL},
 									(par_info){(void*) IGNORE_IT,               TYPE_INT,"AsyncFermionComms",(const void*) &async_comm_fermion_def,NULL},
 									(par_info){(void*) IGNORE_IT,               TYPE_INT,"AsyncGaugeComms",  (const void*) &async_comm_gauge_def,  NULL},
@@ -691,7 +691,7 @@ int read_device_setting(dev_info * di,char filelines[MAXLINES][MAXLINELENGTH], i
 	if(!helpmode){
 #ifdef MULTIDEVICE
 		if(di->nranks_read != di->nranks){
-			printf("MPI%02d: ERROR: nranks from settings file ", di->myrank);
+			MPI_PRINTF0("ERROR: nranks from settings file ");
 			printf("and from MPI_Init() DIFFER!\n");
 			printf("settings: %d , MPI_Init(): %d\n",
 						 di->nranks_read, di->nranks);
@@ -790,6 +790,7 @@ int read_replicas_numbers(rep_info * re,char filelines[MAXLINES][MAXLINELENGTH],
 #ifndef PAR_TEMP
 	re->replicas_total_number = 1;
 	alloc_info.num_replicas = re->replicas_total_number;
+	re->label=malloc(alloc_info.num_replicas*sizeof(int));
 #else      
 	alloc_info.num_replicas=re->replicas_total_number;
 	par_info rp1[3];
@@ -846,6 +847,14 @@ int read_replicas_numbers(rep_info * re,char filelines[MAXLINES][MAXLINELENGTH],
 		res=1;
 	}
 
+	// check number of replicas as in geom defines
+	if(re->replicas_total_number != NREPLICAS){
+		printf("ERROR: NREPLICAS in geom_defines does not match the value totalnumber in input file\n");
+		printf("NREPLICAS=%d, totalnumber=%d\n",NREPLICAS, re->replicas_total_number);
+		res=1;
+	}
+
+
 	// check that defect length is smaller than lattice size along the corresponding direction	
 	int perp_dir[4][3] = { {1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2} };
 	int lat_size[4];
@@ -901,7 +910,7 @@ int set_global_vars_and_fermions_from_input_file(const char* input_filename)
 	char filelines[MAXLINES][MAXLINELENGTH];
 	FILE *input = fopen(input_filename,"r");
 	if (input == NULL){
-		printf("MPI%02d: Could not open file %s \n",devinfo.myrank,input_filename );
+		MPI_PRINTF1("Could not open file %s \n",input_filename);
 		if(0==devinfo.myrank){
 			printf("Creating a template inputfile\n" );
 		}
@@ -1104,7 +1113,7 @@ int set_global_vars_and_fermions_from_input_file(const char* input_filename)
 
 		if(0==devinfo.myrank && totcheck )
 			printf("There are errors in some groups, exiting.\n");
-		printf("MPI%02d: Returning error 1...\n",devinfo.myrank);
+		MPI_PRINTF0("Returning error 1...\n");
 		return 1;
 
 	}

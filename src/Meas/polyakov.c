@@ -21,7 +21,7 @@
 
 // For Polyakov loop calculations
 #define ALIGN 128
-#ifdef MULTIDEVICE
+#ifdef NRANKS_D3 > 1
 #define vol30h LOC_VOL4/LOC_N0/2 
 #define vol31h LOC_VOL4/LOC_N1/2 
 #define vol32h LOC_VOL4/LOC_N2/2 
@@ -204,11 +204,11 @@ d_complex polyakov_loop0(__restrict const su3_soa * const u)
     free(loopplk0);
 
     double trr,tri;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
      MPI_Allreduce((void*)&rel,(void*)&trr,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
      trr = rel;
      tri = iml;
@@ -288,11 +288,11 @@ d_complex polyakov_loop1(__restrict const su3_soa * const u)
     free(loopplk1);
 
     double trr,tri;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
      MPI_Allreduce((void*)&rel,(void*)&trr,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
      trr = rel;
      tri = iml;
@@ -370,11 +370,11 @@ d_complex polyakov_loop2(__restrict const su3_soa * const u)
 
 
     double trr,tri;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
      MPI_Allreduce((void*)&rel,(void*)&trr,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
      trr = rel;
      tri = iml;
@@ -453,11 +453,11 @@ d_complex polyakov_loop3(__restrict const su3_soa * const u)
     free(loopplk3);
 
     double trr,tri;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
      MPI_Allreduce((void*)&rel,(void*)&trr,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
      MPI_Allreduce((void*)&iml,(void*)&tri,
-             1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+             1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
      trr = rel;
      tri = iml;

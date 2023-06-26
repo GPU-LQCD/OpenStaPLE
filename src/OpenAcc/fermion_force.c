@@ -96,12 +96,12 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 	calc_loc_staples_nnptrick_all_onlyferms(U,TMP);
 	if(verbosity_lv > 4)printf("MPI%02d:\t\tcomputed staples  \n",
 														 devinfo.myrank);
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_gl3_borders(TMP,1);
 #endif
 	RHO_times_conf_times_staples_ta_part(U,TMP,QA,istopo);
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_tamat_soa_borders(QA,1);
 #endif
 
@@ -119,7 +119,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 	}
 	compute_lambda(Lambda,Sigma,U,QA,TMP);
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_thmat_soa_borders(Lambda,1);
 #endif
 
@@ -155,7 +155,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 
 
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_gl3_borders(Sigma,1);
 #endif
 
@@ -211,8 +211,7 @@ void fermion_force_soloopenacc(__restrict su3_soa    * tconf_acc,
 		 1 == md_parameters.recycleInvsForce){
 		if(0==devinfo.myrank && verbosity_lv >2) 
 			printf("Converting gauge conf to single precision...\n");
-		conf_to_use_f = conf_acc_f[0]; // using global variable for convenience.
-		// ^^^ WARNING: this works only for sequential replicas updating. If you want to parallelize it, use conf_acc_f[replica_id].
+		conf_to_use_f = conf_acc_f; // using global variable for convenience.
 		convert_double_to_float_su3_soa(conf_to_use,conf_to_use_f);
 		ipt.u_f = conf_to_use_f;
 	}

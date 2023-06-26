@@ -25,7 +25,7 @@
 
 #include <stdlib.h>
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 #include <mpi.h>
 #include "../Mpi/multidev.h"
 
@@ -94,8 +94,8 @@ d_complex scal_prod_global(const __restrict vec3_soa * const in_vect1,
 	double lri = cimag(local_res);
 	double trr,tri;
 
-	MPI_Allreduce((void*)&lrr,(void*)&trr,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-	MPI_Allreduce((void*)&lri,(void*)&tri,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce((void*)&lrr,(void*)&trr,1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
+	MPI_Allreduce((void*)&lri,(void*)&tri,1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 
 	return trr + tri * I;
 }
@@ -106,7 +106,7 @@ double real_scal_prod_global(const __restrict vec3_soa * const in_vect1,
 	double total_res,local_res;
 	// local_res = real_scal_prod_loc(in_vect1,in_vect2); 
 	local_res = real_scal_prod_loc_1Dcut(in_vect1,in_vect2); 
-	MPI_Allreduce((void*)&local_res,(void*)&total_res,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce((void*)&local_res,(void*)&total_res,1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 	return total_res;
 }
 double l2norm2_global(const __restrict vec3_soa * const in_vect1)
@@ -115,12 +115,12 @@ double l2norm2_global(const __restrict vec3_soa * const in_vect1)
 	double total_res,local_res;
 	// local_res = l2norm2_loc(in_vect1); 
 	local_res = l2norm2_loc_1Dcut(in_vect1); 
-	MPI_Allreduce((void*)&local_res,(void*)&total_res,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+	MPI_Allreduce((void*)&local_res,(void*)&total_res,1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 	return total_res;
 }
 
 
-#else // no MULTIDEVICE
+#else // no NRANKS_D3 > 1
 
 
 d_complex scal_prod_global(const __restrict vec3_soa * in_vect1,
@@ -174,7 +174,7 @@ double l2norm2_global( __restrict  const vec3_soa * in_vect1 )
 	return resR;
 }
 
-#endif
+#endif // NRANKS_D3 > 1
 
 // starting from here, only "embarassingly parallel" functions, not requiring any reduction.
 void combine_in1xfactor_plus_in2(__restrict const vec3_soa * in_vect1,

@@ -76,7 +76,7 @@ void sendrecv_vec3soa_borders_1Dcut(vec3_soa *lnh_fermion,
                     rankL,sendtag,
                     (void*) &(c[ii][sizeh-offset_size]),2*slab_sizeh,MPI_DOUBLE,
                     rankR,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[(sizeh-offset_size):slab_sizeh])
 #endif
@@ -93,7 +93,7 @@ void sendrecv_vec3soa_borders_1Dcut(vec3_soa *lnh_fermion,
                     (void*) &(c[ii][offset_size-slab_sizeh]),
                     2*slab_sizeh,MPI_DOUBLE,
                     rankL,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[offset_size-slab_sizeh:slab_sizeh])
 #endif
@@ -139,7 +139,7 @@ void sendrecv_vec3soa_borders_1Dcut_hostonly(vec3_soa *lnh_fermion,
                 rankL,sendtag,
                 (void*) &(c[ii][sizeh-offset_size]),2*slab_sizeh,MPI_DOUBLE,
                 rankR,recvtag,
-                MPI_COMM_WORLD, &status);
+                devinfo.mpi_comm, &status);
 
         sendtag = ii+3;
         recvtag = ii+3;
@@ -150,7 +150,7 @@ void sendrecv_vec3soa_borders_1Dcut_hostonly(vec3_soa *lnh_fermion,
                 (void*) &(c[ii][offset_size-slab_sizeh]),
                 2*slab_sizeh,MPI_DOUBLE,
                 rankL,recvtag,
-                MPI_COMM_WORLD, &status);
+                devinfo.mpi_comm, &status);
     }
 
 }
@@ -159,11 +159,11 @@ void communicate_fermion_borders(vec3_soa *lnh_fermion) // WRAPPER
 {
 
     // NOTICE: GEOMETRY MUST BE SET UP BEFORE!!
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(devinfo.mpi_comm);
     sendrecv_vec3soa_borders_1Dcut(lnh_fermion,
             devinfo.myrank_L, devinfo.myrank_R, 
             FERMION_HALO);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(devinfo.mpi_comm);
 }
 
 
@@ -172,12 +172,12 @@ void communicate_fermion_borders_hostonly(vec3_soa *lnh_fermion) // WRAPPER
 {
 
     // NOTICE: GEOMETRY MUST BE SET UP BEFORE!!
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(devinfo.mpi_comm);
 
     sendrecv_vec3soa_borders_1Dcut_hostonly(lnh_fermion,
             devinfo.myrank_L, devinfo.myrank_R, 
             FERMION_HALO);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(devinfo.mpi_comm);
 }
 
 
@@ -230,11 +230,11 @@ void sendrecv_vec3soa_borders_1Dcut_async(vec3_soa *lnh_fermion,
 
             d_complex *tmpc = c[ii];
             MPI_Isend((void*) &(c[ii][offset_size]),2*slab_sizeh,MPI_DOUBLE,
-                    rankL,sendtag,MPI_COMM_WORLD,
+                    rankL,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[ii]));
             MPI_Irecv((void*) &(c[ii][sizeh-offset_size]),2*slab_sizeh,
                     MPI_DOUBLE,
-                    rankR,recvtag,MPI_COMM_WORLD,
+                    rankR,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[ii]));
 
 
@@ -243,11 +243,11 @@ void sendrecv_vec3soa_borders_1Dcut_async(vec3_soa *lnh_fermion,
 
             MPI_Isend((void*) &(c[ii][sizeh-offset_size-slab_sizeh]),
                     2*slab_sizeh,MPI_DOUBLE,
-                    rankR,sendtag,MPI_COMM_WORLD,
+                    rankR,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[3+ii]));
             MPI_Irecv( (void*) &(c[ii][offset_size-slab_sizeh]),
                     2*slab_sizeh,MPI_DOUBLE,
-                    rankL,recvtag,MPI_COMM_WORLD,
+                    rankL,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[3+ii]));
 
         }
@@ -401,7 +401,7 @@ void sendrecv_thmat_soa_borders_1Dcut(thmat_soa *lnh_momenta,
                     rankL,sendtag,
                     (void*) &(c[ii][sizeh-offset_size]),2*slab_sizeh,MPI_DOUBLE,
                     rankR,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[(sizeh-offset_size):slab_sizeh])
 #endif
@@ -418,7 +418,7 @@ void sendrecv_thmat_soa_borders_1Dcut(thmat_soa *lnh_momenta,
                     (void*) &(c[ii][offset_size-slab_sizeh]),
                     2*slab_sizeh,MPI_DOUBLE,
                     rankL,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[offset_size-slab_sizeh:slab_sizeh])
 #endif
@@ -439,7 +439,7 @@ void sendrecv_thmat_soa_borders_1Dcut(thmat_soa *lnh_momenta,
                     rankL,sendtag,
                     (void*) &(cd[ii][sizeh-offset_size]),slab_sizeh,MPI_DOUBLE,
                     rankR,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[(sizeh-offset_size):slab_sizeh])
 #endif
@@ -456,7 +456,7 @@ void sendrecv_thmat_soa_borders_1Dcut(thmat_soa *lnh_momenta,
                     (void*) &(cd[ii][offset_size-slab_sizeh]),
                     slab_sizeh,MPI_DOUBLE,
                     rankL,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[offset_size-slab_sizeh:slab_sizeh])
 #endif
@@ -508,11 +508,11 @@ void sendrecv_thmat_soa_borders_1Dcut_async(thmat_soa *lnh_momenta,
 
             d_complex *tmpc = c[ii];
             MPI_Isend((void*) &(c[ii][offset_size]),2*slab_sizeh,MPI_DOUBLE,
-                    rankL,sendtag,MPI_COMM_WORLD,
+                    rankL,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[ii]));
             MPI_Irecv((void*) &(c[ii][sizeh-offset_size]),2*slab_sizeh,
                     MPI_DOUBLE,
-                    rankR,recvtag,MPI_COMM_WORLD,
+                    rankR,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[ii]));
 
 
@@ -521,11 +521,11 @@ void sendrecv_thmat_soa_borders_1Dcut_async(thmat_soa *lnh_momenta,
 
             MPI_Isend((void*) &(c[ii][sizeh-offset_size-slab_sizeh]),
                     2*slab_sizeh,MPI_DOUBLE,
-                    rankR,sendtag,MPI_COMM_WORLD,
+                    rankR,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[3+ii]));
             MPI_Irecv( (void*) &(c[ii][offset_size-slab_sizeh]),
                     2*slab_sizeh,MPI_DOUBLE,
-                    rankL,recvtag,MPI_COMM_WORLD,
+                    rankL,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[3+ii]));
 
         }
@@ -537,11 +537,11 @@ void sendrecv_thmat_soa_borders_1Dcut_async(thmat_soa *lnh_momenta,
 
             double *tmpc = cd[ii];
             MPI_Isend((void*) &(cd[ii][offset_size]),slab_sizeh,MPI_DOUBLE,
-                    rankL,sendtag,MPI_COMM_WORLD,
+                    rankL,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[6+ii]));
             MPI_Irecv((void*) &(cd[ii][sizeh-offset_size]),slab_sizeh,
                     MPI_DOUBLE,
-                    rankR,recvtag,MPI_COMM_WORLD,
+                    rankR,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[6+ii]));
 
 
@@ -550,11 +550,11 @@ void sendrecv_thmat_soa_borders_1Dcut_async(thmat_soa *lnh_momenta,
 
             MPI_Isend((void*) &(cd[ii][sizeh-offset_size-slab_sizeh]),
                     slab_sizeh,MPI_DOUBLE,
-                    rankR,sendtag,MPI_COMM_WORLD,
+                    rankR,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[8+ii]));
             MPI_Irecv( (void*) &(cd[ii][offset_size-slab_sizeh]),
                     slab_sizeh,MPI_DOUBLE,
-                    rankL,recvtag,MPI_COMM_WORLD,
+                    rankL,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[8+ii]));
 
         }
@@ -607,7 +607,7 @@ void sendrecv_tamat_soa_borders_1Dcut(tamat_soa *lnh_ipdot,
                     rankL,sendtag,
                     (void*) &(c[ii][sizeh-offset_size]),2*slab_sizeh,MPI_DOUBLE,
                     rankR,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[(sizeh-offset_size):slab_sizeh])
 #endif
@@ -624,7 +624,7 @@ void sendrecv_tamat_soa_borders_1Dcut(tamat_soa *lnh_ipdot,
                     (void*) &(c[ii][offset_size-slab_sizeh]),
                     2*slab_sizeh,MPI_DOUBLE,
                     rankL,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[offset_size-slab_sizeh:slab_sizeh])
 #endif
@@ -643,7 +643,7 @@ void sendrecv_tamat_soa_borders_1Dcut(tamat_soa *lnh_ipdot,
                     rankL,sendtag,
                     (void*) &(cd[ii][sizeh-offset_size]),slab_sizeh,MPI_DOUBLE,
                     rankR,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[(sizeh-offset_size):slab_sizeh])
 #endif
@@ -660,7 +660,7 @@ void sendrecv_tamat_soa_borders_1Dcut(tamat_soa *lnh_ipdot,
                     (void*) &(cd[ii][offset_size-slab_sizeh]),
                     slab_sizeh,MPI_DOUBLE,
                     rankL,recvtag,
-                    MPI_COMM_WORLD, &status);
+                    devinfo.mpi_comm, &status);
 #ifndef USE_MPI_CUDA_AWARE
 #pragma acc update device(tmpc[offset_size-slab_sizeh:slab_sizeh])
 #endif
@@ -711,11 +711,11 @@ void sendrecv_tamat_soa_borders_1Dcut_async(tamat_soa *lnh_ipdot,
 
             d_complex *tmpc = c[ii];
             MPI_Isend((void*) &(c[ii][offset_size]),2*slab_sizeh,MPI_DOUBLE,
-                    rankL,sendtag,MPI_COMM_WORLD,
+                    rankL,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[ii]));
             MPI_Irecv((void*) &(c[ii][sizeh-offset_size]),2*slab_sizeh,
                     MPI_DOUBLE,
-                    rankR,recvtag,MPI_COMM_WORLD,
+                    rankR,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[ii]));
 
 
@@ -724,11 +724,11 @@ void sendrecv_tamat_soa_borders_1Dcut_async(tamat_soa *lnh_ipdot,
 
             MPI_Isend((void*) &(c[ii][sizeh-offset_size-slab_sizeh]),
                     2*slab_sizeh,MPI_DOUBLE,
-                    rankR,sendtag,MPI_COMM_WORLD,
+                    rankR,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[3+ii]));
             MPI_Irecv( (void*) &(c[ii][offset_size-slab_sizeh]),
                     2*slab_sizeh,MPI_DOUBLE,
-                    rankL,recvtag,MPI_COMM_WORLD,
+                    rankL,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[3+ii]));
 
         }
@@ -740,11 +740,11 @@ void sendrecv_tamat_soa_borders_1Dcut_async(tamat_soa *lnh_ipdot,
 
             double *tmpc = cd[ii];
             MPI_Isend((void*) &(cd[ii][offset_size]),slab_sizeh,MPI_DOUBLE,
-                    rankL,sendtag,MPI_COMM_WORLD,
+                    rankL,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[6+ii]));
             MPI_Irecv((void*) &(cd[ii][sizeh-offset_size]),slab_sizeh,
                     MPI_DOUBLE,
-                    rankR,recvtag,MPI_COMM_WORLD,
+                    rankR,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[6+ii]));
 
 
@@ -753,11 +753,11 @@ void sendrecv_tamat_soa_borders_1Dcut_async(tamat_soa *lnh_ipdot,
 
             MPI_Isend((void*) &(cd[ii][sizeh-offset_size-slab_sizeh]),
                     slab_sizeh,MPI_DOUBLE,
-                    rankR,sendtag,MPI_COMM_WORLD,
+                    rankR,sendtag,devinfo.mpi_comm,
                     &(send_border_requests[8+ii]));
             MPI_Irecv( (void*) &(cd[ii][offset_size-slab_sizeh]),
                     slab_sizeh,MPI_DOUBLE,
-                    rankL,recvtag,MPI_COMM_WORLD,
+                    rankL,recvtag,devinfo.mpi_comm,
                     &(recv_border_requests[8+ii]));
 
         }
@@ -838,12 +838,12 @@ void send_lnh_subconf_to_rank(const global_su3_soa *gl_soa_conf,
     //sending the subconfiguration
     //
     // OLD LINE
-    //MPI_Send(target_su3_soa, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE, target_rank , target_rank, MPI_COMM_WORLD); // tag = target_rank
+    //MPI_Send(target_su3_soa, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE, target_rank , target_rank, devinfo.mpi_comm); // tag = target_rank
     
-		MPI_Send(target_su3_soa, 8*sizeof(su3_soa), MPI_CHAR, target_rank, target_rank, MPI_COMM_WORLD); // tag = target_rank
+		MPI_Send(target_su3_soa, 8*sizeof(su3_soa), MPI_CHAR, target_rank, target_rank, devinfo.mpi_comm); // tag = target_rank
 
 		// In case we remove the third line, this is possibly the thing to do
-    //MPI_Send(target_su3_soa, 2*4*(6*2)*LNH_SIZEH,MPI_DOUBLE, rank, 0, MPI_COMM_WORLD);
+    //MPI_Send(target_su3_soa, 2*4*(6*2)*LNH_SIZEH,MPI_DOUBLE, rank, 0, devinfo.mpi_comm);
     //Or maybe do multiple sends in a more complicated way
     // ^^ CHECK
     FREECHECK(target_su3_soa);
@@ -874,10 +874,10 @@ void recv_loc_subconf_from_rank(global_su3_soa *gl_soa_conf,
     ALLOCCHECK(allocation_check, target_su3_soa);
 
     // OLD LINE
-		//MPI_Recv(target_su3_soa, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE,target_rank,tag,MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		//MPI_Recv(target_su3_soa, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE,target_rank,tag,devinfo.mpi_comm, MPI_STATUS_IGNORE);
 
 
-		MPI_Recv(target_su3_soa, 8*sizeof(su3_soa), MPI_CHAR, target_rank,tag,MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		MPI_Recv(target_su3_soa, 8*sizeof(su3_soa), MPI_CHAR, target_rank,tag,devinfo.mpi_comm, MPI_STATUS_IGNORE);
 
     recv_loc_subconf_from_buffer(gl_soa_conf,target_su3_soa,target_rank);
 
@@ -890,18 +890,18 @@ void send_lnh_subconf_to_master(const su3_soa *lnh_soa_conf, int tag)
            devinfo.myrank,tag);
 		
 		// OLD LINE vvv
-    //MPI_Send(lnh_soa_conf, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE, 0, tag , MPI_COMM_WORLD);
+    //MPI_Send(lnh_soa_conf, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE, 0, tag , devinfo.mpi_comm);
 		
 		// NEW LINE vvv
-		MPI_Send(lnh_soa_conf, 8*sizeof(su3_soa), MPI_CHAR, 0, tag, MPI_COMM_WORLD);
+		MPI_Send(lnh_soa_conf, 8*sizeof(su3_soa), MPI_CHAR, 0, tag, devinfo.mpi_comm);
 }
 void receive_lnh_subconf_from_master(su3_soa* lnh_su3_conf)
 {
 		// OLD LINE vvv
-    //MPI_Recv(lnh_su3_conf, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE,0, devinfo.myrank,MPI_COMM_WORLD, MPI_STATUS_IGNORE); // tag = myrank
+    //MPI_Recv(lnh_su3_conf, 2*4*(6*3)*LNH_SIZEH,MPI_DOUBLE,0, devinfo.myrank,devinfo.mpi_comm, MPI_STATUS_IGNORE); // tag = myrank
 
 		// NEW LINE vvv
-    MPI_Recv(lnh_su3_conf, 8*sizeof(su3_soa), MPI_CHAR, 0, devinfo.myrank,MPI_COMM_WORLD, MPI_STATUS_IGNORE); // tag = myrank
+    MPI_Recv(lnh_su3_conf, 8*sizeof(su3_soa), MPI_CHAR, 0, devinfo.myrank,devinfo.mpi_comm, MPI_STATUS_IGNORE); // tag = myrank
 
     // In case we remove the third line possibly 
     // we have to do something different
@@ -918,7 +918,7 @@ void send_lnh_subfermion_to_rank(const global_vec3_soa *gl_soa_ferm,
     ALLOCCHECK(allocation_check, lnh_ferm);
     send_lnh_subfermion_to_buffer(gl_soa_ferm,lnh_ferm,target_rank);
     MPI_Send(lnh_ferm, 6*LNH_SIZEH,MPI_DOUBLE, target_rank , target_rank,
-            MPI_COMM_WORLD); // tag = target_rank
+            devinfo.mpi_comm); // tag = target_rank
 
     FREECHECK(lnh_ferm);
 }
@@ -931,7 +931,7 @@ void recv_loc_subfermion_from_rank(global_vec3_soa *gl_soa_ferm,
     ALLOCCHECK(allocation_check, lnh_ferm);
 
     MPI_Recv(lnh_ferm, 6*LNH_SIZEH,MPI_DOUBLE,target_rank,target_rank,
-            MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            devinfo.mpi_comm, MPI_STATUS_IGNORE);
 
     recv_loc_subfermion_from_buffer(gl_soa_ferm, lnh_ferm, target_rank);
 
@@ -943,12 +943,12 @@ void recv_loc_subfermion_from_rank(global_vec3_soa *gl_soa_ferm,
 void send_lnh_subfermion_to_master(const vec3_soa *lnh_ferm, int tag)
 {
     MPI_Send(lnh_ferm, 6*LNH_SIZEH,MPI_DOUBLE,0,tag           ,
-            MPI_COMM_WORLD); // tag = myrank
+            devinfo.mpi_comm); // tag = myrank
 }
 void receive_lnh_subfermion_from_master(vec3_soa* lnh_ferm)
 {
     MPI_Recv(lnh_ferm, 6*LNH_SIZEH,MPI_DOUBLE,0,devinfo.myrank,
-            MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            devinfo.mpi_comm, MPI_STATUS_IGNORE);
 }
 
 // chunks, tamats
@@ -961,7 +961,7 @@ void send_lnh_subtamat_to_rank(const global_tamat_soa *gl_soa_tamat,
     ALLOCCHECK(allocation_check,lnh_tamat);
     send_lnh_subtamat_to_buffer(gl_soa_tamat,lnh_tamat,target_rank);
     MPI_Send(lnh_tamat,8*LNH_SIZEH,MPI_DOUBLE,target_rank,target_rank,
-            MPI_COMM_WORLD);
+            devinfo.mpi_comm);
     FREECHECK(lnh_tamat);
 
 }
@@ -972,18 +972,18 @@ void recv_loc_subtamat_from_rank(global_tamat_soa *gl_soa_tamat,
             sizeof(tamat_soa)); 
     ALLOCCHECK(allocation_check,lnh_tamat);
     MPI_Recv(lnh_tamat,8*LNH_SIZEH,MPI_DOUBLE,target_rank,target_rank,
-            MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            devinfo.mpi_comm,MPI_STATUS_IGNORE);
     recv_loc_subtamat_from_buffer(gl_soa_tamat,lnh_tamat,target_rank);
     FREECHECK(lnh_tamat);
 
 }
 void send_lnh_subtamat_to_master(const tamat_soa *lnh_tamat, int tag){
 
-    MPI_Send(lnh_tamat,8*LNH_SIZEH,MPI_DOUBLE,0,tag,MPI_COMM_WORLD);
+    MPI_Send(lnh_tamat,8*LNH_SIZEH,MPI_DOUBLE,0,tag,devinfo.mpi_comm);
 
 }
 void receive_lnh_subtamat_from_master(tamat_soa* lnh_tamat){
-    MPI_Recv(lnh_tamat,8*LNH_SIZEH,MPI_DOUBLE,0,devinfo.myrank,MPI_COMM_WORLD,
+    MPI_Recv(lnh_tamat,8*LNH_SIZEH,MPI_DOUBLE,0,devinfo.myrank,devinfo.mpi_comm,
             MPI_STATUS_IGNORE);
 }
 
@@ -997,7 +997,7 @@ void send_lnh_subthmat_to_rank(const global_thmat_soa *gl_soa_thmat,
     ALLOCCHECK(allocation_check,lnh_thmat);
     send_lnh_subthmat_to_buffer(gl_soa_thmat,lnh_thmat,target_rank);
     MPI_Send(lnh_thmat,8*LNH_SIZEH,MPI_DOUBLE,target_rank,target_rank,
-            MPI_COMM_WORLD);
+            devinfo.mpi_comm);
     FREECHECK(lnh_thmat);
 
 }
@@ -1008,18 +1008,18 @@ void recv_loc_subthmat_from_rank(global_thmat_soa *gl_soa_thmat,
             sizeof(thmat_soa)); 
     ALLOCCHECK(allocation_check,lnh_thmat);
     MPI_Recv(lnh_thmat,8*LNH_SIZEH,MPI_DOUBLE,target_rank,target_rank,
-            MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            devinfo.mpi_comm,MPI_STATUS_IGNORE);
     recv_loc_subthmat_from_buffer(gl_soa_thmat,lnh_thmat,target_rank);
     FREECHECK(lnh_thmat);
 
 }
 void send_lnh_subthmat_to_master(const thmat_soa *lnh_thmat, int tag){
 
-    MPI_Send(lnh_thmat,8*LNH_SIZEH,MPI_DOUBLE,0,tag,MPI_COMM_WORLD);
+    MPI_Send(lnh_thmat,8*LNH_SIZEH,MPI_DOUBLE,0,tag,devinfo.mpi_comm);
 
 }
 void receive_lnh_subthmat_from_master(thmat_soa* lnh_thmat){
-    MPI_Recv(lnh_thmat,8*LNH_SIZEH,MPI_DOUBLE,0,devinfo.myrank,MPI_COMM_WORLD,
+    MPI_Recv(lnh_thmat,8*LNH_SIZEH,MPI_DOUBLE,0,devinfo.myrank,devinfo.mpi_comm,
             MPI_STATUS_IGNORE);
 }
 
@@ -1033,7 +1033,7 @@ void send_lnh_subdcomplex_to_rank(const global_dcomplex_soa *gl_soa_dcomplex,
     ALLOCCHECK(allocation_check,lnh_dcomplex);
     send_lnh_subdcomplex_to_buffer(gl_soa_dcomplex,lnh_dcomplex,target_rank);
     MPI_Send(lnh_dcomplex,2*LNH_SIZEH,MPI_DOUBLE,target_rank,target_rank,
-            MPI_COMM_WORLD);
+            devinfo.mpi_comm);
     FREECHECK(lnh_dcomplex);
 
 }
@@ -1044,18 +1044,18 @@ void recv_loc_subdcomplex_from_rank(global_dcomplex_soa *gl_soa_dcomplex,
             sizeof(dcomplex_soa)); 
     ALLOCCHECK(allocation_check,lnh_dcomplex);
     MPI_Recv(lnh_dcomplex,2*LNH_SIZEH,MPI_DOUBLE,target_rank,target_rank,
-            MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            devinfo.mpi_comm,MPI_STATUS_IGNORE);
     recv_loc_subdcomplex_from_buffer(gl_soa_dcomplex,lnh_dcomplex,target_rank);
     FREECHECK(lnh_dcomplex);
 
 }
 void send_lnh_subdcomplex_to_master(const dcomplex_soa *lnh_dcomplex, int tag){
 
-    MPI_Send(lnh_dcomplex,2*LNH_SIZEH,MPI_DOUBLE,0,tag,MPI_COMM_WORLD);
+    MPI_Send(lnh_dcomplex,2*LNH_SIZEH,MPI_DOUBLE,0,tag,devinfo.mpi_comm);
 
 }
 void receive_lnh_subdcomplex_from_master(dcomplex_soa* lnh_dcomplex){
-    MPI_Recv(lnh_dcomplex,2*LNH_SIZEH,MPI_DOUBLE,0,devinfo.myrank,MPI_COMM_WORLD,
+    MPI_Recv(lnh_dcomplex,2*LNH_SIZEH,MPI_DOUBLE,0,devinfo.myrank,devinfo.mpi_comm,
             MPI_STATUS_IGNORE);
 }
 
@@ -1069,7 +1069,7 @@ void send_lnh_subdouble_to_rank(const global_double_soa *gl_soa_double,
     ALLOCCHECK(allocation_check,lnh_double);
     send_lnh_subdouble_to_buffer(gl_soa_double,lnh_double,target_rank);
     MPI_Send(lnh_double,1*LNH_SIZEH,MPI_DOUBLE,target_rank,target_rank,
-            MPI_COMM_WORLD);
+            devinfo.mpi_comm);
     FREECHECK(lnh_double);
 
 }
@@ -1080,18 +1080,18 @@ void recv_loc_subdouble_from_rank(global_double_soa *gl_soa_double,
             sizeof(double_soa)); 
     ALLOCCHECK(allocation_check,lnh_double);
     MPI_Recv(lnh_double,1*LNH_SIZEH,MPI_DOUBLE,target_rank,target_rank,
-            MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            devinfo.mpi_comm,MPI_STATUS_IGNORE);
     recv_loc_subdouble_from_buffer(gl_soa_double,lnh_double,target_rank);
     FREECHECK(lnh_double);
 
 }
 void send_lnh_subdouble_to_master(const double_soa *lnh_double, int tag){
 
-    MPI_Send(lnh_double,1*LNH_SIZEH,MPI_DOUBLE,0,tag,MPI_COMM_WORLD);
+    MPI_Send(lnh_double,1*LNH_SIZEH,MPI_DOUBLE,0,tag,devinfo.mpi_comm);
 
 }
 void receive_lnh_subdouble_from_master(double_soa* lnh_double){
-    MPI_Recv(lnh_double,1*LNH_SIZEH,MPI_DOUBLE,0,devinfo.myrank,MPI_COMM_WORLD,
+    MPI_Recv(lnh_double,1*LNH_SIZEH,MPI_DOUBLE,0,devinfo.myrank,devinfo.mpi_comm,
             MPI_STATUS_IGNORE);
 }
 

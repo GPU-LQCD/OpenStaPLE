@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include "./geometry_multidev.h"
 #include "../OpenAcc/geometry.h"
+#include "../Include/rep_info.h"
 
 #include "./multidev.h"
 
@@ -19,22 +20,40 @@ extern int verbosity_lv;
 void pre_init_multidev1D(dev_info * mdi)
 {
     MPI_Init(NULL,NULL);
-    MPI_Comm_rank(MPI_COMM_WORLD, &(mdi->myrank));
-    MPI_Comm_size(MPI_COMM_WORLD, &(mdi->nranks));
+    MPI_Comm_rank(MPI_COMM_WORLD, &(mdi->myrank_world));
+    MPI_Comm_size(MPI_COMM_WORLD, &(mdi->nranks_world));
     MPI_Get_processor_name(mdi->processor_name,&(mdi->namelen));
 
+    // associate to specific replica communication group
+    mdi->num_replicas=mdi->nranks_world/NRANKS_D3;
+    if(mdi->num_replicas>1){
+      mdi->replica_idx = mdi->myrank_world/NRANKS_D3;
+      MPI_Comm_split(MPI_COMM_WORLD, mdi->replica_idx, mdi->myrank_world, &(mdi->mpi_comm));
+      MPI_Comm_rank(mdi->mpi_comm,&(mdi->myrank));
+      MPI_Comm_size(mdi->mpi_comm,&(mdi->nranks));
+    }else{
+      mdi->replica_idx=0;
+      mdi->mpi_comm=MPI_COMM_WORLD;
+      mdi->myrank=mdi->myrank_world;
+      mdi->nranks=mdi->nranks_world;
+    }
+
+
     if(mdi->nranks != NRANKS_D3){
-        printf("#MPI%02d: NRANKS_D3 is different from nranks: no salamino? Exiting now\n",mdi->myrank);
-        printf("#MPI%02d: NRANKS_D3 = %d, nranks = %d\n",mdi->myrank, NRANKS_D3, mdi->nranks);
+        MPI_PRINTF0("NRANKS_D3 is different from nranks: no salamino? Exiting now\n");
+        MPI_PRINTF1("NRANKS_D3 = %d, nranks = %d\n",NRANKS_D3, mdi->nranks);
+        exit(1);
+    }
+
+    if(mdi->num_replicas != NREPLICAS){
+        MPI_PRINTF0("NREPLICAS is different from devinfo.num_replicas. Exiting now\n");
+        MPI_PRINTF1("NREPLICAS = %d, num_replicas = %d\n",NREPLICAS, mdi->num_replicas);
         exit(1);
     }
     
     if(verbosity_lv > 2){
-        printf("MPI%02d - Called MPI_Init\n",mdi->myrank);
+        MPI_PRINTF0("- Called MPI_Init\n");
     }
-
-
-
 }
 
 void init_multidev1D(dev_info * mdi)
@@ -43,11 +62,14 @@ void init_multidev1D(dev_info * mdi)
     mdi->myrank_R = (mdi->myrank + 1 ) % mdi->nranks;       //SALAMINO
     mdi->node_subrank =  mdi->myrank % mdi->proc_per_node;   //SALAMINO
 
-    sprintf(mdi->myrankstr,"MPI%02d",mdi->myrank);
+    if(mdi->num_replicas>1){
+      sprintf(mdi->myrankstr,"MPI%02d",mdi->myrank);
+    }else{
+      sprintf(mdi->myrankstr,"MPI%02d:%02d",mdi->replica_idx,mdi->myrank);
+    }
 
-    printf("#MPI%02d: of \"%02d\" tasks running on host \"%s\", local rank: %d, rankL: %d, rankR: %d\n",
-    mdi->myrank, mdi->nranks, mdi->processor_name, 
-    mdi->node_subrank, mdi->myrank_L, mdi->myrank_R); //SALAMINO
+    MPI_PRINTF1("of \"%02d\" tasks running on host \"%s\", replica index: %d, local rank: %d, rankL: %d, rankR: %d\n", mdi->nranks_world, mdi->processor_name, 
+    mdi->replica_idx, mdi->node_subrank, mdi->myrank_L, mdi->myrank_R); //SALAMINO
 
     mdi->myrank4int = xyzt_rank(mdi->myrank); // ALL RANKS
 
@@ -79,27 +101,18 @@ void init_multidev1D(dev_info * mdi)
     mdi->origin_0123[2]     = mdi->gl_loc_origin4int.d2;
     mdi->origin_0123[3]     = mdi->gl_loc_origin4int.d3;
     if(verbosity_lv > 2){
-        printf("MPI%02d - Finished init_multidev1D\n", mdi->myrank);   
-        printf("MPI%02d - Origin(%d,%d,%d,%d)",mdi->myrank,
+        MPI_PRINTF0("- Finished init_multidev1D\n");   
+        MPI_PRINTF1("- Origin(%d,%d,%d,%d)",
                 mdi->origin_0123[0],mdi->origin_0123[1],
                 mdi->origin_0123[2], mdi->origin_0123[3]);
    
     }
-
-
 }
-
-
-
-
-
 
 void shutdown_multidev()
 {
-
-    printf("MPI%02d: Finalizing...\n",devinfo.myrank );
+    MPI_PRINTF0("Finalizing...\n" );
     MPI_Finalize();     
-
 }
 
 

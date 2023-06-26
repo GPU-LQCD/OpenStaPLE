@@ -184,7 +184,7 @@ int main(int argc, char* argv[]){
 
     // INITIALIZING GAUGE CONFIGURATION
     int conf_id_iter = 0;
-    if(!read_conf_wrapper(conf_acc[0],mc_params.save_conf_name,
+    if(!read_conf_wrapper(conf_acc,mc_params.save_conf_name,
                 &conf_id_iter,debug_settings.use_ildg)){
         // READS ALSO THE conf_id_iter
         printf("MPI%02d - Stored Gauge Conf \"%s\" Read : OK \n",
@@ -192,16 +192,16 @@ int main(int argc, char* argv[]){
 
     }
     else{
-        generate_Conf_cold(conf_acc[0],mc_params.eps_gen);
+        generate_Conf_cold(conf_acc,mc_params.eps_gen);
         printf("MPI%02d - Cold Gauge Conf Generated : OK \n",
                 devinfo.myrank);
         if(test_settings.saveResults)
-            save_conf_wrapper(conf_acc[0],mc_params.save_conf_name,0,debug_settings.use_ildg);
+            save_conf_wrapper(conf_acc,mc_params.save_conf_name,0,debug_settings.use_ildg);
         if(debug_settings.use_ildg)
             printf("MPI%02d: You're using ILDG format.\n", devinfo.myrank);
         conf_id_iter=0;
     }
-#pragma acc update device(conf_acc[0:1][0:8])
+#pragma acc update device(conf_acc[0:8])
 
 
     // init fermion
@@ -227,11 +227,11 @@ int main(int argc, char* argv[]){
 
     RationalApprox * rationalApproxToUse;
     /*
-#pragma acc data  copy(conf_acc[0][0:8]) copy(ferm_chi_acc[0:1])\
+#pragma acc data  copy(conf_acc[0:8]) copy(ferm_chi_acc[0:1])\
 copy(ferm_phi_acc[0:1])  copy(u1_back_phases[0:8*alloc_info.NDiffFlavs]) \
 create(kloc_r[0:1]) create(kloc_h[0:1]) create(kloc_s[0:1]) create(kloc_p[0:1]) \
 create(ferm_shiftmulti_acc[0:alloc_info.maxNeededShifts]) \
-copy(conf_acc_f[0][0:8]) copy(ferm_chi_acc_f[0:1])\
+copy(conf_acc_f[0:8]) copy(ferm_chi_acc_f[0:1])\
 copy(ferm_phi_acc_f[0:1])  copy(u1_back_phases_f[0:8*alloc_info.NDiffFlavs]) \
 create(kloc_r_f[0:1]) create(kloc_h_f[0:1])\
 create(kloc_s_f[0:1]) create(kloc_p_f[0:1]) \
@@ -252,7 +252,7 @@ create(k_p_shiftferm_f[0:alloc_info.maxApproxOrder] )
         double minmaxeig[2];
         generate_vec3_soa_gauss(kloc_p);
 #pragma acc update device(kloc_p[0:1])
-        find_min_max_eigenvalue_soloopenacc(conf_acc[0],fermions_parameters,kloc_r,kloc_h,kloc_p,kloc_s,minmaxeig);
+        find_min_max_eigenvalue_soloopenacc(conf_acc,fermions_parameters,kloc_r,kloc_h,kloc_p,kloc_s,minmaxeig);
         printf("Found eigenvalues of dirac operator: %e,  %e\n",
                 minmaxeig[0],minmaxeig[1]);
 
@@ -288,7 +288,7 @@ create(k_p_shiftferm_f[0:alloc_info.maxApproxOrder] )
     }
     for(r=0; r<test_settings.multiShiftInverterRepetitions; r++){
         gettimeofday(&t0,NULL);
-        multishift_invert(conf_acc[0],&fermions_parameters[0],
+        multishift_invert(conf_acc,&fermions_parameters[0],
                 rationalApproxToUse,
                 ferm_shiftmulti_acc,
                 ferm_chi_acc,
@@ -333,13 +333,13 @@ create(k_p_shiftferm_f[0:alloc_info.maxApproxOrder] )
         printf("####################\n");
     }
     // conversion to single precision
-    convert_double_to_float_su3_soa(conf_acc[0],conf_acc_f[0]);
+    convert_double_to_float_su3_soa(conf_acc,conf_acc_f);
     convert_double_to_float_vec3_soa(ferm_chi_acc,ferm_chi_acc_f);
 
     struct timeval t0_f,t1_f,t2_f,t3_f,t4_f,t5_f;
     for(r=0; r<test_settings.multiShiftInverterRepetitions; r++){
         gettimeofday(&t0_f,NULL);
-        multishift_invert_f(conf_acc_f[0],&fermions_parameters[0],
+        multishift_invert_f(conf_acc_f,&fermions_parameters[0],
                 rationalApproxToUse,
                 ferm_shiftmulti_acc_f,
                 ferm_chi_acc_f,

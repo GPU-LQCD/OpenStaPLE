@@ -172,7 +172,7 @@ int rat_approx_file_or_script_create(RationalApprox* rational_approx){
 	char * nomefile = rational_approx_filename(rational_approx->error,rational_approx->exponent_num,rational_approx->exponent_den,rational_approx->lambda_min);
 
 #ifdef MULTIDEVICE
-	printf("MPI%02d - Some error happened in reading %s ...\n", devinfo.myrank,nomefile );
+	MPI_PRINTF1("- Some error happened in reading %s ...\n",nomefile);
 	if(0==devinfo.myrank){
 		FILE * bash_repair_commands = fopen("genappfiles.sh","a");
 
@@ -191,7 +191,7 @@ int rat_approx_file_or_script_create(RationalApprox* rational_approx){
 						rational_approx->exponent_den, rational_approx->lambda_min);
 		fclose(bash_repair_commands);
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(devinfo.mpi_comm);
 	error_status = 1; // error cannot be corrected here.
 #else
 	char command[100];

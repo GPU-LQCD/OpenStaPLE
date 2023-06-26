@@ -65,6 +65,12 @@
 #define MULTIDEVICE
 #endif
 
+#ifndef MULTIDEVICE
+#if NREPLICAS > 1
+#define MULTIDEVICE
+#endif
+#endif
+
 // Local aNd Halo lattice dimensions 
 // Hopefully automatically calculated by the compiler during optimization
 //AUTOMATIC DEFINITIONS OF LNH STUFF

@@ -57,7 +57,7 @@ tamat_soa * ipdot_f_old; // for HMC diagnostics
 su3_soa * gconf_as_fermionmatrix; // (only a pointer) conf to use in either cases 
                                   // in fermion related computation (with or without stouting)
 
-su3_soa ** conf_acc; // gauge configuration(s)
+su3_soa * conf_acc; // gauge configuration(s)
 
 // STOUTING UTILITIES
 su3_soa * gstout_conf_acc_arr; // all stouting steps except the zeroth
@@ -124,19 +124,23 @@ void mem_alloc_core(){
 
     
 	alloc_info.conf_acc_size = 8;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	if(devinfo.async_comm_gauge) alloc_info.conf_acc_size *=2 ; 
 #endif
 
-	allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&conf_acc, ALIGN,
-																						 alloc_info.num_replicas*sizeof(su3_soa*));
+//	allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&conf_acc, ALIGN,
+//																						 alloc_info.num_replicas*sizeof(su3_soa*));
+	allocation_check =  POSIX_MEMALIGN_WRAPPER((void *)&conf_acc, ALIGN, sizeof(su3_soa*));
 
-	for(int r=0; r<alloc_info.num_replicas; r++){
-		POSIX_MEMALIGN_WRAPPER((void **)&conf_acc[r], ALIGN,
-													 alloc_info.conf_acc_size*sizeof(su3_soa));
-		ALLOCCHECK(allocation_check, conf_acc[r]);
-	}
-	#pragma acc enter data create(conf_acc[0:alloc_info.num_replicas][0:alloc_info.conf_acc_size])
+//	for(int r=0; r<alloc_info.num_replicas; r++){
+//		POSIX_MEMALIGN_WRAPPER((void **)&conf_acc[r], ALIGN,
+//													 alloc_info.conf_acc_size*sizeof(su3_soa));
+//		ALLOCCHECK(allocation_check, conf_acc[r]);
+//	}
+//	#pragma acc enter data create(conf_acc[0:alloc_info.num_replicas][0:alloc_info.conf_acc_size])
+		POSIX_MEMALIGN_WRAPPER((void *)&conf_acc, ALIGN, alloc_info.conf_acc_size*sizeof(su3_soa));
+		ALLOCCHECK(allocation_check, conf_acc);
+	#pragma acc enter data create(conf_acc[0:alloc_info.conf_acc_size])
 }
 
 void mem_alloc_extended()
@@ -326,10 +330,10 @@ void mem_free_core()
 	FREECHECK(u1_back_phases);        
 	#pragma acc exit data delete(u1_back_phases)        
 
-	for(int r=0;r<alloc_info.num_replicas;r++){
-		FREECHECK(conf_acc[r]);
-	}
-	#pragma acc exit data delete(conf_acc[0:alloc_info.num_replicas][0:alloc_info.conf_acc_size])
+//	for(int r=0;r<alloc_info.num_replicas;r++){
+//		FREECHECK(conf_acc[r]);
+//	}
+//	#pragma acc exit data delete(conf_acc[0:alloc_info.num_replicas][0:alloc_info.conf_acc_size])
 
 	FREECHECK(conf_acc);
 	#pragma acc exit data delete(conf_acc)

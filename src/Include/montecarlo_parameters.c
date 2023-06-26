@@ -20,8 +20,7 @@ mc_params_t mc_params;
 
 void init_global_program_status(){
     
-	printf("MPI%02d: reading global program status  from file %s\n",
-				 devinfo.myrank, mc_params.statusFileName);
+	MPI_PRINTF1("reading global program status  from file %s\n", mc_params.statusFileName);
 
 	FILE * gps_file = fopen(mc_params.statusFileName, "r");  
 	if(gps_file){
@@ -41,8 +40,7 @@ void init_global_program_status(){
 	}
 	else 
     {
-			printf("MPI%02d: file %s not readable\n",
-						 devinfo.myrank, mc_params.statusFileName);
+			MPI_PRINTF1("file %s not readable\n", mc_params.statusFileName);
 
 			mc_params.next_gps  = GPSTATUS_UPDATE;
 			mc_params.max_flavour_cycle_time = 1.0f;

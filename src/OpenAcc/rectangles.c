@@ -10,6 +10,7 @@
 
 #ifdef MULTIDEVICE
 #include <mpi.h>
+#include "../Mpi/multidev.h"
 #endif
 
 double calc_loc_rectangles_2x1_nnptrick(__restrict const su3_soa * const u,
@@ -1051,7 +1052,7 @@ void calc_loc_improved_staples_typeABC_nnptrick_all(__restrict const su3_soa * c
   } // d3
 } // closes routine
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 void calc_loc_improved_staples_typeA_nnptrick_all_bulk(__restrict const su3_soa * const u,
 																											 __restrict su3_soa * const loc_stap )
 {
@@ -1899,9 +1900,9 @@ double calc_rettangolo_soloopenacc(__restrict const su3_soa * const tconf_acc,
       temp  += calc_loc_rectangles_1x2_nnptrick(tconf_acc,local_plaqs,tr_local_plaqs,mu,nu);
     }
   }
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
   MPI_Allreduce((void*)&temp,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
   total_result = temp;
 #endif 

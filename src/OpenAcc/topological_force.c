@@ -24,9 +24,8 @@
 #include "./alloc_vars.h"
 
 #define ALLOLLOCHECK(control_int,var)  if(control_int != 0 )						\
-    printf("MPI%02d: \tError in  allocation of %s . \n",devinfo.myrank, #var); \
-	else if(verbosity_lv > 2) printf("MPI%02d: \tAllocation of %s : OK , %p\n",	\
-																	 devinfo.myrank, #var, var );
+    MPI_PRINTF1("\tError in  allocation of %s . \n", #var); \
+	else if(verbosity_lv > 2) MPI_PRINTF1("\tAllocation of %s : OK , %p\n", #var, var );
 
 #define FREELOLLOCHECK(var) if(verbosity_lv >2)					\
     printf("\tFreed %s, %p ...", #var,var);							\
@@ -159,7 +158,7 @@ void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, dou
     printf("\t\t\tMPI%02d - four_leaves(leaves,u)\n",devinfo.myrank);
   
   // compute leaves
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_su3_borders(u, GAUGE_HALO);  
 #endif
 
@@ -173,7 +172,7 @@ void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, dou
   
   antihermatize_unsafe(leaves);
   
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	communicate_gl3_borders(leaves, GAUGE_HALO);  
 #endif
 

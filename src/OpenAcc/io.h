@@ -27,11 +27,11 @@ static inline int save_conf(global_su3_soa * const conf_rw, const char* nomefile
 														int conf_id_iter, int use_ildg)
 {
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	if(devinfo.myrank != 0){
-		printf("MPI%02d: Rank is not allowed to use this function!\n",devinfo.myrank );
+		MPI_PRINTF0("Rank is not allowed to use this function!\n" );
 		printf("ERROR: %s:%d\n",__FILE__, __LINE__);
-		MPI_Abort(MPI_COMM_WORLD,1);
+		MPI_Abort(devinfo.mpi_comm,1);
 	}
 #endif 
 
@@ -55,7 +55,7 @@ static inline void save_conf_wrapper(su3_soa* conf, const char* nomefile,
 	printf("MPI%02d - Saving whole configuration...\n", devinfo.myrank);
 	int writeOutcome;
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 
 	if(devinfo.myrank == 0){
 		int irank;
@@ -67,7 +67,7 @@ static inline void save_conf_wrapper(su3_soa* conf, const char* nomefile,
 	}
 	else send_lnh_subconf_to_master(conf,devinfo.myrank);
     
-	MPI_Bcast((void*) &writeOutcome,1,MPI_INT,0,MPI_COMM_WORLD);
+	MPI_Bcast((void*) &writeOutcome,1,MPI_INT,0,devinfo.mpi_comm);
 
 	if(0 != writeOutcome){
 		MPI_Finalize();
@@ -95,9 +95,9 @@ static inline int read_conf(global_su3_soa * conf, const char* nomefile,
 														int * conf_id_iter, int use_ildg)
 {
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	if(devinfo.myrank != 0){
-		printf("MPI%02d: Rank is not allowed to use this function!\n",devinfo.myrank );
+		MPI_PRINTF0("Rank is not allowed to use this function!\n");
 		printf("ERROR: %s:%d\n",__FILE__, __LINE__);
 		exit(1);
 	}
@@ -123,13 +123,13 @@ static inline int read_conf_wrapper(su3_soa* conf, const char* nomefile,
 {
 
 	int error =  0;
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 
 	if(devinfo.myrank == 0){
 		if(verbosity_lv > 2)
 			printf("MPI%02d - reading global conf \n",devinfo.myrank );
 		error = read_conf(conf_rw, nomefile,conf_id_iter, use_ildg);
-		MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
 
 		if(!error) {
 			send_lnh_subconf_to_buffer(conf_rw,conf,0);
@@ -137,7 +137,7 @@ static inline int read_conf_wrapper(su3_soa* conf, const char* nomefile,
 			for(irank = 1 ; irank < devinfo.nranks; irank++)
 				send_lnh_subconf_to_rank(conf_rw,irank);
         
-			MPI_Bcast((void*) conf_id_iter,1,MPI_INT,0,MPI_COMM_WORLD);
+			MPI_Bcast((void*) conf_id_iter,1,MPI_INT,0,devinfo.mpi_comm);
 
 		}
 		else 
@@ -149,10 +149,10 @@ static inline int read_conf_wrapper(su3_soa* conf, const char* nomefile,
 		if(verbosity_lv > 2)
 			printf("MPI%02d - receiving conf \n",devinfo.myrank );
         
-		MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+		MPI_Bcast((void*) &error,1,MPI_INT,0,devinfo.mpi_comm);
 		if(!error){ 
 			receive_lnh_subconf_from_master(conf);
-			MPI_Bcast((void*) conf_id_iter,1,MPI_INT,0,MPI_COMM_WORLD);
+			MPI_Bcast((void*) conf_id_iter,1,MPI_INT,0,devinfo.mpi_comm);
 		}
 		else 
 			if(verbosity_lv > 2)

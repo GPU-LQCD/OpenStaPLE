@@ -151,9 +151,9 @@ double reduce_loc_top_charge(double_soa * const loc_q)
         result += loc_q[1].d[t];
     }
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
   double partial = result;
-  MPI_Allreduce((void*)&partial,(void*)&result,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce((void*)&partial,(void*)&result,1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 
 #endif
     return result;

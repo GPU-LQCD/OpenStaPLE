@@ -131,7 +131,7 @@ void set_fermion_file_header(ferm_meas_params * fmpar, ferm_param * tferm_par){
 
 }
 
-void fermion_measures( su3_soa * tconf_acc,
+void fermion_measures(su3_soa * tconf_acc,
         ferm_param * tfermions_parameters,
         ferm_meas_params * tfm_par,
         double res, int max_cg, int conf_id_iter,
@@ -160,8 +160,10 @@ void fermion_measures( su3_soa * tconf_acc,
 #else
     conf_to_use = tconf_acc;
 #endif
+
     if(inverter_tricks.useMixedPrecision){ 
-        conf_to_use_f = conf_acc_f[0];// global variable
+//        conf_to_use_f = conf_acc_f[0];// global variable
+        conf_to_use_f = conf_acc_f;// global variable
         convert_double_to_float_su3_soa(conf_to_use,conf_to_use_f); 
     }
 
@@ -488,7 +490,7 @@ void fermion_measures( su3_soa * tconf_acc,
 
 
 #ifdef MULTIDEVICE
-	    MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,MPI_COMM_WORLD);
+	    MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,devinfo.mpi_comm);
 	    printf("MPI%02d - Broadcast of run condition %d from master...\n",
 			    devinfo.myrank, mc_params.run_condition);
 #endif

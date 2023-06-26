@@ -64,7 +64,7 @@ void dM_dmu_eo0( __restrict const su3_soa * u,
         } // Loop over nd2
     } // Loop over nd3
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 
@@ -121,7 +121,7 @@ void dM_dmu_eo1( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -177,7 +177,7 @@ void dM_dmu_eo2( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -233,7 +233,7 @@ void dM_dmu_eo3( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -295,7 +295,7 @@ void dM_dmu_oe0( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -350,7 +350,7 @@ void dM_dmu_oe1( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -405,7 +405,7 @@ void dM_dmu_oe2( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -460,7 +460,7 @@ void dM_dmu_oe3( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -525,7 +525,7 @@ void d2M_dmu2_eo0( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -581,7 +581,7 @@ void d2M_dmu2_eo1( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -637,7 +637,7 @@ void d2M_dmu2_eo2( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -693,7 +693,7 @@ void d2M_dmu2_eo3( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -755,7 +755,7 @@ void d2M_dmu2_oe0( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -810,7 +810,7 @@ void d2M_dmu2_oe1( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -865,7 +865,7 @@ void d2M_dmu2_oe2( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
@@ -920,7 +920,7 @@ void d2M_dmu2_oe3( __restrict const su3_soa * u,
             } // Loop over nd1
         } // Loop over nd2
     } // Loop over nd3
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
     communicate_fermion_borders(out);
 #endif
 }
