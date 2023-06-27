@@ -129,7 +129,11 @@ int main(int argc, char* argv[]){
   if(argc!=2){
     if(0==devinfo.myrank_world) print_geom_defines();
     if(0==devinfo.myrank_world) printf("\n\nERROR! Use mpirun -n <num_tasks> %s input_file to execute the code!\n\n", argv[0]);
+#ifdef MULTIDEVICE
+    MPI_Abort(MPI_COMM_WORLD,1);			
+#else
     exit(EXIT_FAILURE);			
+#endif
   }
   
 
@@ -301,12 +305,13 @@ int main(int argc, char* argv[]){
 	
 //  for(int r=0;r<rep->replicas_total_number;r++){
 	{
+    int replica_idx;
 #ifdef PAR_TEMP
-    int r=devinfo.replica_idx;
-    snprintf(rep_str,20,"replica_%d",r);
+    replica_idx=devinfo.replica_idx;
+    snprintf(rep_str,20,"replica_%d",replica_idx);
 		strcat(mc_params.save_conf_name,rep_str);
 #else
-		int r=0;
+		replica_idx=0;
 #endif
 		
     if(debug_settings.do_norandom_test){
@@ -333,14 +338,55 @@ int main(int argc, char* argv[]){
 
 
 #ifdef PAR_TEMP
-    for(int ri=0; ri<rep->replicas_total_number; ++ri)
-      rep->label[ri]=ri;
-    strcpy(mc_params.save_conf_name,aux_name_file);
-		if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
-		init_k(conf_acc,rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,0);
+
+    if(conf_id_iter==0){
+      // first label initialization
+      for(int ri=0; ri<rep->replicas_total_number; ++ri)
+        rep->label[ri]=ri;
+      if(devinfo.myrank_world ==0){ // write first labeling (usual increasing order)
+        file_label=fopen(acc_info->file_label_name,"at");
+        if(!file_label){file_label=fopen(acc_info->file_label_name,"wt");} // create label file
+
+        label_print(rep, file_label, conf_id_iter); // populate it
+        fclose(file_label);
+      }
+      strcpy(mc_params.save_conf_name,aux_name_file);
+      if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",replica_idx,rep->replicas_total_number); 
+      init_k(conf_acc,rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,0);
+    }else{ // not first iteration: initialize boundaries from label file
+      if(devinfo.myrank_world ==0){ // read labeling from file
+        file_label=fopen(acc_info->file_label_name,"r");
+        if(!file_label){ 
+          printf("\n\nERROR! Cannot open label file.\n\n");
+#ifdef MULTIDEVICE
+          MPI_Abort(MPI_COMM_WORLD,1);			
+#else
+          exit(EXIT_FAILURE);			
+#endif
+        }else{ // file exists
+          // read label file
+          int itr_num=-1,trash_bin;
+          printf("conf_id_iter: %d\n",conf_id_iter);
+          while(fscanf(file_label,"%d",&itr_num)==1){
+            printf("%d ",itr_num);
+            for(int idx=0; idx<NREPLICAS; ++idx){
+              fscanf(file_label,"%d",(itr_num==conf_id_iter)? &(rep->label[idx]) : &trash_bin);
+              printf("%d ",(itr_num==conf_id_iter)? (rep->label[idx]) : trash_bin);
+            }
+            printf("\n");
+          }
+          fclose(file_label);
+        }
+      }
+      // broadcast it to all replicas and ranks 
+      MPI_Bcast((void*)&(rep->label[0]),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
+      init_k(conf_acc,rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,0);
+    }
+
+
 		
 #if NRANKS_D3 > 1
-    if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,1);
+    if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
 		
 		#pragma acc update device(conf_acc[0:alloc_info.conf_acc_size])
@@ -730,16 +776,16 @@ int main(int argc, char* argv[]){
 						if(rep->replicas_total_number>1){
 							file_label=fopen(acc_info->file_label_name,"at");
 							if(!file_label){file_label=fopen(acc_info->file_label_name,"wt");}
+							label_print(rep, file_label, conf_id_iter);
 
 							hmc_acc_file=fopen(acc_info->hmc_file_name,"at");
 							if(!hmc_acc_file){hmc_acc_file=fopen(acc_info->hmc_file_name,"wt");}
+							fprintf(hmc_acc_file,"%d\t",conf_id_iter);
                     
 							swap_acc_file=fopen(acc_info->swap_file_name,"at");
 							if(!swap_acc_file){swap_acc_file=fopen(acc_info->swap_file_name,"wt");}
-
-							fprintf(hmc_acc_file,"%d\t",conf_id_iter);
 							fprintf(swap_acc_file,"%d\t",conf_id_iter);
-							label_print(rep, file_label, conf_id_iter);
+
 						}
             // print acceptances
 						for(int lab=0;lab<rep->replicas_total_number;lab++){
@@ -775,6 +821,7 @@ int main(int argc, char* argv[]){
 #ifdef PAR_TEMP
           if(0==devinfo.myrank_world){
             acceptance_to_print=accettate_therm[0]+accettate_metro[0]-accettate_therm_old[0]-accettate_metro_old[0];
+            int ridx_lab0;
             for(ridx_lab0=0; 0!=rep->label[ridx_lab0]; ++ridx_lab0){} // finds index corresponding to label=0
             if(ridx_lab0!=0){
               MPI_Send((int*)&acceptance_to_print,1,MPI_INT,ridx_lab0*NRANKS_D3,0,MPI_COMM_WORLD);
