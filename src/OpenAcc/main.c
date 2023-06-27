@@ -88,9 +88,11 @@ int main(int argc, char* argv[]){
  
   gettimeofday ( &(mc_params.start_time), NULL );
 
+#ifdef PAR_TEMP
   FILE *hmc_acc_file;
   FILE *swap_acc_file;
   FILE *file_label;
+#endif
  
   srand(time(NULL));
     
@@ -127,7 +129,11 @@ int main(int argc, char* argv[]){
   if(argc!=2){
     if(0==devinfo.myrank_world) print_geom_defines();
     if(0==devinfo.myrank_world) printf("\n\nERROR! Use mpirun -n <num_tasks> %s input_file to execute the code!\n\n", argv[0]);
+#ifdef MULTIDEVICE
+    MPI_Abort(MPI_COMM_WORLD,1);			
+#else
     exit(EXIT_FAILURE);			
+#endif
   }
   
 
@@ -299,12 +305,13 @@ int main(int argc, char* argv[]){
 	
 //  for(int r=0;r<rep->replicas_total_number;r++){
 	{
+    int replica_idx;
 #ifdef PAR_TEMP
-    int r=devinfo.replica_idx;
-    snprintf(rep_str,20,"replica_%d",r);
+    replica_idx=devinfo.replica_idx;
+    snprintf(rep_str,20,"replica_%d",replica_idx);
 		strcat(mc_params.save_conf_name,rep_str);
 #else
-		int r=0;
+		replica_idx=0;
 #endif
 		
     if(debug_settings.do_norandom_test){
@@ -329,17 +336,57 @@ int main(int argc, char* argv[]){
       }
     }
 
-		// if not parallel tempering, this set label[0]=0. This is right if parallel tempering is off
-    for(int ri=0; ri<rep->replicas_total_number; ++ri)
-      rep->label[ri]=ri;
 
 #ifdef PAR_TEMP
-    strcpy(mc_params.save_conf_name,aux_name_file);
-		if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
-		init_k(conf_acc,rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,0);
+
+    if(conf_id_iter==0){
+      // first label initialization
+      for(int ri=0; ri<rep->replicas_total_number; ++ri)
+        rep->label[ri]=ri;
+      if(devinfo.myrank_world ==0){ // write first labeling (usual increasing order)
+        file_label=fopen(acc_info->file_label_name,"at");
+        if(!file_label){file_label=fopen(acc_info->file_label_name,"wt");} // create label file
+
+        label_print(rep, file_label, conf_id_iter); // populate it
+        fclose(file_label);
+      }
+      strcpy(mc_params.save_conf_name,aux_name_file);
+      if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",replica_idx,rep->replicas_total_number); 
+      init_k(conf_acc,rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,0);
+    }else{ // not first iteration: initialize boundaries from label file
+      if(devinfo.myrank_world ==0){ // read labeling from file
+        file_label=fopen(acc_info->file_label_name,"r");
+        if(!file_label){ 
+          printf("\n\nERROR! Cannot open label file.\n\n");
+#ifdef MULTIDEVICE
+          MPI_Abort(MPI_COMM_WORLD,1);			
+#else
+          exit(EXIT_FAILURE);			
+#endif
+        }else{ // file exists
+          // read label file
+          int itr_num=-1,trash_bin;
+          printf("conf_id_iter: %d\n",conf_id_iter);
+          while(fscanf(file_label,"%d",&itr_num)==1){
+            printf("%d ",itr_num);
+            for(int idx=0; idx<NREPLICAS; ++idx){
+              fscanf(file_label,"%d",(itr_num==conf_id_iter)? &(rep->label[idx]) : &trash_bin);
+              printf("%d ",(itr_num==conf_id_iter)? (rep->label[idx]) : trash_bin);
+            }
+            printf("\n");
+          }
+          fclose(file_label);
+        }
+      }
+      // broadcast it to all replicas and ranks 
+      MPI_Bcast((void*)&(rep->label[0]),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
+      init_k(conf_acc,rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,0);
+    }
+
+
 		
 #if NRANKS_D3 > 1
-    if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,1);
+    if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
 		
 		#pragma acc update device(conf_acc[0:alloc_info.conf_acc_size])
@@ -355,7 +402,7 @@ int main(int argc, char* argv[]){
 			
 			#pragma acc update host(conf_acc_f[0:alloc_info.conf_acc_size])
 		}
-#else
+#else // no PAR_TEMP
 		#pragma acc update device(conf_acc[0:alloc_info.conf_acc_size])
 #endif
   }
@@ -406,12 +453,15 @@ int main(int argc, char* argv[]){
 
   int rankloc_accettate_therm=0;
   int rankloc_accettate_metro=0;
+  int rankloc_accettate_therm_old;
+  int rankloc_accettate_metro_old;
+  int id_iter_offset=conf_id_iter;
+
+#ifdef PAR_TEMP
   int *accettate_therm;
   int *accettate_metro;
-    
   int *accettate_therm_old;
   int *accettate_metro_old;
-  int id_iter_offset=conf_id_iter;
 
   if(0==devinfo.myrank_world){
     accettate_therm=malloc(sizeof(int)*rep->replicas_total_number);
@@ -428,6 +478,7 @@ int main(int argc, char* argv[]){
     }
   }
 	int swap_number=0;
+#endif
 
   // plaquette measures and polyakov loop measures.
   printf("PLAQUETTE START\n");
@@ -462,7 +513,10 @@ int main(int argc, char* argv[]){
     printf("\n#################################################\n");
 
     // gauge stuff measures
-    if(devinfo.replica_idx==rep->label[0]){
+#ifdef PAR_TEMP
+    if(devinfo.replica_idx==rep->label[0])
+#endif
+    {
       printf("Gauge Measures:\n");
       plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
 
@@ -479,7 +533,10 @@ int main(int argc, char* argv[]){
     }
 
     // fermionic stuff measures
-    if(devinfo.replica_idx==rep->label[0]){
+#ifdef PAR_TEMP
+    if(devinfo.replica_idx==rep->label[0])
+#endif
+    {
       printf("Fermion Measurements: see file %s\n",
 																		fm_par.fermionic_outfilename);
       fermion_measures(conf_acc,fermions_parameters,
@@ -555,10 +612,15 @@ int main(int argc, char* argv[]){
 					MPI_PRINTF1("Avg/Max unitarity deviation on device: %e / %e\n",avg_unitarity_deviation,max_unitarity_deviation);
             
           if(0==devinfo.myrank_world){
+#ifdef PAR_TEMP
             for (int lab=0;lab<rep->replicas_total_number;lab++){
               accettate_therm_old [lab]= accettate_therm[lab];
               accettate_metro_old [lab]= accettate_metro[lab];
             }
+#else
+            rankloc_accettate_therm_old= rankloc_accettate_therm;
+            rankloc_accettate_metro_old= rankloc_accettate_metro;
+#endif
           }
 
 					if(devinfo.myrank ==0 ){
@@ -579,9 +641,11 @@ int main(int argc, char* argv[]){
 		
 					// replicas update - hpt step
          {
+#ifdef PAR_TEMP
             int r=devinfo.replica_idx;
             int lab=rep->label[r];
 						printf("REPLICA %d (index %d):\n",lab,r);
+#endif
 
 						// initial action
 			
@@ -591,7 +655,12 @@ int main(int argc, char* argv[]){
 #ifdef GAUGE_ACT_TLSM
 							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
 #endif
+
+#ifdef PAR_TEMP
 							printf("ACTION BEFORE HMC STEP REPLICA %d (idx %d): %.15lg\n", lab, r, action);
+#else
+							printf("ACTION BEFORE HMC STEP: %.15lg\n", action);
+#endif
 						}
 
 						// HMC step
@@ -649,10 +718,17 @@ int main(int argc, char* argv[]){
 #endif
 			
 						if(which_mode /* is metro */ && 0==devinfo.myrank_world){
+#ifdef PAR_TEMP
 								int iterations = id_iter-id_iter_offset-accettate_therm[0]+1;
 								double acceptance = (double) accettate_metro[0] / iterations;
 								double acc_err = sqrt((double)accettate_metro[0]*(iterations-accettate_metro[0])/iterations)/iterations;
-								printf("Estimated HMC acceptance for this run [replica %d]: %f +- %f\n. Iterations: %d\n",0,acceptance, acc_err, iterations);
+                printf("Estimated HMC acceptance for this run [replica %d]: %f +- %f\n. Iterations: %d\n",0,acceptance, acc_err, iterations);
+#else
+								int iterations = id_iter-id_iter_offset-rankloc_accettate_therm+1;
+								double acceptance = (double) rankloc_accettate_metro / iterations;
+								double acc_err = sqrt((double)rankloc_accettate_metro*(iterations-rankloc_accettate_metro)/iterations)/iterations;
+                printf("Estimated HMC acceptance for this run: %f +- %f\n. Iterations: %d\n",acceptance, acc_err, iterations);
+#endif
 						}
 
 						// final action
@@ -662,7 +738,12 @@ int main(int argc, char* argv[]){
 #ifdef GAUGE_ACT_TLSM
 							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
 #endif
+
+#ifdef PAR_TEMP
 							printf("ACTION AFTER HMC STEP REPLICA %d (idx %d): %.15lg\n", lab, r, action);
+#else
+							printf("ACTION AFTER HMC STEP: %.15lg\n", action);
+#endif
 						}
 
 #ifdef PAR_TEMP
@@ -695,16 +776,16 @@ int main(int argc, char* argv[]){
 						if(rep->replicas_total_number>1){
 							file_label=fopen(acc_info->file_label_name,"at");
 							if(!file_label){file_label=fopen(acc_info->file_label_name,"wt");}
+							label_print(rep, file_label, conf_id_iter);
 
 							hmc_acc_file=fopen(acc_info->hmc_file_name,"at");
 							if(!hmc_acc_file){hmc_acc_file=fopen(acc_info->hmc_file_name,"wt");}
+							fprintf(hmc_acc_file,"%d\t",conf_id_iter);
                     
 							swap_acc_file=fopen(acc_info->swap_file_name,"at");
 							if(!swap_acc_file){swap_acc_file=fopen(acc_info->swap_file_name,"wt");}
-
-							fprintf(hmc_acc_file,"%d\t",conf_id_iter);
 							fprintf(swap_acc_file,"%d\t",conf_id_iter);
-							label_print(rep, file_label, conf_id_iter);
+
 						}
             // print acceptances
 						for(int lab=0;lab<rep->replicas_total_number;lab++){
@@ -737,6 +818,7 @@ int main(int argc, char* argv[]){
           
 					// gauge stuff measures
           int acceptance_to_print;
+#ifdef PAR_TEMP
           if(0==devinfo.myrank_world){
             acceptance_to_print=accettate_therm[0]+accettate_metro[0]-accettate_therm_old[0]-accettate_metro_old[0];
             int ridx_lab0;
@@ -749,9 +831,15 @@ int main(int argc, char* argv[]){
               MPI_Recv((int*)&acceptance_to_print,1,MPI_INT,0,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
             }
           }
+#else
+          acceptance_to_print=rankloc_accettate_therm+rankloc_accettate_metro-rankloc_accettate_therm_old-rankloc_accettate_metro_old;
+#endif
 
 
-          if(0==rep->label[devinfo.replica_idx]){
+#ifdef PAR_TEMP
+          if(0==rep->label[devinfo.replica_idx])
+#endif
+          {
             printf("===========GAUGE MEASURING============\n");
               
             plq  = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
@@ -950,7 +1038,10 @@ int main(int argc, char* argv[]){
 					if(conf_id_iter % fm_par.measEvery == 0 )
 						mc_params.next_gps = GPSTATUS_FERMION_MEASURES;
 
-          if(devinfo.replica_idx==rep->label[0]){
+#ifdef PAR_TEMP
+          if(devinfo.replica_idx==rep->label[0])
+#endif
+          {
             struct timeval tf0, tf1;
             gettimeofday(&tf0, NULL);
             fermion_measures(conf_acc,fermions_parameters,
@@ -1083,8 +1174,8 @@ int main(int argc, char* argv[]){
   // saving gauge conf and RNG status to file
   {
     int r=devinfo.replica_idx;
-    int lab=rep->label[r];
 #ifdef PAR_TEMP
+    int lab=rep->label[r];
     snprintf(rep_str,20,"replica_%d",lab); // initialize rep_str
     strcat(mc_params.save_conf_name,rep_str); // append rep_str
 #endif
