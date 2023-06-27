@@ -88,9 +88,11 @@ int main(int argc, char* argv[]){
  
   gettimeofday ( &(mc_params.start_time), NULL );
 
+#ifdef PAR_TEMP
   FILE *hmc_acc_file;
   FILE *swap_acc_file;
   FILE *file_label;
+#endif
  
   srand(time(NULL));
     
@@ -355,7 +357,6 @@ int main(int argc, char* argv[]){
 			#pragma acc update host(conf_acc_f[0:alloc_info.conf_acc_size])
 		}
 #else // no PAR_TEMP
-    rep->label[0]=0;
 		#pragma acc update device(conf_acc[0:alloc_info.conf_acc_size])
 #endif
   }
@@ -466,7 +467,10 @@ int main(int argc, char* argv[]){
     printf("\n#################################################\n");
 
     // gauge stuff measures
-    if(devinfo.replica_idx==rep->label[0]){
+#ifdef PAR_TEMP
+    if(devinfo.replica_idx==rep->label[0])
+#endif
+    {
       printf("Gauge Measures:\n");
       plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
 
@@ -483,7 +487,10 @@ int main(int argc, char* argv[]){
     }
 
     // fermionic stuff measures
-    if(devinfo.replica_idx==rep->label[0]){
+#ifdef PAR_TEMP
+    if(devinfo.replica_idx==rep->label[0])
+#endif
+    {
       printf("Fermion Measurements: see file %s\n",
 																		fm_par.fermionic_outfilename);
       fermion_measures(conf_acc,fermions_parameters,
@@ -588,9 +595,11 @@ int main(int argc, char* argv[]){
 		
 					// replicas update - hpt step
          {
+#ifdef PAR_TEMP
             int r=devinfo.replica_idx;
             int lab=rep->label[r];
 						printf("REPLICA %d (index %d):\n",lab,r);
+#endif
 
 						// initial action
 			
@@ -600,7 +609,12 @@ int main(int argc, char* argv[]){
 #ifdef GAUGE_ACT_TLSM
 							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
 #endif
+
+#ifdef PAR_TEMP
 							printf("ACTION BEFORE HMC STEP REPLICA %d (idx %d): %.15lg\n", lab, r, action);
+#else
+							printf("ACTION BEFORE HMC STEP: %.15lg\n", action);
+#endif
 						}
 
 						// HMC step
@@ -662,12 +676,13 @@ int main(int argc, char* argv[]){
 								int iterations = id_iter-id_iter_offset-accettate_therm[0]+1;
 								double acceptance = (double) accettate_metro[0] / iterations;
 								double acc_err = sqrt((double)accettate_metro[0]*(iterations-accettate_metro[0])/iterations)/iterations;
+                printf("Estimated HMC acceptance for this run [replica %d]: %f +- %f\n. Iterations: %d\n",0,acceptance, acc_err, iterations);
 #else
 								int iterations = id_iter-id_iter_offset-rankloc_accettate_therm+1;
 								double acceptance = (double) rankloc_accettate_metro / iterations;
 								double acc_err = sqrt((double)rankloc_accettate_metro*(iterations-rankloc_accettate_metro)/iterations)/iterations;
+                printf("Estimated HMC acceptance for this run: %f +- %f\n. Iterations: %d\n",acceptance, acc_err, iterations);
 #endif
-								printf("Estimated HMC acceptance for this run [replica %d]: %f +- %f\n. Iterations: %d\n",0,acceptance, acc_err, iterations);
 						}
 
 						// final action
@@ -677,7 +692,12 @@ int main(int argc, char* argv[]){
 #ifdef GAUGE_ACT_TLSM
 							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
 #endif
+
+#ifdef PAR_TEMP
 							printf("ACTION AFTER HMC STEP REPLICA %d (idx %d): %.15lg\n", lab, r, action);
+#else
+							printf("ACTION AFTER HMC STEP: %.15lg\n", action);
+#endif
 						}
 
 #ifdef PAR_TEMP
@@ -769,7 +789,10 @@ int main(int argc, char* argv[]){
 #endif
 
 
-          if(0==rep->label[devinfo.replica_idx]){
+#ifdef PAR_TEMP
+          if(0==rep->label[devinfo.replica_idx])
+#endif
+          {
             printf("===========GAUGE MEASURING============\n");
               
             plq  = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
@@ -968,7 +991,10 @@ int main(int argc, char* argv[]){
 					if(conf_id_iter % fm_par.measEvery == 0 )
 						mc_params.next_gps = GPSTATUS_FERMION_MEASURES;
 
-          if(devinfo.replica_idx==rep->label[0]){
+#ifdef PAR_TEMP
+          if(devinfo.replica_idx==rep->label[0])
+#endif
+          {
             struct timeval tf0, tf1;
             gettimeofday(&tf0, NULL);
             fermion_measures(conf_acc,fermions_parameters,
@@ -1101,8 +1127,8 @@ int main(int argc, char* argv[]){
   // saving gauge conf and RNG status to file
   {
     int r=devinfo.replica_idx;
-    int lab=rep->label[r];
 #ifdef PAR_TEMP
+    int lab=rep->label[r];
     snprintf(rep_str,20,"replica_%d",lab); // initialize rep_str
     strcat(mc_params.save_conf_name,rep_str); // append rep_str
 #endif
