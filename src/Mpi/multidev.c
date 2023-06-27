@@ -38,7 +38,6 @@ void pre_init_multidev1D(dev_info * mdi)
       mdi->nranks=mdi->nranks_world;
     }
 
-
     if(mdi->nranks != NRANKS_D3){
         MPI_PRINTF0("NRANKS_D3 is different from nranks: no salamino? Exiting now\n");
         MPI_PRINTF1("NRANKS_D3 = %d, nranks = %d\n",NRANKS_D3, mdi->nranks);
@@ -105,7 +104,6 @@ void init_multidev1D(dev_info * mdi)
         MPI_PRINTF1("- Origin(%d,%d,%d,%d)",
                 mdi->origin_0123[0],mdi->origin_0123[1],
                 mdi->origin_0123[2], mdi->origin_0123[3]);
-   
     }
 }
 

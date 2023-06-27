@@ -329,11 +329,10 @@ int main(int argc, char* argv[]){
       }
     }
 
-		// if not parallel tempering, this set label[0]=0. This is right if parallel tempering is off
-    for(int ri=0; ri<rep->replicas_total_number; ++ri)
-      rep->label[ri]=ri;
 
 #ifdef PAR_TEMP
+    for(int ri=0; ri<rep->replicas_total_number; ++ri)
+      rep->label[ri]=ri;
     strcpy(mc_params.save_conf_name,aux_name_file);
 		if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",r,rep->replicas_total_number); 
 		init_k(conf_acc,rep->cr_vec[r],rep->defect_boundary,rep->defect_coordinates,&def,0);
@@ -355,7 +354,8 @@ int main(int argc, char* argv[]){
 			
 			#pragma acc update host(conf_acc_f[0:alloc_info.conf_acc_size])
 		}
-#else
+#else // no PAR_TEMP
+    rep->label[0]=0;
 		#pragma acc update device(conf_acc[0:alloc_info.conf_acc_size])
 #endif
   }
@@ -406,12 +406,15 @@ int main(int argc, char* argv[]){
 
   int rankloc_accettate_therm=0;
   int rankloc_accettate_metro=0;
+  int rankloc_accettate_therm_old;
+  int rankloc_accettate_metro_old;
+  int id_iter_offset=conf_id_iter;
+
+#ifdef PAR_TEMP
   int *accettate_therm;
   int *accettate_metro;
-    
   int *accettate_therm_old;
   int *accettate_metro_old;
-  int id_iter_offset=conf_id_iter;
 
   if(0==devinfo.myrank_world){
     accettate_therm=malloc(sizeof(int)*rep->replicas_total_number);
@@ -428,6 +431,7 @@ int main(int argc, char* argv[]){
     }
   }
 	int swap_number=0;
+#endif
 
   // plaquette measures and polyakov loop measures.
   printf("PLAQUETTE START\n");
@@ -555,10 +559,15 @@ int main(int argc, char* argv[]){
 					MPI_PRINTF1("Avg/Max unitarity deviation on device: %e / %e\n",avg_unitarity_deviation,max_unitarity_deviation);
             
           if(0==devinfo.myrank_world){
+#ifdef PAR_TEMP
             for (int lab=0;lab<rep->replicas_total_number;lab++){
               accettate_therm_old [lab]= accettate_therm[lab];
               accettate_metro_old [lab]= accettate_metro[lab];
             }
+#else
+            rankloc_accettate_therm_old= rankloc_accettate_therm;
+            rankloc_accettate_metro_old= rankloc_accettate_metro;
+#endif
           }
 
 					if(devinfo.myrank ==0 ){
@@ -649,9 +658,15 @@ int main(int argc, char* argv[]){
 #endif
 			
 						if(which_mode /* is metro */ && 0==devinfo.myrank_world){
+#ifdef PAR_TEMP
 								int iterations = id_iter-id_iter_offset-accettate_therm[0]+1;
 								double acceptance = (double) accettate_metro[0] / iterations;
 								double acc_err = sqrt((double)accettate_metro[0]*(iterations-accettate_metro[0])/iterations)/iterations;
+#else
+								int iterations = id_iter-id_iter_offset-rankloc_accettate_therm+1;
+								double acceptance = (double) rankloc_accettate_metro / iterations;
+								double acc_err = sqrt((double)rankloc_accettate_metro*(iterations-rankloc_accettate_metro)/iterations)/iterations;
+#endif
 								printf("Estimated HMC acceptance for this run [replica %d]: %f +- %f\n. Iterations: %d\n",0,acceptance, acc_err, iterations);
 						}
 
@@ -737,9 +752,9 @@ int main(int argc, char* argv[]){
           
 					// gauge stuff measures
           int acceptance_to_print;
+#ifdef PAR_TEMP
           if(0==devinfo.myrank_world){
             acceptance_to_print=accettate_therm[0]+accettate_metro[0]-accettate_therm_old[0]-accettate_metro_old[0];
-            int ridx_lab0;
             for(ridx_lab0=0; 0!=rep->label[ridx_lab0]; ++ridx_lab0){} // finds index corresponding to label=0
             if(ridx_lab0!=0){
               MPI_Send((int*)&acceptance_to_print,1,MPI_INT,ridx_lab0*NRANKS_D3,0,MPI_COMM_WORLD);
@@ -749,6 +764,9 @@ int main(int argc, char* argv[]){
               MPI_Recv((int*)&acceptance_to_print,1,MPI_INT,0,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
             }
           }
+#else
+          acceptance_to_print=rankloc_accettate_therm+rankloc_accettate_metro-rankloc_accettate_therm_old-rankloc_accettate_metro_old;
+#endif
 
 
           if(0==rep->label[devinfo.replica_idx]){
