@@ -734,12 +734,10 @@ void manage_replica_swaps(
 
     // select relabeling and scatter coefficients to each mpirank
     int swap_order;
-//    double even_first;
-
 
     if (0==devinfo.myrank_world){
       swap_order=(casuale()<0.5)?1:0;
-      printf("swap order: %d\n",swap_order);
+      if (verbosity_lv>1) printf("swap order: %d\n",swap_order);
     }
 
     MPI_Bcast((void*)&swap_order,1,MPI_INT,0,MPI_COMM_WORLD);
@@ -747,7 +745,7 @@ void manage_replica_swaps(
     if(hpt_params->is_evenodd){
       for(int evenodd_itr=0;evenodd_itr<2; ++evenodd_itr){
           swap_order=(evenodd_itr+swap_order)%2;
-          if (0==devinfo.myrank_world){
+          if (verbosity_lv>1 && 0==devinfo.myrank_world){
             printf("stage %d, swap order: %d\n",evenodd_itr, swap_order);
           }
 
@@ -761,9 +759,9 @@ void manage_replica_swaps(
           int twin_lab = ((swap_order==0 && (lab)%2==0) || (swap_order==1 && (lab)%2==1))? lab+1 : lab-1;
 
           int stay_still=(twin_lab<0 || twin_lab>=NREPLICAS)? 1 : 0;
-          MPI_PRINTF1("pairs: %d %d (are tried? %d)\n",lab,twin_lab,1-stay_still);
+          if (verbosity_lv>1) MPI_PRINTF1("pairs: %d %d (is swap proposed? %d)\n",lab,twin_lab,1-stay_still);
           if(!stay_still){
-            MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",lab,hpt_params->cr_vec[twin_lab]);
+            if (verbosity_lv>1) MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",lab,hpt_params->cr_vec[twin_lab]);
             init_k(tconf_acc,hpt_params->cr_vec[twin_lab],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
 #if NRANKS_D3 > 1
             //TODO: possibly optimize by updating only defect info
@@ -778,7 +776,6 @@ void manage_replica_swaps(
 
           compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
 
-          //XXX: debug
           if(devinfo.myrank_world==0){
             for(int lbs=swap_order; lbs<NREPLICAS; lbs+=2){
                 int lbs_twin_lab = ((swap_order==0 && lbs%2==0) || (swap_order==1 && lbs%2==1))? lbs+1 : lbs-1;
@@ -792,10 +789,9 @@ void manage_replica_swaps(
                   min_lab=lbs_twin_lab;
                   max_lab=lbs;
                 }
-                MPI_PRINTF1("All actions (lab1: %d <-> lab2: %d): S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
-                    min_lab,max_lab,
-                S_arr_next[min_lab], S_arr_next[max_lab], 
-                S_arr_prev[min_lab], S_arr_prev[max_lab])
+                if (verbosity_lv>1) 
+                  MPI_PRINTF1("All actions (lab1: %d <-> lab2: %d): S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
+                      min_lab,max_lab, S_arr_next[min_lab], S_arr_next[max_lab], S_arr_prev[min_lab], S_arr_prev[max_lab])
             }
           }
 
@@ -880,8 +876,7 @@ void manage_replica_swaps(
           }
         MPI_Barrier(MPI_COMM_WORLD); 
       }
-
-    }else{
+    }else{ // serial swap proposals
       int accepted=0;
       int i_counter, j_counter; // labels, not indexes
       int rep_lab1,rep_lab2;
@@ -904,14 +899,16 @@ void manage_replica_swaps(
           rep_lab2=NREPLICAS-i_counter-2;
         }
 
-        if(devinfo.myrank_world==0){
+        if(devinfo.myrank_world==0 && (verbosity_lv>1) ){
           printf("proposing swap %d %d\n",rep_lab1,rep_lab2);      
         }
         
         // rep_lab1 and rep_lab2 are tried for swap
         if(rep_lab1==hpt_params->label[devinfo.replica_idx]){
           // set defect as next
-          MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",rep_lab1,hpt_params->cr_vec[rep_lab2]);
+
+          if (verbosity_lv>1) MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",
+                                          rep_lab1,hpt_params->cr_vec[rep_lab2]);
           init_k(tconf_acc,hpt_params->cr_vec[rep_lab2],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
 #if NRANKS_D3 > 1
           if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab2],rep->defect_boundary,rep->defect_coordinates,&def,1);
@@ -919,7 +916,8 @@ void manage_replica_swaps(
         }
         if(rep_lab2==hpt_params->label[devinfo.replica_idx]){
           // set defect as prev
-          MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",rep_lab2,hpt_params->cr_vec[rep_lab1]);
+          if (verbosity_lv>1) MPI_PRINTF1("replica lab: %d gets coefficient %lf\n",
+                                          rep_lab2,hpt_params->cr_vec[rep_lab1]);
           init_k(tconf_acc,hpt_params->cr_vec[rep_lab1],hpt_params->defect_boundary,hpt_params->defect_coordinates,&def,1);
 #if NRANKS_D3 > 1
           if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep_lab1],rep->defect_boundary,rep->defect_coordinates,&def,1);
@@ -935,7 +933,7 @@ void manage_replica_swaps(
         }
         compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
 
-        if(devinfo.myrank_world==0){
+        if(devinfo.myrank_world==0 && (verbosity_lv>1) ){
           MPI_PRINTF1("All actions S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
               S_arr_next[rep_lab1], S_arr_next[rep_lab2], 
               S_arr_prev[rep_lab1], S_arr_prev[rep_lab2])
