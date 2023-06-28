@@ -33,14 +33,21 @@
 
 // #define TIMING_ALL // if defined many computation times are printed in the output
 
-// WARNING!!!!!! comment the one you don't wanna use and decoment the other one
-// ACHTUNG! Please, use script_compile_Open_StaPLE.sh to comment/uncomment these macros
+// treat the gauge type action as a preprocessor enumeration
+#define TLSM 0
+#define WILSON 1
 
+#ifndef ACTION_TYPE
+#error "ACTION_TYPE must be specified in geom_defines (either TLSM or WILSON)"
+#endif
+
+#if ACTION_TYPE==TLSM
 #define GAUGE_ACT_TLSM
-//#define GAUGE_ACT_WILSON
-
-// WARNING! uncomment only if you want to perform parallel tempering
-// ACHTUNG! Please, use script_compile_Open_StaPLE.sh to comment/uncomment this macro
+#elif ACTION_TYPE==WILSON
+#define GAUGE_ACT_WILSON
+#else
+#error "Invalid GAUGE_TYPE. It must be specified in geom_defines as either TLSM or WILSON."
+#endif
 
 #ifdef NREPLICAS 
 #if NREPLICAS > 1

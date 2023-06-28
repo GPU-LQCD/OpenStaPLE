@@ -51,7 +51,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 	if(debug_settings.do_norandom_test)
 		printf("MIP%02d: WELCOME! NORANDOM MODE. (UPDATE_SOLOACC_UNOSTEP_VERSATILE())\n", devinfo.myrank);
 
-	printf("MPI%02d: UPDATE_SOLOACC_UNOSTEP_VERSATILE_TLSM_STDFERM: starting... \n", devinfo.myrank);
+	printf("MPI%02d: UPDATE_SOLOACC_UNOSTEP_VERSATILE: starting... \n", devinfo.myrank);
 
 	// defining all the dts needed by Omelyan integrator
     

@@ -69,6 +69,7 @@ fi
 
 
 
+ACTION_TYPE=$( grep -E "^\s*ACTION_TYPE\s+" $COMPILE_INFO_FILENAME | awk '{print $2}')
 NREPLICAS=$( grep -E "^\s*NREPLICAS\s+" $COMPILE_INFO_FILENAME | awk '{print $2}')
 LOC_N0=$( grep -E "^\s*LOC_N0\s+" $COMPILE_INFO_FILENAME | awk '{print $2}')
 LOC_N1=$( grep -E "^\s*LOC_N1\s+" $COMPILE_INFO_FILENAME | awk '{print $2}')
@@ -104,6 +105,7 @@ SIGMAGANG3=$( grep -E "^\s*SIGMAGANG3\s+" $COMPILE_INFO_FILENAME | awk '{print $
 
 COMMIT_HASH=$(git rev-parse HEAD)
 
+AC_DEFINE_UNQUOTED(ACTION_TYPE, [[$ACTION_TYPE]])
 AC_DEFINE_UNQUOTED(NREPLICAS,   [[$NREPLICAS]])
 AC_DEFINE_UNQUOTED(LOC_N0,      [[$LOC_N0]])
 AC_DEFINE_UNQUOTED(LOC_N1,      [[$LOC_N1]])

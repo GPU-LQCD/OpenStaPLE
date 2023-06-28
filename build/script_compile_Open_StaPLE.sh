@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# SIMULATION PARAMETERS
-ACTION_TYPE='TLSM'         # must be either 'WILSON' or 'TLSM'
-
 # LOCAL LIB PATH
 my_lib_path=$( echo "${LIBRARY_PATH}" | cut -d ':' -f 1 ) 
 
@@ -18,24 +15,6 @@ cur_dir="--prefix=${PWD}"
 module unload python
 module load profile/global
 module load pgi
-
-# CHECKS
-if [ "${ACTION_TYPE}" != 'TLSM' ] && [ "${ACTION_TYPE}" != 'WILSON' ]; then
-	echo "ERROR! ACTION_TYPE set to ${ACTION_TYPE} but must be either WILSON or TLSM"
-	exit 1
-fi
-
-
-# COMMENT/UNCOMMENT DESIRED SIMULATION PARAMS
-commented=$( grep "#define GAUGE_ACT_${ACTION_TYPE}" ../src/Include/common_defines.h | cut -d '#' -f 1 )
-if test -z "${commented}"; then # desired action is already selected
-	echo "Desired action ${ACTION_TYPE} already uncommented"
-else # desired action is uncommented
-	if [ "${ACTION_TYPE}" == 'TLSM' ]; then OTHER_ACTION='WILSON'; else OTHER_ACTION='TLSM'; fi
-	echo "${ACTION_TYPE} will be uncommented; ${OTHER_ACTION} will be commented"
-	sed -i "s://#define GAUGE_ACT_${ACTION_TYPE}:#define GAUGE_ACT_${ACTION_TYPE}:g" ../src/Include/common_defines.h
-	sed -i "s:#define GAUGE_ACT_${OTHER_ACTION}://#define GAUGE_ACT_${OTHER_ACTION}:g" ../src/Include/common_defines.h
-fi
 
 # CONFIGURE + COMPILE
 # if autotools are not built, build them
