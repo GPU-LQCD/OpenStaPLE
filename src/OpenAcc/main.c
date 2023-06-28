@@ -664,7 +664,7 @@ int main(int argc, char* argv[]){
 						}
 
 						// HMC step
-            int which_mode=!(id_iter<mc_params.therm_ntraj); // 0: therm, 1: metro
+            int which_mode=(id_iter<mc_params.therm_ntraj)? 0 : 1; // 0: therm, 1: metro
             int *rankloc_accettate_which[2]={&rankloc_accettate_therm,(int*)&rankloc_accettate_metro};
             int effective_iter = id_iter-id_iter_offset-(which_mode==1? rankloc_accettate_therm : 0);
 
@@ -730,6 +730,7 @@ int main(int argc, char* argv[]){
                 printf("Estimated HMC acceptance for this run: %f +- %f\n. Iterations: %d\n",acceptance, acc_err, iterations);
 #endif
 						}
+						#pragma acc update host(conf_acc[0:8])
 
 						// final action
 						if (verbosity_lv>10){
