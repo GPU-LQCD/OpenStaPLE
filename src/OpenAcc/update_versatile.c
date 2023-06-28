@@ -90,7 +90,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 	if(metro==1){
 		// store old conf   set_su3_soa_to_su3_soa(arg1,arg2) ===>   arg2=arg1;
 		set_su3_soa_to_su3_soa(tconf_acc,conf_acc_bkp);
-		if(verbosity_lv > 1) printf("Backup copy of the initial gauge conf : OK \n");
+    if(verbosity_lv > 1) printf("Backup copy of the initial gauge conf : OK \n");
 
 	}
 
@@ -377,9 +377,8 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		((double)(md_end.tv_usec - md_start.tv_usec)/1.0e6);
 
 	if(devinfo.myrank == 0){
-
-		MPI_PRINTF1("needed for moledular dynamics: %f s, ",mdtime);
-		printf("total CG-M iterations during MD: %d\n",multishift_iterations_md );
+		MPI_PRINTF1("needed for molecular dynamics: %f s, ",mdtime);
+		printf("total CG-M iterations during MD: %d\n",multishift_iterations_md);
 	}
 
 	if(debug_settings.do_reversibility_test){
@@ -421,7 +420,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		exit(0);
 	}
 
-	if(verbosity_lv > 1) MPI_PRINTF0("- MOLECULAR DYNAMICS COMPLETED \n");
+	if(verbosity_lv > 1) MPI_PRINTF0("MOLECULAR DYNAMICS COMPLETED\n");
 
 
 #ifdef STOUT_FERMIONS
@@ -537,12 +536,12 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		// delta_S = action_new - action_old
 		delta_S  = - (-action_in+action_mom_in+action_ferm_in+action_topo_in) + (-action_fin+action_mom_fin+action_ferm_fin+action_topo_fin);
 		if(verbosity_lv > 2 && 0 == devinfo.myrank ){
-			MPI_PRINTF1("-iterazione %i:  Gauge_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,-action_in,-action_fin);
-			MPI_PRINTF1("-iterazione %i:  Topol_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,+action_topo_in,+action_topo_fin);
-			MPI_PRINTF1("-iterazione %i:  Momen_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,action_mom_in,action_mom_fin);
-			MPI_PRINTF1("-iterazione %i:  Fermi_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,action_ferm_in,action_ferm_fin);
+			MPI_PRINTF1("iterazione %i:  Gauge_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,-action_in,-action_fin);
+			MPI_PRINTF1("iterazione %i:  Topol_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,+action_topo_in,+action_topo_fin);
+			MPI_PRINTF1("iterazione %i:  Momen_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,action_mom_in,action_mom_fin);
+			MPI_PRINTF1("iterazione %i:  Fermi_ACTION  (in and out) = %.18lf , %.18lf\n",iterazioni,action_ferm_in,action_ferm_fin);
 		}       
-		MPI_PRINTF1("-iterazione %i:  DELTA_ACTION = %.18lf. ",iterazioni,delta_S);
+		MPI_PRINTF1("iterazione %i:  DELTA_ACTION = %.18lf. ",iterazioni,delta_S);
 
 
 		if(debug_settings.do_norandom_test) // NORANDOM
@@ -550,46 +549,33 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 
 		if(delta_S<0){
 			accepted=1;
-		}
-		else
-			{
-				p1=exp(-delta_S);
-				if(debug_settings.do_norandom_test) p2=0; // NORANDOM
-				else{ // NORMAL, RANDOM
-					if(0==devinfo.myrank)p2=casuale();
-#if NRANKS_D3 > 1
-					MPI_Bcast((void*) &p2,1,MPI_DOUBLE,0,devinfo.mpi_comm);
-					MPI_PRINTF1("p2 : %f, p1 %f \n", p2,p1);
-#endif
-				}
-				if(p2<p1)
-					{
-						accepted=1;
-					}
-				else
-					{
-						accepted=0;
-						// configuration reject
-					}
-			}
-	}
-
-
-	if(metro==1){
-		if(accepted==1){
-			acc++;
-			MPI_PRINTF1(" ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
-			// configuration accepted set_su3_soa_to_su3_soa(arg1,arg2) ===> arg2=arg1;
-			set_su3_soa_to_su3_soa(tconf_acc,conf_acc_bkp);
 		}else{
-			MPI_PRINTF1(" ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
-			// configuration rejected set_su3_soa_to_su3_soa(arg1,arg2) ===> arg2=arg1;
-			set_su3_soa_to_su3_soa(conf_acc_bkp,tconf_acc);
-			#pragma acc update device(tconf_acc[0:8])
-			// putting previous step configuration on device
-		}
-	}
-	gettimeofday ( &t_end, NULL );
+      p1=exp(-delta_S);
+      if(debug_settings.do_norandom_test) p2=0; // NORANDOM
+      else{ // NORMAL, RANDOM
+        if(0==devinfo.myrank)p2=casuale();
+#if NRANKS_D3 > 1
+        MPI_Bcast((void*) &p2,1,MPI_DOUBLE,0,devinfo.mpi_comm);
+#endif
+      MPI_PRINTF1("p2 : %f, p1 %f \n", p2,p1);
+      }
+      accepted = (p2<p1)? 1: 0;
+    }
+
+    if(accepted==1){
+      acc++;
+      MPI_PRINTF1(" ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
+      // configuration accepted set_su3_soa_to_su3_soa(arg1,arg2) ===> arg2=arg1;
+      set_su3_soa_to_su3_soa(tconf_acc,conf_acc_bkp);
+    }else{
+      MPI_PRINTF1(" ---> [acc/iter] = [%i/%i] \n",acc,iterazioni);
+      // configuration rejected set_su3_soa_to_su3_soa(arg1,arg2) ===> arg2=arg1;
+      set_su3_soa_to_su3_soa(conf_acc_bkp,tconf_acc);
+#pragma acc update device(tconf_acc[0:8])
+      // putting previous step configuration on device
+    }
+  }
+  gettimeofday ( &t_end, NULL );
 
 
 	if(metro==0){ // no Metropolis in thermalization updates
