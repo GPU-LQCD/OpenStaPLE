@@ -6,6 +6,13 @@ void print_geom_defines(){
 	printf("#############################\n") ;
 	printf("#   PRINTING GEOM DEFINES   #\n") ;
 	printf("#############################\n") ;
+#if ACTION_TYPE==TLSM
+	printf("ACTION_TYPE    TLSM\n");         
+#elif ACTION_TYPE==WILSON 
+	printf("ACTION_TYPE    WILSON\n");         
+#else
+	printf("ACTION_TYPE    INVALID!\n");         
+#endif
 	printf("NREPLICAS    %d\n",NREPLICAS     );         
 	printf("LOC_N0       %d\n",LOC_N0       );         
 	printf("LOC_N1       %d\n",LOC_N1       );         
