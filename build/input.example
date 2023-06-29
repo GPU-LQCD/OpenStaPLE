@@ -1,0 +1,208 @@
+ActionParameters
+Beta                          3.750               #(double)
+StoutSteps                    2                   #(int)
+StoutRho                      1.500000e-01        #(double)
+TopoAct                       0                   #(int)
+#Set TopoAct to 1 to enable multicanonical topological potential
+
+Barrier                       3.000000e+00        #(double)
+Width                         5.000000e-02        #(double)
+TopoPath                      ToPotential         #(string)
+TopoStoutSteps                10                  #(int)
+TopoRho                       0.1                 #(double)
+
+FlavourParameters
+Mass                          0.00179             #(double)
+Degeneracy                    2                   #(int)
+PseudoFermions                2                   #(int)
+Name                          light               #(string)
+Charge                        0                   #(double)
+MuOverPiT                     0                   #(double)
+
+FlavourParameters
+Mass                          0.0503              #(double)
+Degeneracy                    1                   #(int)
+PseudoFermions                1                   #(int)
+Name                          strange             #(string)
+Charge                        0                   #(double)
+MuOverPiT                     0                   #(double)
+
+BackgroundFieldParameters
+ex                            0.000000e+00        #(double)
+ey                            0.000000e+00        #(double)
+ez                            0.000000e+00        #(double)
+bx                            0.000000e+00        #(double)
+by                            0.000000e+00        #(double)
+bz                            0.000000e+00        #(double)
+
+MDParameters
+NmdSteps                      14                  #(int)
+GaugeSubSteps                 5                   #(int)
+TrajLength                    1.0                 #(double)
+residue_metro                 1.0e-8              #(double)
+ExpMaxEigenvalue              5.500000e+00        #(double)
+# 5.5 is ok for 2 stout, with less stouting this number must be higher. 
+
+SinglePrecMD                  0                   #(int)
+#For volumes large as or larger than about 24^4 double precision MD is needed. 
+
+residue_md                    1.0e-7              #(double)
+#If using single precision MD, the residue can't reliably be set to less than 1e-4
+
+MaxCGIterations               30000               #(int)
+recycleInvsForce              0                   #(int)
+# For chronological inverters - not implemented - keep 0 or remove
+
+extrapolateInvsForce          0                   #(int)
+# For chronological inverters - not implemented - keep 0 or remove
+
+MontecarloParameters
+Ntraj                         10                   #(int)
+ThermNtraj                    30                   #(int)
+# When starting from the identity links, metropolis test will likely fail for a few trajectories.
+#Set this number to a few to allow the run to thermalise.
+
+StoreConfInterval             30                   #(int)
+SaveConfInterval              1                    #(int)
+StoreConfName                 stored_conf          #(string)
+#This is the prefix of the filenames of the gauge conf files which will be saved (with an index).
+
+SaveConfName                  save_conf            #(string)
+#This is the name of the starting gauge conf file. THIS FILE WILL BE OVERWRITTEN.
+
+MaxConfIdIter                 1000000              #(int)
+#In Jarzynski mode, this number will be taken as the number of steps
+#to go from the starting value of bz to the last.
+
+RandGenStatusFilename         rgstatus.bin         #(string)
+# The status of the random number generator will be saved in a file named like this (plus suffixes).
+# In correspondence of every stored gauge conf, the random number generator statuses will be saved for each MPI rank.
+# With these files, the gauge conf and the right setting file (like this one) reproducibility should be assured.
+
+MaxRunTimeS                   86400                #(double)
+Seed                          42                   #(int)
+# set Seed to 42 
+#(https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life.2C_the_Universe.2C_and_Everything_.2842.29)
+
+EpsGen                        2.500000e-01        #(double)
+#The level of randomness in creating a new random gauge conf
+
+JarzynskiMode                 0                   #(int)
+#0 - normal operation,
+#1 - from bz(as set in input file) to bz+1
+#-1 - from bz to bz-1
+
+StatusFileName                program_status.txt  #(string)
+# The status of the program at the end will be saved here.
+# This is useful to run the program on "short" queues.
+
+GaugeMeasuresSettings
+GaugeOutfilename              gauge_obs               #(string)
+
+FermionMeasuresSettings
+FermionicOutfilename          ferm_obs                #(string)
+MeasEvery                     100000000                   #(int)
+#Fermionic measurements will be performed once very MeasEvery times.
+
+SingleInvNVectors             20                   #(int)
+DoubleInvNVectorsChiral       2                   #(int)
+DoubleInvNVectorsQuarkNumber  2                   #(int)
+PrintPlaqAndRect              1                   #(int)
+# Each measurement line will contain the value of the plaquette and the rectangle - reweighting will then be easier.
+
+TopoMeasuresSettings
+MeasCool                      1                   #(int)
+PathCool                      TopoCool            #(string)
+CoolMeasSteps                 120                  #(int)
+CoolMeasInterval              10                   #(int)
+# Cooled Topological charge will be measured every CoolMeasInterval cooling steps.
+
+CoolMeasEach                  1                   #(int)
+# Cooled Topological charge will be measured every CoolMeasEach MC step.
+
+MeasStout                     1                   #(int)
+PathStout                     TopoStout           #(string)
+MeasStoutRho                  1.000000e-01        #(double)
+# MeasStoutRho can't be changed, it have to be equal to StoutRho, which is setted in src/Include/common_defines.h
+
+StoutMeasSteps                10                   #(int)
+StoutMeasInterval             1                   #(int)
+# Stouted Topological charge will be measured every StoutMeasInterval cooling steps.
+
+StoutMeasEach                 1                   #(int)
+# Stouted Topological charge will be measured every StoutMeasEach MC step.
+
+DeviceSettings
+device_choice                 0                   #(int)
+AsyncFermionComms             1                   #(int)
+AsyncGaugeComms               1                   #(int)
+NProcPerNode                  4                   #(int)
+NRanks                        4                   #(int)
+# NRanks has been set at make time with the NR3 variable.
+
+Geometry
+nx                            24                  #(int)
+ny                            24                  #(int)
+nz                            24                  #(int)
+nt                            24                  #(int)
+# Lattice dimensions have been fixed at make time through N0,N1,N2,N3 and NR3.
+
+xmap                          1                   #(int)
+ymap                          2                   #(int)
+zmap                          3                   #(int)
+tmap                          0                   #(int)
+#Notice that only the dimension mapped as 3 will be parallelized
+
+DebugSettings
+UseILDG                       1                   #(int)
+VerbosityLv                   3                   #(int)
+SaveAllAtEnd                  1                   #(int)
+# Set this to 0 if you want the program not to save its state at the end
+# (or it may overwrite some files and you won't be able to reproduce bugs/do other things)
+
+PrintBackFieldDbgInfo         0                   #(int)
+SaveDiagnostics               1                   #(int)
+DoRevTest                     0                  #(int)
+DoNoRandomTest                0                   #(int)
+RngFakenessLevel              0                   #(int)
+MDDbgPrintMaxCount            0                   #(int)
+#Print gauge conf, momenta and ipdot intermediate results during MD evolution
+
+SaveDiagnosticsFilename       md_diagnostics.dat  #(string)
+PrintDiagInfoEvery            10000               #(int)
+
+InverterTricks
+singlePInvAccelMultiInv       0                   #(int)
+# At present, multishift inverter is faster. Keep 0 or delete.
+
+useMixedPrecision             1                   #(int)
+restartingEvery               10000               #(int)
+mixedPrecisionDelta           1.000000e-01        #(double)
+
+TestSettings
+DeoDoeIterations              10                  #(int)
+MultiShiftInverterRepetitions 20                  #(int)
+FakeShift                     1.0e-12             #(double)
+# tHe shift (equal for all terms) in the fake rational approximations in benchmarkMode for CG-M.
+
+BenchmarkMode                 0                   #(int)
+# In benchmark mode, a fake rationan approximation will be used in CG-M.
+
+SaveResults                   0                   #(int)
+# set to 1 if you want to save all results (the results of Deo Doe or the result of # individual shifts)
+
+#---- Hasenbusch Parallel Tempering params ----
+# Remove or comment when running without parallel tempering (i.e., with 1 replica)
+ReplicasNumbers
+totalnumber      2         # Total number of replicas
+is_evenodd       0         # Propose swaps to all even and then to all odd couples (1==YES, 0==NO, SERIAL ORDER)
+defect_boundary  1         # This parameter sets the direction along which the defect will be implemented on: 0=n0, 1=n1, 2=n2, 3=n3
+defect_size0     2         # <
+defect_size1     2         # < These 3 parameters set the dimension of the 3-dimensional defect
+defect_size2     2         # <
+cr_values        1.0 0.0   # Must provide a total of <ReplicasNumbers> values of c(r) in this field
+
+AcceptancesMeasuresSettings
+Hmc_file_name    hmc_acc.dat
+Swap_file_name   swap_acc.dat
+Label_file_name  label_path.dat
