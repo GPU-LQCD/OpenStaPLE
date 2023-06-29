@@ -95,6 +95,12 @@ int main(int argc, char* argv[]){
 #endif
  
   srand(time(NULL));
+
+  if(argc!=2){
+    if(0==devinfo.myrank_world) print_geom_defines();
+    if(0==devinfo.myrank_world) printf("\n\nERROR! Use mpirun -n <num_tasks> %s input_file to execute the code!\n\n", argv[0]);
+    exit(EXIT_FAILURE);			
+  }
     
   // read input file.
 #ifdef MULTIDEVICE
@@ -113,10 +119,9 @@ int main(int argc, char* argv[]){
     printf("****************************************************\n");
   }
   
-  if (GAUGE_ACTION == 1 ){
+  if (ACTION_TYPE == TLSM ){
     if(0==devinfo.myrank_world) printf("\nCOMPILED WITH TREE-LEVEL SYMANZIK IMPROVED GAUGE ACTION\n\n");
-  }
-  else{
+  }else{ // ACTION_TYPE == WILSON
     if(0==devinfo.myrank_world) printf("COMPILED WITH WILSON GAUGE ACTION\n\n");
   }
 
@@ -126,15 +131,6 @@ int main(int argc, char* argv[]){
   if(0==devinfo.myrank_world) printf("COMPILED WITHOUT PARALLEL TEMPERING (1 REPLICA RUN)\n\n");
 #endif
 
-  if(argc!=2){
-    if(0==devinfo.myrank_world) print_geom_defines();
-    if(0==devinfo.myrank_world) printf("\n\nERROR! Use mpirun -n <num_tasks> %s input_file to execute the code!\n\n", argv[0]);
-#ifdef MULTIDEVICE
-    MPI_Abort(MPI_COMM_WORLD,1);			
-#else
-    exit(EXIT_FAILURE);			
-#endif
-  }
   
 
   int input_file_read_check = set_global_vars_and_fermions_from_input_file(argv[1]);
