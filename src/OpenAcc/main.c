@@ -749,7 +749,6 @@ int main(int argc, char* argv[]){
               #pragma acc update host(conf_acc[0:alloc_info.conf_acc_size])
               manage_replica_swaps(conf_acc, aux_conf_acc, local_sums, &def, &swap_number,all_swap_vector,acceptance_vector,rep);
 
-							if (0==devinfo.myrank_world) {printf("Number of accepted swaps: %d\n", swap_number);}       
 							#pragma acc update host(conf_acc[0:8])
                 
 							// periodic conf translation
@@ -1022,8 +1021,8 @@ int main(int argc, char* argv[]){
 						}
 
 						init_all_u1_phases(new_backfield_parameters,fermions_parameters);
-						#pragma acc update device(u1_back_phases[0:8*alloc_info.NDiffFlavs])
-						#pragma acc update device(u1_back_phases_f[0:8*alloc_info.NDiffFlavs])
+            #pragma acc update device(u1_back_phases[0:8*alloc_info.NDiffFlavs])
+            #pragma acc update device(u1_back_phases_f[0:8*alloc_info.NDiffFlavs])
 
 					}
 
@@ -1031,37 +1030,43 @@ int main(int argc, char* argv[]){
 																 &avg_unitarity_deviation);
 					MPI_PRINTF1("Avg/Max unitarity deviation on device: %e / %e\n",avg_unitarity_deviation,max_unitarity_deviation);
 
-					if(conf_id_iter % fm_par.measEvery == 0 )
-						mc_params.next_gps = GPSTATUS_FERMION_MEASURES;
-
 #ifdef PAR_TEMP
           if(0==rep->label[devinfo.replica_idx])
 #endif
-          {
-            struct timeval tf0, tf1;
-            gettimeofday(&tf0, NULL);
-            fermion_measures(conf_acc,fermions_parameters,
-                             &fm_par, md_parameters.residue_metro,
-                             md_parameters.max_cg_iterations,conf_id_iter,
-                             plq/GL_SIZE/3.0/6.0,
-                             rect/GL_SIZE/3.0/6.0/2.0);   
+						{
+							struct timeval tf0, tf1;
+							gettimeofday(&tf0, NULL);
+							fermion_measures(conf_acc,fermions_parameters,
+															 &fm_par, md_parameters.residue_metro,
+															 md_parameters.max_cg_iterations,conf_id_iter,
+															 plq/GL_SIZE/3.0/6.0,
+															 rect/GL_SIZE/3.0/6.0/2.0);   
 
-            gettimeofday(&tf1, NULL);
+							gettimeofday(&tf1, NULL);
 
-            double fermionMeasureTiming =
-              (double) (tf1.tv_sec - tf0.tv_sec)+
-              (double)(tf1.tv_usec - tf0.tv_usec)/1.0e6;
+							double fermionMeasureTiming =
+								(double) (tf1.tv_sec - tf0.tv_sec)+
+								(double)(tf1.tv_usec - tf0.tv_usec)/1.0e6;
 
-            if(debug_settings.save_diagnostics == 1){
-              FILE *foutfile = 
-                fopen(debug_settings.diagnostics_filename,"at");
+							if(debug_settings.save_diagnostics == 1){
+								FILE *foutfile = 
+									fopen(debug_settings.diagnostics_filename,"at");
 
-              if(conf_id_iter % fm_par.measEvery == 0 )
-                fprintf(foutfile,"FERMMEASTIME  %f \n",fermionMeasureTiming);
-              fclose(foutfile);
-            }
-          }
-                  
+								if(conf_id_iter % fm_par.measEvery == 0 )
+									fprintf(foutfile,"FERMMEASTIME  %f \n",fermionMeasureTiming);
+								fclose(foutfile);
+							}
+						
+						} // closes if(0==rep->label[devinfo.replica_idx]) or just the scope if PAR_TEMP is not defined
+
+#ifdef PAR_TEMP
+					{
+						int ridx_lab0;
+						for(ridx_lab0=0; 0!=rep->label[ridx_lab0]; ++ridx_lab0){} // finds index corresponding to label=0
+						MPI_Bcast((void*)&(mc_params.measures_done),1,MPI_INT,ridx_lab0,MPI_COMM_WORLD);
+					}
+#endif
+
 					// save RNG status
 					if(conf_id_iter%mc_params.storeconfinterval==0){
 						char tempname[50];
@@ -1081,9 +1086,10 @@ int main(int argc, char* argv[]){
 						else MPI_PRINTF0("WARNING, \'SaveAllAtEnd\'=0,NOT SAVING/OVERWRITING RNG STATUS.\n\n\n");
 					}
 
-        }
+        } // closes if (GPSTATUS_FERMION_MEASURES == mc_params.next_gps)
+				
         // determining next thing to do
-        if(0 == conf_id_iter % fm_par.measEvery)
+        if(0 == conf_id_iter % fm_par.measEvery && 0 != alloc_info.NDiffFlavs)
 					mc_params.next_gps = GPSTATUS_FERMION_MEASURES;
         if(mc_params.measures_done == fm_par.SingleInvNVectors){
 					mc_params.next_gps = GPSTATUS_UPDATE;
