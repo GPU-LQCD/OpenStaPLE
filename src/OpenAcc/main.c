@@ -1035,7 +1035,7 @@ int main(int argc, char* argv[]){
 						mc_params.next_gps = GPSTATUS_FERMION_MEASURES;
 
 #ifdef PAR_TEMP
-          if(devinfo.replica_idx==rep->label[0])
+          if(0==rep->label[devinfo.replica_idx])
 #endif
           {
             struct timeval tf0, tf1;
