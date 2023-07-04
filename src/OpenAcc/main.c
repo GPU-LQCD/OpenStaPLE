@@ -345,7 +345,6 @@ int main(int argc, char* argv[]){
         label_print(rep, file_label, conf_id_iter); // populate it
         fclose(file_label);
       }
-      strcpy(mc_params.save_conf_name,aux_name_file);
       if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",replica_idx,rep->replicas_total_number); 
       init_k(conf_acc,rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,0);
     }else{ // not first iteration: initialize boundaries from label file
@@ -377,6 +376,7 @@ int main(int argc, char* argv[]){
       MPI_Bcast((void*)&(rep->label[0]),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
       init_k(conf_acc,rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,0);
     }
+		strcpy(mc_params.save_conf_name,aux_name_file);
 
 
 		
@@ -947,8 +947,8 @@ int main(int argc, char* argv[]){
               MPI_PRINTF1("Storing rng status in %s.\n" , tempname);
               saverand_tofile(tempname);
             }
-  
-					if(conf_id_iter%mc_params.saveconfinterval==0){
+
+						if(conf_id_iter%mc_params.saveconfinterval==0){
             {
               int r=devinfo.replica_idx;
 #ifdef PAR_TEMP        
