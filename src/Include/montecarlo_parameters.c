@@ -63,13 +63,13 @@ void init_global_program_status(){
 
 }
 
-void save_global_program_status(mc_params_t mcp){
+void save_global_program_status(mc_params_t mcp, int max_update_times, int max_flavour_cycle_times){
 
 	printf("Saving global program status...\n");
 	printf("%d %f %f %d\n",
 				 mcp.next_gps,
-				 mcp.max_flavour_cycle_time,
-				 mcp.max_update_time,
+				 max_flavour_cycle_times,
+				 max_update_times,
 				 mcp.measures_done);
 
 	printf("#mc_params.next_gps,mc_params.max_flavour_cycle_time,\n\
@@ -79,8 +79,8 @@ void save_global_program_status(mc_params_t mcp){
 	FILE * gps_file = fopen(mc_params.statusFileName, "w");  
 	fprintf(gps_file,"%d %f %f %d\n",
 					mcp.next_gps,
-					mcp.max_flavour_cycle_time,
-					mcp.max_update_time,
+					max_flavour_cycle_times,
+					max_update_times,
 					mcp.measures_done);
 
 	fprintf(gps_file,"#mc_params.next_gps,mc_params.max_flavour_cycle_time,\n\

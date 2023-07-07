@@ -549,6 +549,9 @@ int main(int argc, char* argv[]){
   int id_iter=id_iter_offset;
     
   init_global_program_status(); 
+  int loc_max_update_times=0, glob_max_update_times;
+  int loc_max_flavour_cycle_times=0, glob_max_flavour_cycle_times;
+  int loc_max_run_times=0, glob_max_run_times;
 
   printf("run_condition: %d\n",mc_params.run_condition) ;
   if ( 0 != mc_params.ntraj ) {
@@ -1091,6 +1094,15 @@ int main(int argc, char* argv[]){
 					mc_params.measures_done = 0;
         }
 
+        
+        loc_max_update_times=mc_params.max_update_time;
+        loc_max_flavour_cycle_times=mc_params.max_flavour_cycle_time;
+        loc_max_run_times=mc_params.MaxRunTimeS;
+
+        MPI_Allreduce((void*)&loc_max_update_times, (void*)&glob_max_update_times,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+        MPI_Allreduce((void*)&loc_max_flavour_cycle_times, (void*)&glob_max_flavour_cycle_times,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+        MPI_Allreduce((void*)&loc_max_run_times, (void*)&glob_max_run_times,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+
         // determining run condition
         if(0 == devinfo.myrank_world && RUN_CONDITION_TERMINATE != mc_params.run_condition){
          
@@ -1114,19 +1126,19 @@ int main(int argc, char* argv[]){
 					double max_expected_duration_with_another_cycle;
 					if(GPSTATUS_UPDATE == mc_params.next_gps){
 						max_expected_duration_with_another_cycle = 
-							total_duration + 1.3*mc_params.max_update_time;
-						printf("Next step, update : %ds\n",(int) mc_params.max_update_time);
+							total_duration + 1.3*glob_max_update_times;
+						printf("Next step, update : %ds\n",(int) glob_max_update_times);
 					}
 					if(GPSTATUS_FERMION_MEASURES == mc_params.next_gps){
 						max_expected_duration_with_another_cycle = 
-							total_duration + 2*mc_params.max_flavour_cycle_time;
+							total_duration + 2*glob_max_flavour_cycle_times;
 						printf("Next step, flavour measure cycle : %ds\n",
-									 (int) mc_params.max_flavour_cycle_time);
+									 (int) glob_max_flavour_cycle_times);
 					}
 
-					if(max_expected_duration_with_another_cycle > mc_params.MaxRunTimeS){
+					if(max_expected_duration_with_another_cycle > glob_max_run_times){
 						printf("Time is running out (%d of %d seconds elapsed),",
-									 (int) total_duration, (int) mc_params.MaxRunTimeS);
+									 (int) total_duration, (int) glob_max_run_times);
 						printf(" shutting down now.\n");
 						printf("Total max expected duration: %d seconds",
 									 (int) max_expected_duration_with_another_cycle);
@@ -1159,15 +1171,10 @@ int main(int argc, char* argv[]){
 					}
         }
 
-        int loc_check=mc_params.run_condition;
         MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,MPI_COMM_WORLD);
-        if(loc_check!=mc_params.run_condition){
-          printf("ERROR: mismatch in the run condition between different ranks\n");
-          MPI_Abort(MPI_COMM_WORLD,1);			
-        }
         MPI_PRINTF1("Broadcast of run condition %d from master...\n", mc_params.run_condition);
 
-        loc_check=mc_params.next_gps;
+        int loc_check=mc_params.next_gps;
         MPI_Bcast((void*)&(mc_params.next_gps),1,MPI_INT,0,MPI_COMM_WORLD);
         if(loc_check!=mc_params.next_gps){
           printf("ERROR: mismatch in the next_gps step between different ranks\n");
@@ -1202,7 +1209,7 @@ int main(int argc, char* argv[]){
 	}
 
   if(0 == devinfo.myrank_world && debug_settings.SaveAllAtEnd){
-    save_global_program_status(mc_params); // WARNING: this function in some cases does not work
+    save_global_program_status(mc_params, glob_max_update_times,glob_max_flavour_cycle_times); // WARNING: this function in some cases does not work
   }
 
   MPI_PRINTF0("Double precision free [CORE]\n");

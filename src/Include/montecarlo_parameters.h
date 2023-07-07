@@ -40,6 +40,6 @@ typedef struct MC_PARAM_T{
 extern mc_params_t mc_params;
 
 void init_global_program_status();
-void save_global_program_status(mc_params_t mcp);
+void save_global_program_status(mc_params_t mcp, int max_update_times, int max_flavour_cycle_times);
 
 #endif
