@@ -75,6 +75,12 @@
 #define xstr(s) str(s) 
 #define str(s) #s
 
+#ifdef PAR_TEMP
+#define IF_PERIODIC_REPLICA() \
+  if(rep->label[devinfo.replica_idx]==0) 
+#else
+#define IF_PERIODIC_REPLICA()
+#endif 
 
 
 
@@ -223,7 +229,6 @@ int main(int argc, char* argv[]){
   MPI_PRINTF0("Selecting device.\n");
 #ifdef MULTIDEVICE
   select_init_acc_device(my_device_type, (devinfo.single_dev_choice + devinfo.myrank_world)%devinfo.proc_per_node);
-	// select_init_acc_device(my_device_type, devinfo.myrank%devinfo.proc_per_node);
 #else
   select_init_acc_device(my_device_type, devinfo.single_dev_choice);
 #endif
@@ -299,7 +304,6 @@ int main(int argc, char* argv[]){
   strcpy(aux_name_file,mc_params.save_conf_name);
 #endif
 	
-//  for(int r=0;r<rep->replicas_total_number;r++){
 	{
     int replica_idx;
 #ifdef PAR_TEMP
@@ -319,13 +323,11 @@ int main(int argc, char* argv[]){
 				MPI_PRINTF0("COMPILED IN NORANDOM MODE. A CONFIGURATION FILE NAMED \"conf_norndtest\" MUST BE PRESENT\n");
 				exit(1);
       }
-    }
-    else{
+    }else{
       if(!read_conf_wrapper(conf_acc,mc_params.save_conf_name,
 														&conf_id_iter,debug_settings.use_ildg)){
 				MPI_PRINTF1("Stored Gauge Conf \"%s\" Read : OK \n", mc_params.save_conf_name);
-      }
-      else{
+      }else{
 				generate_Conf_cold(conf_acc,mc_params.eps_gen);
 				MPI_PRINTF0("Cold Gauge Conf Generated : OK \n");
 				conf_id_iter=0;
@@ -478,7 +480,8 @@ int main(int argc, char* argv[]){
   // plaquette measures and polyakov loop measures.
   printf("PLAQUETTE START\n");
     
-  if(devinfo.replica_idx==0){
+  IF_PERIODIC_REPLICA()
+  {
     plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
     MPI_PRINTF1("Therm_iter %d Placchetta    = %.18lf \n", conf_id_iter,plq/GL_SIZE/6.0/3.0);
   }
@@ -486,7 +489,8 @@ int main(int argc, char* argv[]){
   printf("PLAQUETTE END\n");
 
 #if !defined(GAUGE_ACT_WILSON) || !(NRANKS_D3 > 1)
-  if(devinfo.replica_idx==0){
+  IF_PERIODIC_REPLICA()
+  {
     rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums);
     MPI_PRINTF1("Therm_iter %d Rettangolo = %.18lf \n", conf_id_iter,rect/GL_SIZE/6.0/3.0/2.0);
   }
@@ -494,7 +498,8 @@ int main(int argc, char* argv[]){
   MPI_PRINTF0("multidevice rectangle computation with Wilson action not implemented\n");
 #endif
 
-  if(devinfo.replica_idx==0){
+  IF_PERIODIC_REPLICA()
+  {
     poly =  (*polyakov_loop[geom_par.tmap])(conf_acc);
     MPI_PRINTF1("Therm_iter %d Polyakov Loop = (%.18lf, %.18lf)  \n", conf_id_iter,creal(poly),cimag(poly));
   }
@@ -508,9 +513,7 @@ int main(int argc, char* argv[]){
     printf("\n#################################################\n");
 
     // gauge stuff measures
-#ifdef PAR_TEMP
-    if(0==rep->label[devinfo.replica_idx])
-#endif
+    IF_PERIODIC_REPLICA()
     {
       printf("Gauge Measures:\n");
       plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
@@ -528,9 +531,7 @@ int main(int argc, char* argv[]){
     }
 
     // fermionic stuff measures
-#ifdef PAR_TEMP
-    if(0==rep->label[devinfo.replica_idx])
-#endif
+    IF_PERIODIC_REPLICA()
     {
       printf("Fermion Measurements: see file %s\n",
 																		fm_par.fermionic_outfilename);
@@ -618,10 +619,10 @@ int main(int argc, char* argv[]){
 #endif
           }
 
-					if(devinfo.myrank ==0 ){
-						printf("\n#################################################\n");
-						printf(  "   GENERATING CONF %d of %d, %dx%dx%dx%d,%1.3f \n",
-										 conf_id_iter,mc_params.ntraj+id_iter_offset,
+          if(devinfo.myrank_world ==0 ){ 
+            printf("\n#################################################\n"); 
+            printf(  "   GENERATING CONF %d of %d, %dx%dx%dx%d,%1.3f \n", 
+                conf_id_iter,mc_params.ntraj+id_iter_offset,
 										 geom_par.gnx,geom_par.gny,
 										 geom_par.gnz,geom_par.gnt,
 										 act_params.beta);
@@ -749,6 +750,7 @@ int main(int argc, char* argv[]){
               #pragma acc update host(conf_acc[0:alloc_info.conf_acc_size])
               manage_replica_swaps(conf_acc, aux_conf_acc, local_sums, &def, &swap_number,all_swap_vector,acceptance_vector,rep);
 
+							if (0==devinfo.myrank_world) {printf("Number of accepted swaps: %d\n", swap_number);}       
 							#pragma acc update host(conf_acc[0:8])
                 
 							// periodic conf translation
@@ -816,8 +818,7 @@ int main(int argc, char* argv[]){
 #ifdef PAR_TEMP
           if(0==devinfo.myrank_world){
             acceptance_to_print=accettate_therm[0]+accettate_metro[0]-accettate_therm_old[0]-accettate_metro_old[0];
-            int ridx_lab0;
-            for(ridx_lab0=0; 0!=rep->label[ridx_lab0]; ++ridx_lab0){} // finds index corresponding to label=0
+            int ridx_lab0 = get_index_of_pbc_replica(); // finds index corresponding to label=0
             if(ridx_lab0!=0){
               MPI_Send((int*)&acceptance_to_print,1,MPI_INT,ridx_lab0*NRANKS_D3,0,MPI_COMM_WORLD);
             }
@@ -831,9 +832,7 @@ int main(int argc, char* argv[]){
 #endif
 
 
-#ifdef PAR_TEMP
-          if(0==rep->label[devinfo.replica_idx])
-#endif
+          IF_PERIODIC_REPLICA()
           {
             printf("===========GAUGE MEASURING============\n");
               
@@ -950,9 +949,8 @@ int main(int argc, char* argv[]){
 
 						if(conf_id_iter%mc_params.saveconfinterval==0){
             {
-              int r=devinfo.replica_idx;
 #ifdef PAR_TEMP        
-							snprintf(rep_str,20,"replica_%d",r);
+							snprintf(rep_str,20,"replica_%d",devinfo.replica_idx);
 							strcat(mc_params.save_conf_name,rep_str);
 #endif
 							if (debug_settings.SaveAllAtEnd){
@@ -1030,10 +1028,8 @@ int main(int argc, char* argv[]){
 																 &avg_unitarity_deviation);
 					MPI_PRINTF1("Avg/Max unitarity deviation on device: %e / %e\n",avg_unitarity_deviation,max_unitarity_deviation);
 
-#ifdef PAR_TEMP
-          if(0==rep->label[devinfo.replica_idx])
-#endif
-						{
+          IF_PERIODIC_REPLICA()
+          {
 							struct timeval tf0, tf1;
 							gettimeofday(&tf0, NULL);
 							fermion_measures(conf_acc,fermions_parameters,
@@ -1061,8 +1057,7 @@ int main(int argc, char* argv[]){
 
 #ifdef PAR_TEMP
 					{
-						int ridx_lab0;
-						for(ridx_lab0=0; 0!=rep->label[ridx_lab0]; ++ridx_lab0){} // finds index corresponding to label=0
+            int ridx_lab0 = get_index_of_pbc_replica(); // finds index corresponding to label=0
 						MPI_Bcast((void*)&(mc_params.measures_done),1,MPI_INT,ridx_lab0,MPI_COMM_WORLD);
 					}
 #endif
@@ -1097,7 +1092,8 @@ int main(int argc, char* argv[]){
         }
 
         // determining run condition
-        if(0 == devinfo.myrank && RUN_CONDITION_TERMINATE != mc_params.run_condition){
+        if(0 == devinfo.myrank_world && RUN_CONDITION_TERMINATE != mc_params.run_condition){
+         
 					// program exits if it finds a file called "stop"
 
 					FILE * test_stop = fopen("stop","r");
@@ -1163,13 +1159,23 @@ int main(int argc, char* argv[]){
 					}
         }
 
-#if NRANKS_D3 > 1
-        MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,devinfo.mpi_comm);
+        int loc_check=mc_params.run_condition;
+        MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,MPI_COMM_WORLD);
+        if(loc_check!=mc_params.run_condition){
+          printf("ERROR: mismatch in the run condition between different ranks\n");
+          MPI_Abort(MPI_COMM_WORLD,1);			
+        }
         MPI_PRINTF1("Broadcast of run condition %d from master...\n", mc_params.run_condition);
-        MPI_Bcast((void*)&(mc_params.next_gps),1,MPI_INT,0,devinfo.mpi_comm);
+
+        loc_check=mc_params.next_gps;
+        MPI_Bcast((void*)&(mc_params.next_gps),1,MPI_INT,0,MPI_COMM_WORLD);
+        if(loc_check!=mc_params.next_gps){
+          printf("ERROR: mismatch in the next_gps step between different ranks\n");
+          MPI_Abort(MPI_COMM_WORLD,1);			
+        }
         MPI_PRINTF1("Broadcast of next global program status %d from master...\n", mc_params.next_gps);
 
-#endif
+        MPI_Barrier(MPI_COMM_WORLD);
       } // while id_iter loop ends here             
   } // closes if (0 != mc_params.ntraj)
     
@@ -1192,10 +1198,10 @@ int main(int argc, char* argv[]){
 	
 	if (debug_settings.SaveAllAtEnd){
 		MPI_PRINTF1("Saving rng status in %s.\n", mc_params.RandGenStatusFilename);
-		saverand_tofile(mc_params.RandGenStatusFilename);
+  saverand_tofile(mc_params.RandGenStatusFilename);
 	}
 
-  if(0 == devinfo.myrank && debug_settings.SaveAllAtEnd){
+  if(0 == devinfo.myrank_world && debug_settings.SaveAllAtEnd){
     save_global_program_status(mc_params); // WARNING: this function in some cases does not work
   }
 

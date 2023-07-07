@@ -11,4 +11,6 @@ typedef struct rep_info_t {
 } rep_info;
 extern rep_info *rep;
 
+int get_index_of_pbc_replica();
+
 #endif

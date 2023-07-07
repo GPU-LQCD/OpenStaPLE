@@ -330,11 +330,6 @@ void mem_free_core()
 	FREECHECK(u1_back_phases);        
 	#pragma acc exit data delete(u1_back_phases)        
 
-//	for(int r=0;r<alloc_info.num_replicas;r++){
-//		FREECHECK(conf_acc[r]);
-//	}
-//	#pragma acc exit data delete(conf_acc[0:alloc_info.num_replicas][0:alloc_info.conf_acc_size])
-
 	FREECHECK(conf_acc);
 	#pragma acc exit data delete(conf_acc)
 }
