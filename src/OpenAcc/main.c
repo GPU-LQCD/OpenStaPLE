@@ -1177,6 +1177,7 @@ int main(int argc, char* argv[]){
 					}
         }
 
+#ifdef MULTIDEVICE
         MPI_Bcast((void*)&(mc_params.run_condition),1,MPI_INT,0,MPI_COMM_WORLD);
         MPI_PRINTF1("Broadcast of run condition %d from master...\n", mc_params.run_condition);
 
@@ -1189,6 +1190,7 @@ int main(int argc, char* argv[]){
         MPI_PRINTF1("Broadcast of next global program status %d from master...\n", mc_params.next_gps);
 
         MPI_Barrier(MPI_COMM_WORLD);
+#endif
       } // while id_iter loop ends here             
   } // closes if (0 != mc_params.ntraj)
     
