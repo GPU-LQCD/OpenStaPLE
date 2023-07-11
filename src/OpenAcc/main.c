@@ -1099,9 +1099,15 @@ int main(int argc, char* argv[]){
         loc_max_flavour_cycle_times=mc_params.max_flavour_cycle_time;
         loc_max_run_times=mc_params.MaxRunTimeS;
 
+#ifdef MULTIDEVICE
         MPI_Allreduce((void*)&loc_max_update_times, (void*)&glob_max_update_times,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
         MPI_Allreduce((void*)&loc_max_flavour_cycle_times, (void*)&glob_max_flavour_cycle_times,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
         MPI_Allreduce((void*)&loc_max_run_times, (void*)&glob_max_run_times,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
+#else
+        glob_max_update_times= loc_max_update_times;
+        glob_max_flavour_cycle_times= loc_max_flavour_cycle_times;
+        glob_max_run_times= loc_max_run_times;
+#endif
 
         // determining run condition
         if(0 == devinfo.myrank_world && RUN_CONDITION_TERMINATE != mc_params.run_condition){
