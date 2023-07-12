@@ -25,5 +25,5 @@ if [ -f Makefile ];then make clean;fi
 make -j 32
 
 # COPY EXECS IN CUR DIR
-cp src/main .
-cp tools/rgen .
+#cp src/main .
+#cp tools/rgen .
