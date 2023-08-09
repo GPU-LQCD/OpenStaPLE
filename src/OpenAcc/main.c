@@ -7,9 +7,9 @@
 #define __restrict
 #endif
 
-#ifndef __GNUC__
+//#ifndef __GNUC__
 #include "openacc.h"
-#endif
+//#endif
 
 #ifdef ONE_FILE_COMPILATION
 #include "../Include/all_include.h"
@@ -217,7 +217,7 @@ int main(int argc, char* argv[]){
   if(verbosity_lv > 2) 
     MPI_PRINTF0("Input file read and initialized multidev1D...\n");
 
-#ifndef __GNUC__
+  //#ifndef __GNUC__
   // OpenAcc context initialization
   // NVIDIA GPUs
   acc_device_t my_device_type = acc_device_nvidia;
@@ -233,7 +233,7 @@ int main(int argc, char* argv[]){
   select_init_acc_device(my_device_type, devinfo.single_dev_choice);
 #endif
   printf("Device Selected : OK \n"); //checking printing.
-#endif
+  //#endif
 
   unsigned int myseed_default =  (unsigned int) mc_params.seed; 
 
@@ -1260,10 +1260,10 @@ int main(int argc, char* argv[]){
       all=all->next;
     };
 
-#ifndef __GNUC__
+  //#ifndef __GNUC__
   // OpenAcc context closing
   shutdown_acc_device(my_device_type);
-#endif
+  //#endif
 
 #ifdef MULTIDEVICE
   shutdown_multidev();

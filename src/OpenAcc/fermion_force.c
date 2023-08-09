@@ -33,9 +33,9 @@
 
 
 
-#ifndef __GNUC__
+// #ifndef __GNUC__
 #define TIMING_FERMION_FORCE
-#endif
+// #endif
 
 // if using GCC, there are some problems with __restrict.
 #ifdef __GNUC__
@@ -76,7 +76,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 		printf("Sigma[old]21 = %.18lf + (%.18lf)*I\n",creal(Sigma[0].r2.c1[0]),cimag(Sigma[0].r2.c1[0]));                                               
 		printf("Sigma[old]22 = %.18lf + (%.18lf)*I\n\n",creal(Sigma[0].r2.c2[0]),cimag(Sigma[0].r2.c2[0]));                
     
-		#pragma acc update self(U[0:8])
+		#pragma acc update host(U[0:8])
 		printf("-------------U------------------\n");                                                                                             
 		printf("U00 = %.18lf + (%.18lf)*I\n",creal(U[0].r0.c0[0]),cimag(U[0].r0.c0[0]));                                               
 		printf("U01 = %.18lf + (%.18lf)*I\n",creal(U[0].r0.c1[0]),cimag(U[0].r0.c1[0]));                                               

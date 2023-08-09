@@ -1008,7 +1008,7 @@ void trasl_conf( __restrict const su3_soa *  const tconf_acc,
     
 #if NRANKS_D3 > 1
   communicate_su3_borders(tconf_acc, GAUGE_HALO);
-	#pragma acc update self(tconf_acc[0:8])
+	#pragma acc update host(tconf_acc[0:8])
 #endif
     
   set_su3_soa_to_su3_soa(tconf_acc,taux_conf);
@@ -1033,7 +1033,7 @@ void trasl_conf( __restrict const su3_soa *  const tconf_acc,
     
 #if NRANKS_D3 > 1
   communicate_su3_borders(tconf_acc, GAUGE_HALO);  
-	#pragma acc update self(tconf_acc[0:8])
+	#pragma acc update host(tconf_acc[0:8])
 #endif
 }
 

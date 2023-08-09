@@ -9,11 +9,11 @@
 
 
 #define acc_twopi 2*3.14159265358979323846
-#ifndef __GNUC__
+//#ifndef __GNUC__
 #include <accelmath.h>
-#else
-#include <math.h>
-#endif
+//#else
+//#include <math.h>
+//#endif
 
 
 // phases, unbounded, without multiplication by 2pi 

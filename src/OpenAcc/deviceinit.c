@@ -4,7 +4,7 @@
 #include "./deviceinit.h"
 #include "../Mpi/multidev.h"
 
-#ifndef __GNUC__  // assuming then PGI is used for compilation on accelerator
+// #ifndef __GNUC__  // assuming then PGI is used for compilation on accelerator
                   // at the moment only nvidia gpus are supported.
 
 #include "openacc.h"
@@ -37,5 +37,5 @@ void shutdown_acc_device(acc_device_t my_device_type)
 
 }
 
-#endif
+//#endif
 #endif

@@ -54,7 +54,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
 	int parity = (d0 + d1 + d2 + d3) % 2;
 	int dir_link = 2*mu + parity;
 
-	#pragma acc update self(tconf_acc[0:8]) self(local_staples[0:8]) self(tipdot[0:8])
+	#pragma acc update host(tconf_acc[0:8]) host(local_staples[0:8]) host(tipdot[0:8])
 	if(devinfo.myrank == 0){
 		printf("DEBUG FORCE WILSON GREP HERE\n");
 		printf("check multiplication into tamat:\n");
@@ -79,7 +79,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
 
 	// store initial link and comp action
 	single_su3 sto;
-	#pragma acc update self(tconf_acc[0:8])
+	#pragma acc update host(tconf_acc[0:8])
 	if(devinfo.myrank==0){
 		single_su3_from_su3_soa(&tconf_acc[dir_link],idxh,&sto);
 		rebuild3row(&sto);
@@ -223,7 +223,7 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
 	int parity = (d0 + d1 + d2 + d3) % 2;
 	int dir_link = 2*mu + parity;
 
-	#pragma acc update self(tconf_acc[0:8]) self(local_staples[0:8]) self(tipdot[0:8])
+	#pragma acc update host(tconf_acc[0:8]) host(local_staples[0:8]) host(tipdot[0:8])
 	if(devinfo.myrank == 0){
 		printf("DEBUG FORCE WILSON GREP HERE\n");
 		printf("check multiplication into tamat:\n");
@@ -248,7 +248,7 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
 
 	// store initial link and comp action
 	single_su3 sto;
-	#pragma acc update self(tconf_acc[0:8])
+	#pragma acc update host(tconf_acc[0:8])
 	if(devinfo.myrank==0){
 		single_su3_from_su3_soa(&tconf_acc[dir_link],idxh,&sto);
 		rebuild3row(&sto);

@@ -12,10 +12,10 @@
 #include "./struct_c_def.h"
 #include "./inverter_package.h"
 
-#ifndef __GNUC__
+// #ifndef __GNUC__
 #include "openacc.h"
 #define __restrict
-#endif
+// #endif
 #include "./sp_inverter_full.h"
 
 #include "../Mpi/multidev.h"

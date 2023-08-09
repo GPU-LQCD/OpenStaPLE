@@ -4,9 +4,9 @@
 #include "../Include/common_defines.h"
 #include "./geometry.h"
 #include "./struct_c_def.h"
-#ifndef __GNUC__
+// #ifndef __GNUC__
 #include "openacc.h"
-#endif
+// #endif
 #include "./fermionic_utilities.h"
 #include "./fermion_matrix.h"
 #include "./matvecmul.h"

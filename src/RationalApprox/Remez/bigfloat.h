@@ -32,7 +32,7 @@ public:
   bigfloat(const double d) { mpfr_init_set_d(x, d, mpfr_get_default_rounding_mode()); }  
   bigfloat(const char *str) { mpfr_init_set_str(x, (char*)str, 10, mpfr_get_default_rounding_mode()); }
   ~bigfloat(void) { mpfr_clear(x); }
-  operator const double (void) const { return (double)mpfr_get_d(x, mpfr_get_default_rounding_mode()); }
+  operator double (void) const { return (double)mpfr_get_d(x, mpfr_get_default_rounding_mode()); }
 
   static void setDefaultPrecision(unsigned long dprec) 
     {

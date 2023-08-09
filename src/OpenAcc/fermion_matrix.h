@@ -3,9 +3,9 @@
 
 
 #include "./struct_c_def.h"
-#ifndef __GNUC__
+// #ifndef __GNUC__
 #include "openacc.h"
-#endif
+// #endif
 #include "./fermionic_utilities.h"
 #include "../Include/fermion_parameters.h"
 

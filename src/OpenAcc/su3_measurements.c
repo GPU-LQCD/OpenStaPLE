@@ -9,9 +9,9 @@
 #include "./su3_utilities.h"
 #include "math.h"
 
-#ifndef __GNUC__
+// #ifndef __GNUC__
 #include <openacc.h>
-#endif
+// #endif
 
 #ifdef MULTIDEVICE
 #include <mpi.h>

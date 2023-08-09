@@ -9,9 +9,9 @@
 #include "./find_min_max.h"
 #include "../Mpi/multidev.h"
 
-#ifndef __GNUC__
+// #ifndef __GNUC__
 #include "openacc.h"
-#endif
+// #endif
 
 
 extern int verbosity_lv;

@@ -44,10 +44,10 @@ const char * type_strings[]={"(int)", "(double)", "(string)" };
 typedef struct par_info_t {
 	void* par;
 	enum dtype type;
-	const char* name;
-	const void* default_value;
-	const char* comment;
-	const int data_length;
+	char* name;
+	void* default_value;
+	char* comment;
+	int data_length;
 	double* dvet_par;
 	int* zvet_par;
 } par_info;
@@ -413,24 +413,24 @@ int read_flavour_info(ferm_param *flpar,char filelines[MAXLINES][MAXLINELENGTH],
 
 int read_action_info(action_param *act_par,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline)
 {
-	const double stout_rho_def = 0.15;
-	const int topo_action_def = 0;
-	const double barrier_def = 2.0;
-	const double width_def = 0.1;
-	const char topo_file_path_def[] = "ToPotential";
-	const int topo_stout_steps_def = 0;
-	const double topo_stout_rho_def = 0.15;
-	const char topo_act_comment[] = "#Set to 1 to enable multicanonical topological potential.";
+	double stout_rho_def = 0.15;
+	int topo_action_def = 0;
+	double barrier_def = 2.0;
+	double width_def = 0.1;
+	char topo_file_path_def[] = "ToPotential";
+	int topo_stout_steps_def = 0;
+	double topo_stout_rho_def = 0.15;
+	char topo_act_comment[] = "#Set to 1 to enable multicanonical topological potential.";
 	par_info ap[]={
 								 (par_info){(void*) &(act_par->beta)            , TYPE_DOUBLE, "Beta"          , NULL, NULL},
 								 (par_info){(void*) &(act_par->stout_steps)     , TYPE_INT   , "StoutSteps"    , NULL, NULL},
-								 (par_info){(void*) &(act_par->stout_rho)       , TYPE_DOUBLE, "StoutRho"      , (const void*) &stout_rho_def, NULL},
-								 (par_info){(void*) &(act_par->topo_action)     , TYPE_INT   , "TopoAct"       , (const void*) &topo_action_def, topo_act_comment},
-								 (par_info){(void*) &(act_par->barrier)         , TYPE_DOUBLE, "Barrier"       , (const void*) &barrier_def, NULL},
-								 (par_info){(void*) &(act_par->width)           , TYPE_DOUBLE, "Width"         , (const void*) &width_def, NULL},
-								 (par_info){(void*) &(act_par->topo_file_path)  , TYPE_STR   , "TopoPath"      , (const void*) &topo_file_path_def, NULL},
-								 (par_info){(void*) &(act_par->topo_stout_steps), TYPE_INT   , "TopoStoutSteps", (const void*) &topo_stout_steps_def, NULL},
-								 (par_info){(void*) &(act_par->topo_rho)        , TYPE_DOUBLE, "TopoRho"       , (const void*) &stout_rho_def, NULL}
+								 (par_info){(void*) &(act_par->stout_rho)       , TYPE_DOUBLE, "StoutRho"      , (void*) &stout_rho_def, NULL},
+								 (par_info){(void*) &(act_par->topo_action)     , TYPE_INT   , "TopoAct"       , (void*) &topo_action_def, topo_act_comment},
+								 (par_info){(void*) &(act_par->barrier)         , TYPE_DOUBLE, "Barrier"       , (void*) &barrier_def, NULL},
+								 (par_info){(void*) &(act_par->width)           , TYPE_DOUBLE, "Width"         , (void*) &width_def, NULL},
+								 (par_info){(void*) &(act_par->topo_file_path)  , TYPE_STR   , "TopoPath"      , (void*) &topo_file_path_def, NULL},
+								 (par_info){(void*) &(act_par->topo_stout_steps), TYPE_INT   , "TopoStoutSteps", (void*) &topo_stout_steps_def, NULL},
+								 (par_info){(void*) &(act_par->topo_rho)        , TYPE_DOUBLE, "TopoRho"       , (void*) &stout_rho_def, NULL}
 	};			   
 				   
 	// from here on, you should not have to modify anything.
@@ -441,14 +441,14 @@ int read_backfield_info(bf_param *bfpar,char filelines[MAXLINES][MAXLINELENGTH],
 {
 
 	// see /OpenAcc/backfield.h
-	const double default_value = 0.0;
+	double default_value = 0.0;
 	par_info bfp[]={
-									(par_info){(void*) &(bfpar->ex ),TYPE_DOUBLE, "ex", (const void*) &default_value  ,NULL},
-									(par_info){(void*) &(bfpar->ey ),TYPE_DOUBLE, "ey", (const void*) &default_value  ,NULL},
-									(par_info){(void*) &(bfpar->ez ),TYPE_DOUBLE, "ez", (const void*) &default_value  ,NULL},
-									(par_info){(void*) &(bfpar->bx ),TYPE_DOUBLE, "bx", (const void*) &default_value  ,NULL},
-									(par_info){(void*) &(bfpar->by ),TYPE_DOUBLE, "by", (const void*) &default_value  ,NULL},
-									(par_info){(void*) &(bfpar->bz ),TYPE_DOUBLE, "bz", (const void*) &default_value  ,NULL}};
+									(par_info){(void*) &(bfpar->ex ),TYPE_DOUBLE, "ex", (void*) &default_value  ,NULL},
+									(par_info){(void*) &(bfpar->ey ),TYPE_DOUBLE, "ey", (void*) &default_value  ,NULL},
+									(par_info){(void*) &(bfpar->ez ),TYPE_DOUBLE, "ez", (void*) &default_value  ,NULL},
+									(par_info){(void*) &(bfpar->bx ),TYPE_DOUBLE, "bx", (void*) &default_value  ,NULL},
+									(par_info){(void*) &(bfpar->by ),TYPE_DOUBLE, "by", (void*) &default_value  ,NULL},
+									(par_info){(void*) &(bfpar->bz ),TYPE_DOUBLE, "bz", (void*) &default_value  ,NULL}};
 
 	return scan_group_NV(sizeof(bfp)/sizeof(par_info),bfp, filelines, startline, endline);
 }
@@ -456,48 +456,48 @@ int read_backfield_info(bf_param *bfpar,char filelines[MAXLINES][MAXLINELENGTH],
 int read_md_info(md_param *mdpar,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline)
 {
 	// see /OpenAcc/md_integrator.h
-	const double tlendef = 1.0;
-	const double expmaxeigenv_def = 5.5 ; 
-	const int singlePrecMDdef = 0;
-	const int max_cg_iterations_def = 10000;
-	const int recycleInvsForceDef = 0;
-	const int extrapolateInvsForceDef = 0;
+	double tlendef = 1.0;
+	double expmaxeigenv_def = 5.5 ; 
+	int singlePrecMDdef = 0;
+	int max_cg_iterations_def = 10000;
+	int recycleInvsForceDef = 0;
+	int extrapolateInvsForceDef = 0;
     
-	const char singlePrecMD_comment[] = "#For volumes large as or larger than about 24^4 double precision MD is needed. ";
-	const char residue_md_comment[] = "#If using single precision MD, the residue can't reliably be set to less than 1e-4" ;
-	const char recycleInvsForce_comment[] = "# For chronological inverters - not implemented - keep 0 or remove";
-	const char extrapolateInvsForce_comment[] = "# For chronological inverters - not implemented - keep 0 or remove";
-	const char expmaxeigenv_comment[] = "# 5.5 is ok for 2 stout, with less stouting this number must be higher. " ; 
+	char singlePrecMD_comment[] = "#For volumes large as or larger than about 24^4 double precision MD is needed. ";
+	char residue_md_comment[] = "#If using single precision MD, the residue can't reliably be set to less than 1e-4" ;
+	char recycleInvsForce_comment[] = "# For chronological inverters - not implemented - keep 0 or remove";
+	char extrapolateInvsForce_comment[] = "# For chronological inverters - not implemented - keep 0 or remove";
+	char expmaxeigenv_comment[] = "# 5.5 is ok for 2 stout, with less stouting this number must be higher. " ; 
 
 	par_info mdp[]={
 									(par_info){(void*) &(mdpar->no_md ),       TYPE_INT, "NmdSteps"     , NULL,NULL},
 									(par_info){(void*) &(mdpar->gauge_scale ), TYPE_INT, "GaugeSubSteps", NULL,NULL},
-									(par_info){(void*) &(mdpar->t ),        TYPE_DOUBLE, "TrajLength"   , (const void*) &tlendef,NULL},
+									(par_info){(void*) &(mdpar->t ),        TYPE_DOUBLE, "TrajLength"   , (void*) &tlendef,NULL},
 									(par_info){(void*) &(mdpar->residue_metro),       TYPE_DOUBLE,   "residue_metro"          , NULL,NULL},
-									(par_info){(void*) &(mdpar->expected_max_eigenvalue),TYPE_DOUBLE,"ExpMaxEigenvalue"       , (const void*) &expmaxeigenv_def,expmaxeigenv_comment},
-									(par_info){(void*) &(mdpar->singlePrecMD),TYPE_INT , "SinglePrecMD", (const void*) &singlePrecMDdef,singlePrecMD_comment},
+									(par_info){(void*) &(mdpar->expected_max_eigenvalue),TYPE_DOUBLE,"ExpMaxEigenvalue"       , (void*) &expmaxeigenv_def,expmaxeigenv_comment},
+									(par_info){(void*) &(mdpar->singlePrecMD),TYPE_INT , "SinglePrecMD", (void*) &singlePrecMDdef,singlePrecMD_comment},
 									(par_info){(void*) &(mdpar->residue_md),TYPE_DOUBLE, "residue_md"   , NULL,residue_md_comment},
-									(par_info){(void*) &(mdpar->max_cg_iterations),TYPE_INT, "MaxCGIterations" , (const void*) &max_cg_iterations_def,NULL},
-									(par_info){(void*) &(mdpar->recycleInvsForce),TYPE_INT, "recycleInvsForce" , (const void*) &recycleInvsForceDef,recycleInvsForce_comment},
-									(par_info){(void*) &(mdpar->extrapolateInvsForce),TYPE_INT, "extrapolateInvsForce", (const void*) &extrapolateInvsForceDef,extrapolateInvsForce_comment}};
+									(par_info){(void*) &(mdpar->max_cg_iterations),TYPE_INT, "MaxCGIterations" , (void*) &max_cg_iterations_def,NULL},
+									(par_info){(void*) &(mdpar->recycleInvsForce),TYPE_INT, "recycleInvsForce" , (void*) &recycleInvsForceDef,recycleInvsForce_comment},
+									(par_info){(void*) &(mdpar->extrapolateInvsForce),TYPE_INT, "extrapolateInvsForce", (void*) &extrapolateInvsForceDef,extrapolateInvsForce_comment}};
 
 	return scan_group_NV(sizeof(mdp)/sizeof(par_info),mdp, filelines, startline, endline);
 }
 
 int read_inv_tricks_info(inv_tricks *invinfo,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline){
 
-	const int singlePInvAccelMultiInvDef = 0;
-	const int useMixedPrecisionDef = 0;
-	const int restartingEveryDef = 10000;
-	const double mixedPrecisionDeltaDef = 0.1; 
+	int singlePInvAccelMultiInvDef = 0;
+	int useMixedPrecisionDef = 0;
+	int restartingEveryDef = 10000;
+	double mixedPrecisionDeltaDef = 0.1; 
 
-	const char singlePInvAccelMultiInv_comment[] = "# At present, multishift inverter is faster. Keep 0 or delete.";
+	char singlePInvAccelMultiInv_comment[] = "# At present, multishift inverter is faster. Keep 0 or delete.";
 
 	par_info iip[]={
-									(par_info){(void*) &(invinfo->singlePInvAccelMultiInv),TYPE_INT,"singlePInvAccelMultiInv", (const void*) &singlePInvAccelMultiInvDef,singlePInvAccelMultiInv_comment},
-									(par_info){(void*) &(invinfo->useMixedPrecision),TYPE_INT,"useMixedPrecision", (const void*) &useMixedPrecisionDef,NULL},
-									(par_info){(void*) &(invinfo->restartingEvery),TYPE_INT,"restartingEvery", (const void*) &restartingEveryDef,NULL},
-									(par_info){(void*) &(invinfo->mixedPrecisionDelta), TYPE_DOUBLE, "mixedPrecisionDelta", (const void*)&mixedPrecisionDeltaDef,NULL}};
+									(par_info){(void*) &(invinfo->singlePInvAccelMultiInv),TYPE_INT,"singlePInvAccelMultiInv", (void*) &singlePInvAccelMultiInvDef,singlePInvAccelMultiInv_comment},
+									(par_info){(void*) &(invinfo->useMixedPrecision),TYPE_INT,"useMixedPrecision", (void*) &useMixedPrecisionDef,NULL},
+									(par_info){(void*) &(invinfo->restartingEvery),TYPE_INT,"restartingEvery", (void*) &restartingEveryDef,NULL},
+									(par_info){(void*) &(invinfo->mixedPrecisionDelta), TYPE_DOUBLE, "mixedPrecisionDelta", (void*)&mixedPrecisionDeltaDef,NULL}};
 
 	return scan_group_NV(sizeof(iip)/sizeof(par_info),iip, filelines, startline, endline);
 }
@@ -506,27 +506,27 @@ int read_mc_info(mc_params_t *mcpar,char filelines[MAXLINES][MAXLINELENGTH], int
 {
 
 	// see /OpenAcc/md_integrator.h
-	const int seed_def = 0;  // which means time()
-	const double epsgen_def = 0.1 ; 
-	const char RandGenStatusFilename_def[] = "rgstatus.bin"; 
-	const double MaxRunTimeS_def = 1.0e9; // 30 years should be enough
-	const int MaxConfIdIter_def = 1000000;
-	const int JarzynskiMode_def = 0;
+	int seed_def = 0;  // which means time()
+	double epsgen_def = 0.1 ; 
+	char RandGenStatusFilename_def[] = "rgstatus.bin"; 
+	double MaxRunTimeS_def = 1.0e9; // 30 years should be enough
+	int MaxConfIdIter_def = 1000000;
+	int JarzynskiMode_def = 0;
 
-	const char JarzynskiMode_comment[]="#0 - normal operation,\n#1 - from bz(as set in input file) to bz+1\n#-1 - from bz to bz-1";
-	const char MaxConfIdIter_comment[]="#In Jarzynski mode, this number will be taken as the number of steps\n#to go from the starting value of bz to the last.";
-	const char therm_ntraj_comment[] = 
+	char JarzynskiMode_comment[]="#0 - normal operation,\n#1 - from bz(as set in input file) to bz+1\n#-1 - from bz to bz-1";
+	char MaxConfIdIter_comment[]="#In Jarzynski mode, this number will be taken as the number of steps\n#to go from the starting value of bz to the last.";
+	char therm_ntraj_comment[] = 
 		"# When starting from the identity links, metropolis test will likely fail for a few trajectories.\n#Set this number to a few to allow the run to thermalise.";
-	const char eps_gen_comment[] = "#The level of randomness in creating a new random gauge conf";
-	const char store_conf_name_comment[] = "#This is the prefix of the filenames of the gauge conf files which will be saved (with an index).";
-	const char save_conf_name_comment[] = "#This is the name of the starting gauge conf file. THIS FILE WILL BE OVERWRITTEN.";
-	const char seed_comment[] = "# set this to 42 \n\ #(https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker\%27s_Guide_to_the_Galaxy#Answer_to_the_Ultimate_Question_of_Life.2C_the_Universe.2C_and_Everything_.2842.29)";
-	const char RandGenStatusFilename_comment[] = "# The status of the random number generator will be saved in a file named like this (plus suffixes).\n\
+	char eps_gen_comment[] = "#The level of randomness in creating a new random gauge conf";
+	char store_conf_name_comment[] = "#This is the prefix of the filenames of the gauge conf files which will be saved (with an index).";
+	char save_conf_name_comment[] = "#This is the name of the starting gauge conf file. THIS FILE WILL BE OVERWRITTEN.";
+	char seed_comment[] = "# set this to 42 (if you do not get the quote, stop using this code)";
+	char RandGenStatusFilename_comment[] = "# The status of the random number generator will be saved in a file named like this (plus suffixes).\n\
 # In correspondence of every stored gauge conf, the random number generator statuses will be saved for each MPI rank.\n\
 # With these files, the gauge conf and the right setting file (like this one) reproducibility should be assured.";
 
-	const char statusFileName_def[] = "program_status.txt"; 
-	const char statusFileName_comment[] = "# The status of the program at the end will be saved here.\n\
+	char statusFileName_def[] = "program_status.txt"; 
+	char statusFileName_comment[] = "# The status of the program at the end will be saved here.\n\
 # This is useful to run the program on \"short\" queues."; 
 
 	par_info mcp[]={
@@ -536,13 +536,13 @@ int read_mc_info(mc_params_t *mcpar,char filelines[MAXLINES][MAXLINELENGTH], int
 									(par_info){(void*) &(mcpar->saveconfinterval),       TYPE_INT,   "SaveConfInterval"       , NULL,NULL},
 									(par_info){(void*) &(mcpar->store_conf_name),        TYPE_STR,   "StoreConfName"          , NULL,store_conf_name_comment},
 									(par_info){(void*) &(mcpar->save_conf_name),         TYPE_STR,   "SaveConfName"           , NULL,save_conf_name_comment},
-									(par_info){(void*) &(mcpar->MaxConfIdIter),          TYPE_INT,   "MaxConfIdIter"          , (const void*) &MaxConfIdIter_def,MaxConfIdIter_comment},
-									(par_info){(void*) &(mcpar->RandGenStatusFilename),  TYPE_STR,   "RandGenStatusFilename"  , (const void*) &RandGenStatusFilename_def,RandGenStatusFilename_comment},
-									(par_info){(void*) &(mcpar->MaxRunTimeS),         TYPE_DOUBLE,   "MaxRunTimeS"            , (const void*) &MaxRunTimeS_def,NULL},
-									(par_info){(void*) &(mcpar->seed),                   TYPE_INT,   "Seed"                   , (const void*) &seed_def,seed_comment},
-									(par_info){(void*) &(mcpar->eps_gen),             TYPE_DOUBLE,   "EpsGen"                 , (const void*) &epsgen_def,eps_gen_comment},
-									(par_info){(void*) &(mcpar->JarzynskiMode),             TYPE_INT,   "JarzynskiMode"       , (const void*) &JarzynskiMode_def,JarzynskiMode_comment},
-									(par_info){(void*) &(mcpar->statusFileName),            TYPE_STR,   "StatusFileName"      , (const void*) &statusFileName_def,statusFileName_comment}
+									(par_info){(void*) &(mcpar->MaxConfIdIter),          TYPE_INT,   "MaxConfIdIter"          , (void*) &MaxConfIdIter_def,MaxConfIdIter_comment},
+									(par_info){(void*) &(mcpar->RandGenStatusFilename),  TYPE_STR,   "RandGenStatusFilename"  , (void*) &RandGenStatusFilename_def,RandGenStatusFilename_comment},
+									(par_info){(void*) &(mcpar->MaxRunTimeS),         TYPE_DOUBLE,   "MaxRunTimeS"            , (void*) &MaxRunTimeS_def,NULL},
+									(par_info){(void*) &(mcpar->seed),                   TYPE_INT,   "Seed"                   , (void*) &seed_def,seed_comment},
+									(par_info){(void*) &(mcpar->eps_gen),             TYPE_DOUBLE,   "EpsGen"                 , (void*) &epsgen_def,eps_gen_comment},
+									(par_info){(void*) &(mcpar->JarzynskiMode),             TYPE_INT,   "JarzynskiMode"       , (void*) &JarzynskiMode_def,JarzynskiMode_comment},
+									(par_info){(void*) &(mcpar->statusFileName),            TYPE_STR,   "StatusFileName"      , (void*) &statusFileName_def,statusFileName_comment}
 	};
 
 	return scan_group_NV(sizeof(mcp)/sizeof(par_info),mcp, filelines, startline, endline);
@@ -550,37 +550,37 @@ int read_mc_info(mc_params_t *mcpar,char filelines[MAXLINES][MAXLINELENGTH], int
 
 int read_debug_info(debug_settings_t * dbg_settings,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline)
 {
-	const int useildg_def = 1;
-	const int input_vbl_def = 2;
-	const int SaveAllAtEnd_def = 1;
-	const int save_diagnostics_def = 0;
-	const char diagnostics_filename_def[] = "md_diagnostics.dat"; 
-	const int do_reversibility_test_def = 0; 
-	const int do_norandom_test_def = 0; 
-	const int rng_fakeness_level_def = 0 ;
-	const int md_dbg_print_max_count_def = 0;
-	const int md_dbg_be_verbose_def = 0;
-	const int print_bfield_dbginfo_def = 0;
-	const int md_diag_print_every_def = 10000;
+	int useildg_def = 1;
+	int input_vbl_def = 2;
+	int SaveAllAtEnd_def = 1;
+	int save_diagnostics_def = 0;
+	char diagnostics_filename_def[] = "md_diagnostics.dat"; 
+	int do_reversibility_test_def = 0; 
+	int do_norandom_test_def = 0; 
+	int rng_fakeness_level_def = 0 ;
+	int md_dbg_print_max_count_def = 0;
+	int md_dbg_be_verbose_def = 0;
+	int print_bfield_dbginfo_def = 0;
+	int md_diag_print_every_def = 10000;
 
-	const char SaveAllAtEnd_comment[] = "# Set this to 0 if you want the program not to save its state at the end\n\
+	char SaveAllAtEnd_comment[] = "# Set this to 0 if you want the program not to save its state at the end\n\
 # (or it may overwrite some files and you won't be able to reproduce bugs/do other things)";
-	const char md_dbg_print_max_count_comment[] = "#Print gauge conf, momenta and ipdot intermediate results during MD evolution";
-	const char md_dbg_be_verbose_comment[] = "#More intermediate results will be printed";
+	char md_dbg_print_max_count_comment[] = "#Print gauge conf, momenta and ipdot intermediate results during MD evolution";
+	char md_dbg_be_verbose_comment[] = "#More intermediate results will be printed";
 	// see /Meas
 	par_info gmp[]= {
-									 (par_info){(void*) &(dbg_settings->use_ildg),              TYPE_INT,"UseILDG"                , (const void*) &useildg_def,NULL},
-									 (par_info){(void*) &(dbg_settings->input_vbl),             TYPE_INT,"VerbosityLv"            , (const void*) &input_vbl_def,NULL},
-									 (par_info){(void*) &(dbg_settings->SaveAllAtEnd),          TYPE_INT,"SaveAllAtEnd"           , (const void*) &SaveAllAtEnd_def,SaveAllAtEnd_comment},
-									 (par_info){(void*) &(dbg_settings->print_bfield_dbginfo),  TYPE_INT,"PrintBackFieldDbgInfo"  , (const void*) &print_bfield_dbginfo_def,NULL},
-									 (par_info){(void*) &(dbg_settings->save_diagnostics),      TYPE_INT,"SaveDiagnostics"        , (const void*) &save_diagnostics_def,NULL},
-									 (par_info){(void*) &(dbg_settings->do_reversibility_test), TYPE_INT,"DoRevTest"              , (const void*) &do_reversibility_test_def,NULL},
-									 (par_info){(void*) &(dbg_settings->do_norandom_test),      TYPE_INT,"DoNoRandomTest"         , (const void*) &do_norandom_test_def,NULL},
-									 (par_info){(void*) &(dbg_settings->rng_fakeness_level),    TYPE_INT,"RngFakenessLevel"       , (const void*) &rng_fakeness_level_def,NULL},
-									 (par_info){(void*) &(dbg_settings->md_dbg_print_max_count),TYPE_INT,"MDDbgPrintMaxCount"     , (const void*) &md_dbg_print_max_count_def,md_dbg_print_max_count_comment},
-									 (par_info){(void*) &(dbg_settings->md_dbg_be_verbose),     TYPE_INT,"MDDbgBeVerbose"         , (const void*) &md_dbg_be_verbose_def,md_dbg_be_verbose_comment},
-									 (par_info){(void*) &(dbg_settings->diagnostics_filename),  TYPE_STR,"SaveDiagnosticsFilename", (const void*) &diagnostics_filename_def,NULL},
-									 (par_info){(void*) &(dbg_settings->md_diag_print_every) ,  TYPE_INT,"PrintDiagInfoEvery",      (const void*) &md_diag_print_every_def,NULL},
+									 (par_info){(void*) &(dbg_settings->use_ildg),              TYPE_INT,"UseILDG"                , (void*) &useildg_def,NULL},
+									 (par_info){(void*) &(dbg_settings->input_vbl),             TYPE_INT,"VerbosityLv"            , (void*) &input_vbl_def,NULL},
+									 (par_info){(void*) &(dbg_settings->SaveAllAtEnd),          TYPE_INT,"SaveAllAtEnd"           , (void*) &SaveAllAtEnd_def,SaveAllAtEnd_comment},
+									 (par_info){(void*) &(dbg_settings->print_bfield_dbginfo),  TYPE_INT,"PrintBackFieldDbgInfo"  , (void*) &print_bfield_dbginfo_def,NULL},
+									 (par_info){(void*) &(dbg_settings->save_diagnostics),      TYPE_INT,"SaveDiagnostics"        , (void*) &save_diagnostics_def,NULL},
+									 (par_info){(void*) &(dbg_settings->do_reversibility_test), TYPE_INT,"DoRevTest"              , (void*) &do_reversibility_test_def,NULL},
+									 (par_info){(void*) &(dbg_settings->do_norandom_test),      TYPE_INT,"DoNoRandomTest"         , (void*) &do_norandom_test_def,NULL},
+									 (par_info){(void*) &(dbg_settings->rng_fakeness_level),    TYPE_INT,"RngFakenessLevel"       , (void*) &rng_fakeness_level_def,NULL},
+									 (par_info){(void*) &(dbg_settings->md_dbg_print_max_count),TYPE_INT,"MDDbgPrintMaxCount"     , (void*) &md_dbg_print_max_count_def,md_dbg_print_max_count_comment},
+									 (par_info){(void*) &(dbg_settings->md_dbg_be_verbose),     TYPE_INT,"MDDbgBeVerbose"         , (void*) &md_dbg_be_verbose_def,md_dbg_be_verbose_comment},
+									 (par_info){(void*) &(dbg_settings->diagnostics_filename),  TYPE_STR,"SaveDiagnosticsFilename", (void*) &diagnostics_filename_def,NULL},
+									 (par_info){(void*) &(dbg_settings->md_diag_print_every) ,  TYPE_INT,"PrintDiagInfoEvery",      (void*) &md_diag_print_every_def,NULL},
             
 	};
 
@@ -598,19 +598,19 @@ int read_gaugemeas_info(char *outfilename,char filelines[MAXLINES][MAXLINELENGTH
 
 int read_fermmeas_info(ferm_meas_params * fmpars,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline)
 {
-	const int doubleinv_def = 0;
-	const int measEvery_def = 1;
-	const char measEvery_comment[] = "#Fermionic measurements will be performed once very MeasEvery times.";
-	const int printPlaqAndRect_def = 0;
-	const char printPlaqAndRect_comment[] = "# Each measurement line will contain the value of the plaquette and the rectangle - reweighting will then be easier.";
+	int doubleinv_def = 0;
+	int measEvery_def = 1;
+	char measEvery_comment[] = "#Fermionic measurements will be performed once very MeasEvery times.";
+	int printPlaqAndRect_def = 0;
+	char printPlaqAndRect_comment[] = "# Each measurement line will contain the value of the plaquette and the rectangle - reweighting will then be easier.";
 
 	par_info fmp[]={
 									(par_info){(void*) &(fmpars->fermionic_outfilename),       TYPE_STR,"FermionicOutfilename",        NULL ,                       NULL},
-									(par_info){(void*) &(fmpars->measEvery),                   TYPE_INT,"MeasEvery"           ,(const void*) &measEvery_def,measEvery_comment},
+									(par_info){(void*) &(fmpars->measEvery),                   TYPE_INT,"MeasEvery"           ,(void*) &measEvery_def,measEvery_comment},
 									(par_info){(void*) &(fmpars->SingleInvNVectors),           TYPE_INT,"SingleInvNVectors"   ,        NULL ,                       NULL},
-									(par_info){(void*) &(fmpars->DoubleInvNVectorsChiral),     TYPE_INT,"DoubleInvNVectorsChiral",     (const void*) &doubleinv_def,NULL},
-									(par_info){(void*) &(fmpars->DoubleInvNVectorsQuarkNumber),TYPE_INT,"DoubleInvNVectorsQuarkNumber",(const void*) &doubleinv_def,NULL},
-									(par_info){(void*) &(fmpars->printPlaqAndRect),TYPE_INT,"PrintPlaqAndRect",(const void*) &printPlaqAndRect_def,printPlaqAndRect_comment},
+									(par_info){(void*) &(fmpars->DoubleInvNVectorsChiral),     TYPE_INT,"DoubleInvNVectorsChiral",     (void*) &doubleinv_def,NULL},
+									(par_info){(void*) &(fmpars->DoubleInvNVectorsQuarkNumber),TYPE_INT,"DoubleInvNVectorsQuarkNumber",(void*) &doubleinv_def,NULL},
+									(par_info){(void*) &(fmpars->printPlaqAndRect),TYPE_INT,"PrintPlaqAndRect",(void*) &printPlaqAndRect_def,printPlaqAndRect_comment},
     
 	};
 
@@ -619,37 +619,37 @@ int read_fermmeas_info(ferm_meas_params * fmpars,char filelines[MAXLINES][MAXLIN
 
 int read_topomeas_info(meastopo_param * meastopars,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline)
 {
-	const int meascool_def = 0;
-	const char pathcool_def[] = "TopoCool";
-	const int coolmeasstep_def = 1;
-	const int cool_measinterval_def = 1;
-	const char cool_measinterval_comment[] = "# Cooled Topological charge will be measured every CoolMeasInterval cooling steps.";
-	const int cooleach_def = 1;
-	const char cooleach_comment[] = "# Cooled Topological charge will be measured every CoolMeasEach MC step.";
+	int meascool_def = 0;
+	char pathcool_def[] = "TopoCool";
+	int coolmeasstep_def = 1;
+	int cool_measinterval_def = 1;
+	char cool_measinterval_comment[] = "# Cooled Topological charge will be measured every CoolMeasInterval cooling steps.";
+	int cooleach_def = 1;
+	char cooleach_comment[] = "# Cooled Topological charge will be measured every CoolMeasEach MC step.";
     
-	const int measstout_def = 0;
-	const char pathstout_def[] = "TopoStout";
-	const double measrhostout_def = 0.1;
-	const char measrhostout_comment[]="# MeasStoutRho can't be changed, it have to be equal to StoutRho, which is setted in src/Include/common_defines.h";
-	const int stoutmeasstep_def = 1;
-	const int stout_measinterval_def = 1;
-	const char stout_measinterval_comment[] = "# Stouted Topological charge will be measured every StoutMeasInterval cooling steps.";
-	const int stouteach_def = 1;
-	const char stouteach_comment[] = "# Stouted Topological charge will be measured every StoutMeasEach MC step.";
+	int measstout_def = 0;
+	char pathstout_def[] = "TopoStout";
+	double measrhostout_def = 0.1;
+	char measrhostout_comment[]="# MeasStoutRho can't be changed, it have to be equal to StoutRho, which is setted in src/Include/common_defines.h";
+	int stoutmeasstep_def = 1;
+	int stout_measinterval_def = 1;
+	char stout_measinterval_comment[] = "# Stouted Topological charge will be measured every StoutMeasInterval cooling steps.";
+	int stouteach_def = 1;
+	char stouteach_comment[] = "# Stouted Topological charge will be measured every StoutMeasEach MC step.";
 
 	par_info tomp[]={
-									 (par_info){(void*) &(meastopars->meascool),       	       TYPE_INT,"MeasCool"            ,(const void*) &meascool_def,         NULL},
-									 (par_info){(void*) &(meastopars->pathcool),                    TYPE_STR,"PathCool"            ,(const void*) &pathcool_def,         NULL},
-									 (par_info){(void*) &(meastopars->coolmeasstep),                    TYPE_INT,"CoolMeasSteps"       ,(const void*) &coolmeasstep_def,         NULL},
-									 (par_info){(void*) &(meastopars->cool_measinterval),           TYPE_INT,"CoolMeasInterval"    ,(const void*) &cool_measinterval_def,cool_measinterval_comment},
-									 (par_info){(void*) &(meastopars->cooleach),                TYPE_INT,"CoolMeasEach"        ,(const void*) &cooleach_def,cooleach_comment},
+									 (par_info){(void*) &(meastopars->meascool),       	       TYPE_INT,"MeasCool"            ,(void*) &meascool_def,         NULL},
+									 (par_info){(void*) &(meastopars->pathcool),                    TYPE_STR,"PathCool"            ,(void*) &pathcool_def,         NULL},
+									 (par_info){(void*) &(meastopars->coolmeasstep),                    TYPE_INT,"CoolMeasSteps"       ,(void*) &coolmeasstep_def,         NULL},
+									 (par_info){(void*) &(meastopars->cool_measinterval),           TYPE_INT,"CoolMeasInterval"    ,(void*) &cool_measinterval_def,cool_measinterval_comment},
+									 (par_info){(void*) &(meastopars->cooleach),                TYPE_INT,"CoolMeasEach"        ,(void*) &cooleach_def,cooleach_comment},
 
-									 (par_info){(void*) &(meastopars->measstout),       	       TYPE_INT,"MeasStout"           ,(const void*) &measstout_def,         NULL},
-									 (par_info){(void*) &(meastopars->pathstout),                   TYPE_STR,"PathStout"           ,(const void*) &pathstout_def,         NULL},
-									 (par_info){(void*) &(meastopars->measrhostout),       	    TYPE_DOUBLE,"MeasStoutRho"        ,(const void*) &measrhostout_def,measrhostout_comment},
-									 (par_info){(void*) &(meastopars->stoutmeasstep),                   TYPE_INT,"StoutMeasSteps"      ,(const void*) &stoutmeasstep_def,         NULL},
-									 (par_info){(void*) &(meastopars->stout_measinterval),          TYPE_INT,"StoutMeasInterval"   ,(const void*) &stout_measinterval_def,stout_measinterval_comment},
-									 (par_info){(void*) &(meastopars->stouteach),               TYPE_INT,"StoutMeasEach"       ,(const void*) &stouteach_def,stouteach_comment},
+									 (par_info){(void*) &(meastopars->measstout),       	       TYPE_INT,"MeasStout"           ,(void*) &measstout_def,         NULL},
+									 (par_info){(void*) &(meastopars->pathstout),                   TYPE_STR,"PathStout"           ,(void*) &pathstout_def,         NULL},
+									 (par_info){(void*) &(meastopars->measrhostout),       	    TYPE_DOUBLE,"MeasStoutRho"        ,(void*) &measrhostout_def,measrhostout_comment},
+									 (par_info){(void*) &(meastopars->stoutmeasstep),                   TYPE_INT,"StoutMeasSteps"      ,(void*) &stoutmeasstep_def,         NULL},
+									 (par_info){(void*) &(meastopars->stout_measinterval),          TYPE_INT,"StoutMeasInterval"   ,(void*) &stout_measinterval_def,stout_measinterval_comment},
+									 (par_info){(void*) &(meastopars->stouteach),               TYPE_INT,"StoutMeasEach"       ,(void*) &stouteach_def,stouteach_comment},
 	};
 
 	// from here on, you should not have to modify anything.
@@ -661,27 +661,27 @@ int read_device_setting(dev_info * di,char filelines[MAXLINES][MAXLINELENGTH], i
 	// notice that pre_init_multidev1D or any relevant function
 	// must have been called before, in order to get nranks
 	// from MPI_Init()
-	const int single_dev_choice_def = 0;
-	const int async_comm_fermion_def = 0;
-	const int async_comm_gauge_def   = 0;
+	int single_dev_choice_def = 0;
+	int async_comm_fermion_def = 0;
+	int async_comm_gauge_def   = 0;
 
 	int helpmode = (int) (startline == endline);
 #ifndef MULTIDEVICE        
-	const int ignored_def = 1; // ignored, actually, but necessary
+	int ignored_def = 1; // ignored, actually, but necessary
 #endif
     
-	const char nranks_read_comment[] = "# NRanks has been set at make time with the NR3 variable.";
+	char nranks_read_comment[] = "# NRanks has been set at make time with the NR3 variable.";
 
 	par_info tp[]= {
 #ifndef MULTIDEVICE
 									(par_info){(void*) &(di->single_dev_choice),TYPE_INT,"device_choice",    NULL,                                 NULL},
-									(par_info){(void*) IGNORE_IT,               TYPE_INT,"AsyncFermionComms",(const void*) &async_comm_fermion_def,NULL},
-									(par_info){(void*) IGNORE_IT,               TYPE_INT,"AsyncGaugeComms",  (const void*) &async_comm_gauge_def,  NULL},
-									(par_info){(void*) IGNORE_IT,               TYPE_INT,"NProcPerNode",     (const void*) &ignored_def,           NULL},
+									(par_info){(void*) IGNORE_IT,               TYPE_INT,"AsyncFermionComms",(void*) &async_comm_fermion_def,NULL},
+									(par_info){(void*) IGNORE_IT,               TYPE_INT,"AsyncGaugeComms",  (void*) &async_comm_gauge_def,  NULL},
+									(par_info){(void*) IGNORE_IT,               TYPE_INT,"NProcPerNode",     (void*) &ignored_def,           NULL},
 #else
-									(par_info){(void*) &(di->single_dev_choice), TYPE_INT,"device_choice",    (const void*) &single_dev_choice_def, NULL},
-									(par_info){(void*) &(di->async_comm_fermion),TYPE_INT,"AsyncFermionComms",(const void*) &async_comm_fermion_def,NULL},
-									(par_info){(void*) &(di->async_comm_gauge),  TYPE_INT,"AsyncGaugeComms",  (const void*) &async_comm_gauge_def  ,NULL},
+									(par_info){(void*) &(di->single_dev_choice), TYPE_INT,"device_choice",    (void*) &single_dev_choice_def, NULL},
+									(par_info){(void*) &(di->async_comm_fermion),TYPE_INT,"AsyncFermionComms",(void*) &async_comm_fermion_def,NULL},
+									(par_info){(void*) &(di->async_comm_gauge),  TYPE_INT,"AsyncGaugeComms",  (void*) &async_comm_gauge_def  ,NULL},
 									(par_info){(void*) &(di->proc_per_node),     TYPE_INT,"NProcPerNode",     NULL, NULL},
 #endif
 									(par_info){(void*) &(di->nranks_read),       TYPE_INT,"NRanks",           NULL, nranks_read_comment}};
@@ -711,27 +711,27 @@ int read_device_setting(dev_info * di,char filelines[MAXLINES][MAXLINELENGTH], i
 int read_geometry(geom_parameters *gpar,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline)
 {
 	// see /OpenAcc/backfield.h
-	const int nx_def   = nd0; 
-	const int ny_def   = nd1; 
-	const int nz_def   = nd2; 
-	const int nt_def   = NRANKS_D3*LOC_N3; 
-	const int xmap_def = 0;
-	const int ymap_def = 1;
-	const int zmap_def = 2;
-	const int tmap_def = 3;
+	int nx_def   = nd0; 
+	int ny_def   = nd1; 
+	int nz_def   = nd2; 
+	int nt_def   = NRANKS_D3*LOC_N3; 
+	int xmap_def = 0;
+	int ymap_def = 1;
+	int zmap_def = 2;
+	int tmap_def = 3;
 
-	const char dimensions_comment[] = "# Lattice dimensions have been fixed at make time through N0,N1,N2,N3 and NR3.";
-	const char dimension_mapping_content[] = "#Notice that only the dimension mapped as 3 will be parallelized";
+	char dimensions_comment[] = "# Lattice dimensions have been fixed at make time through N0,N1,N2,N3 and NR3.";
+	char dimension_mapping_content[] = "#Notice that only the dimension mapped as 3 will be parallelized";
 
 	par_info gp[]={
-								 (par_info){(void*) &(gpar->gnx ),TYPE_INT,  "nx"  ,(const void*) &nx_def  ,NULL},
-								 (par_info){(void*) &(gpar->gny ),TYPE_INT,  "ny"  ,(const void*) &ny_def  ,NULL},
-								 (par_info){(void*) &(gpar->gnz ),TYPE_INT,  "nz"  ,(const void*) &nz_def  ,NULL},
-								 (par_info){(void*) &(gpar->gnt ),TYPE_INT,  "nt"  ,(const void*) &nt_def  ,dimensions_comment},
-								 (par_info){(void*) &(gpar->xmap ),TYPE_INT, "xmap",(const void*) &xmap_def,NULL},
-								 (par_info){(void*) &(gpar->ymap ),TYPE_INT, "ymap",(const void*) &ymap_def,NULL},
-								 (par_info){(void*) &(gpar->zmap ),TYPE_INT, "zmap",(const void*) &zmap_def,NULL},
-								 (par_info){(void*) &(gpar->tmap ),TYPE_INT, "tmap",(const void*) &tmap_def,dimension_mapping_content}};
+								 (par_info){(void*) &(gpar->gnx ),TYPE_INT,  "nx"  ,(void*) &nx_def  ,NULL},
+								 (par_info){(void*) &(gpar->gny ),TYPE_INT,  "ny"  ,(void*) &ny_def  ,NULL},
+								 (par_info){(void*) &(gpar->gnz ),TYPE_INT,  "nz"  ,(void*) &nz_def  ,NULL},
+								 (par_info){(void*) &(gpar->gnt ),TYPE_INT,  "nt"  ,(void*) &nt_def  ,dimensions_comment},
+								 (par_info){(void*) &(gpar->xmap ),TYPE_INT, "xmap",(void*) &xmap_def,NULL},
+								 (par_info){(void*) &(gpar->ymap ),TYPE_INT, "ymap",(void*) &ymap_def,NULL},
+								 (par_info){(void*) &(gpar->zmap ),TYPE_INT, "zmap",(void*) &zmap_def,NULL},
+								 (par_info){(void*) &(gpar->tmap ),TYPE_INT, "tmap",(void*) &tmap_def,dimension_mapping_content}};
 
 	int res = scan_group_NV(sizeof(gp)/sizeof(par_info),gp, filelines, startline, endline);
 
@@ -744,14 +744,14 @@ int read_geometry(geom_parameters *gpar,char filelines[MAXLINES][MAXLINELENGTH],
 int read_test_setting(test_info * ti,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline)
 {
 	int helpmode = (int) (startline == endline);
-	const int saveResults_def = 0;
-	const char saveResults_comment[] = "\
+	int saveResults_def = 0;
+	char saveResults_comment[] = "\
 # set to 1 if you want to save all results (the results of Deo Doe or the result of \n\
 # individual shifts)\n";
 
-	const char fakeShift_comment[]="\
+	char fakeShift_comment[]="\
 # tHe shift (equal for all terms) in the fake rational approximations in benchmarkMode for CG-M.";
-	const char benchMarkMode_comment[]="\
+	char benchMarkMode_comment[]="\
 # In benchmark mode, a fake rationan approximation will be used in CG-M.\n";
 
 	par_info tp[]= {
@@ -759,7 +759,7 @@ int read_test_setting(test_info * ti,char filelines[MAXLINES][MAXLINELENGTH], in
 									(par_info){(void*) &(ti->multiShiftInverterRepetitions),TYPE_INT,"MultiShiftInverterRepetitions",NULL, NULL},
 									(par_info){(void*) &(ti->fakeShift),TYPE_DOUBLE,"FakeShift",NULL,fakeShift_comment},
 									(par_info){(void*) &(ti->benchmarkMode),TYPE_INT,"BenchmarkMode",NULL,benchMarkMode_comment},
-									(par_info){(void*) &(ti->saveResults),TYPE_INT,"SaveResults",(const void*) &saveResults_def,saveResults_comment},
+									(par_info){(void*) &(ti->saveResults),TYPE_INT,"SaveResults",(void*) &saveResults_def,saveResults_comment},
     
 	};
 
@@ -772,14 +772,14 @@ int read_test_setting(test_info * ti,char filelines[MAXLINES][MAXLINELENGTH], in
 
 int read_replicas_numbers(rep_info * re,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline){
 
-	const int totalnumber_def = 1;
-  const int is_evenodd_def = 1;
-	const int defect_boundary_def = 0;
+	int totalnumber_def = 1;
+  int is_evenodd_def = 1;
+	int defect_boundary_def = 0;
 	par_info rp[]={
 #ifndef PAR_TEMP        
-								 (par_info){(void*) IGNORE_IT, TYPE_INT,"totalnumber",    (const void*) &totalnumber_def,     NULL},
-								 (par_info){(void*) IGNORE_IT, TYPE_INT,"is_evenodd",    (const void*) &is_evenodd_def,     NULL},
-								 (par_info){(void*) IGNORE_IT, TYPE_INT,"defect_boundary",(const void*) &defect_boundary_def, NULL},
+								 (par_info){(void*) IGNORE_IT, TYPE_INT,"totalnumber",    (void*) &totalnumber_def,     NULL},
+								 (par_info){(void*) IGNORE_IT, TYPE_INT,"is_evenodd",    (void*) &is_evenodd_def,     NULL},
+								 (par_info){(void*) IGNORE_IT, TYPE_INT,"defect_boundary",(void*) &defect_boundary_def, NULL},
 #else
 								 (par_info){(void*) &(re->replicas_total_number),TYPE_INT,"totalnumber",NULL, NULL},
 								 (par_info){(void*) &(re->is_evenodd),TYPE_INT,"is_evenodd",NULL, NULL},
@@ -880,9 +880,9 @@ int read_replicas_numbers(rep_info * re,char filelines[MAXLINES][MAXLINELENGTH],
 
 int read_acceptance_numbers(accept_info * acp,char filelines[MAXLINES][MAXLINELENGTH], int startline, int endline){
 
-	const char Hmc_file_name_def[]="fool";
-	const char Swap_file_name_def[]="fool";
-	const char Label_file_name_def[]="fool";
+	char Hmc_file_name_def[]="fool";
+	char Swap_file_name_def[]="fool";
+	char Label_file_name_def[]="fool";
 	
 	par_info tp[]= {
 #ifndef PAR_TEMP
@@ -1089,7 +1089,6 @@ int set_global_vars_and_fermions_from_input_file(const char* input_filename)
 		default:
 			if(0==devinfo.myrank)printf("TAG TYPE NOT RECOGNIZED\n");
 			return 1;
-			break;
 		}
 		if(check)
 			if(0==devinfo.myrank)

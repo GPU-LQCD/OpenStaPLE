@@ -21,7 +21,7 @@
 
 // For Polyakov loop calculations
 #define ALIGN 128
-#ifdef NRANKS_D3 > 1
+#if (NRANKS_D3 > 1)
 #define vol30h LOC_VOL4/LOC_N0/2 
 #define vol31h LOC_VOL4/LOC_N1/2 
 #define vol32h LOC_VOL4/LOC_N2/2 

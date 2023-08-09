@@ -101,7 +101,7 @@ double compute_topo_action(__restrict su3_soa * u
   
 
 #ifdef STOUT_TOPO
-	#pragma acc update self(tstout_conf_acc_arr[0:8])
+	#pragma acc update host(tstout_conf_acc_arr[0:8])
   if(act_params.topo_stout_steps > 0){
     stout_wrapper(u,tstout_conf_acc_arr,1);
     conf_to_use = &(tstout_conf_acc_arr[8*(act_params.topo_stout_steps-1)]);

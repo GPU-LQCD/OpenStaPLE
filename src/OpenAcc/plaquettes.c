@@ -157,7 +157,7 @@ void calc_loc_staples_nnptrick_all(__restrict const su3_soa * const u,
 
   /*
   // DEBUG HMC WITH PARALLEL TEMPERING
-  #pragma acc update self(loc_stap[0:8])
+  #pragma acc update host(loc_stap[0:8])
   int d0=0, d1=15, d2=0, d3=0;
   int mu=1;
 

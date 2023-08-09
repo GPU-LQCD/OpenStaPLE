@@ -375,7 +375,7 @@ void calc_ipdot_topo(__restrict su3_soa const * const tconf_acc,
 	// DEBUG
 #ifdef DEBUG_LOLLO
 	if(devinfo.myrank == 0){
-		#pragma acc update self(tconf_acc[0:8]) self(local_staples[0:8]) self(conf_to_use[0:8]) self(tipdot_acc[0:8])
+		#pragma acc update host(tconf_acc[0:8]) host(local_staples[0:8]) host(conf_to_use[0:8]) host(tipdot_acc[0:8])
 		int O = snum_acc(0,0,0,D3_HALO); 
 		printf("check multiplication into tamat:\n");
 		STAMPA_DEBUG_SU3_SOA(tconf_acc,0,O);
@@ -400,7 +400,7 @@ void calc_ipdot_topo(__restrict su3_soa const * const tconf_acc,
   
   // store initial link and comp action
   single_su3 sto;
-	#pragma acc update self(tconf_acc[0:8])
+	#pragma acc update host(tconf_acc[0:8])
   single_su3_from_su3_soa(&tconf_acc[0],0,&sto);
   rebuild3row(&sto);
   
