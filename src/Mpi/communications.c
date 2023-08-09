@@ -1117,18 +1117,17 @@ void send_lnh_subconf_to_buffer(const global_su3_soa *gl_soa_conf,
     int tg_lnh_0,tg_lnh_1,tg_lnh_2,tg_lnh_3,dir; //target-lnh coordinates
     // and link direction
     // Copying all relevant links into the sublattice
-    for(dir =0; dir < 4; dir++)
+		for(dir =0; dir < 4; dir++)
         for(tg_lnh_3=0;tg_lnh_3 < LNH_N3; tg_lnh_3++)
             for(tg_lnh_2=0;tg_lnh_2 < LNH_N2; tg_lnh_2++)
                 for(tg_lnh_1=0;tg_lnh_1 < LNH_N1; tg_lnh_1++)
                     for(tg_lnh_0=0;tg_lnh_0 < LNH_N0; tg_lnh_0++){
-
                         //        int gtsp; // global target site parity
                         int tsprlo ; // target site parity respect (to his) local origin;
 
                         int target_gl_snum = target_lnh_to_gl_snum(tg_lnh_0, tg_lnh_1, tg_lnh_2, tg_lnh_3, target_gl_loc_origin_from_rank);
                         int target_lnh_snum = snum_acc(tg_lnh_0, tg_lnh_1, tg_lnh_2, tg_lnh_3);
-
+												
                         tsprlo = (D0_HALO+D1_HALO+D2_HALO+D3_HALO+ tg_lnh_3+tg_lnh_2+tg_lnh_1+tg_lnh_0)%2;
 												//      gtsp = (target_loc_origin_parity + tsprlo )%2;
 
@@ -1137,8 +1136,8 @@ void send_lnh_subconf_to_buffer(const global_su3_soa *gl_soa_conf,
                         single_gl3_from_global_su3_soa(&(gl_soa_conf[2*dir+tsprlo]),
                                 target_gl_snum,&aux);
                         //    printf("ciao \n");
-                        //        printf("ciao ");
-                        //      print_su3(aux);
+												//      printf("ciao ");
+																//    print_su3(aux);
                         single_gl3_into_su3_soa(&(target_su3_soa[2*dir+tsprlo]),
                                 target_lnh_snum, &aux);
                         //        printf("ciao \n");

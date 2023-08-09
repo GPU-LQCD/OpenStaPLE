@@ -184,6 +184,15 @@ static inline void single_thmat_from_thmat_soa(__restrict const thmat_soa * in, 
 
 // insertion into soas
 #pragma acc routine seq
+static inline void single_su3_into_su3_soa_nc(__restrict su3_soa * const mat, int idx_mat,  single_su3 * Imat){
+	mat->r0.c0[idx_mat] = Imat->comp[0][0];
+	mat->r0.c1[idx_mat] = Imat->comp[0][1];
+	mat->r0.c2[idx_mat] = Imat->comp[0][2];
+	mat->r1.c0[idx_mat] = Imat->comp[1][0];
+	mat->r1.c1[idx_mat] = Imat->comp[1][1];
+	mat->r1.c2[idx_mat] = Imat->comp[1][2];
+}
+#pragma acc routine seq
 static inline void single_su3_into_su3_soa(__restrict su3_soa * const mat, const int idx_mat,  single_su3 * Imat){
   mat->r0.c0[idx_mat] = Imat->comp[0][0];
   mat->r0.c1[idx_mat] = Imat->comp[0][1];

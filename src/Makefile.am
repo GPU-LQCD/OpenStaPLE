@@ -116,6 +116,8 @@ __common_sources = \
 	OpenAcc/fermionic_utilities.h \
 	OpenAcc/fermion_matrix.c \
 	OpenAcc/fermion_matrix.h \
+	OpenAcc/field_corr.c \
+	OpenAcc/field_corr.h \
 	OpenAcc/field_times_fermion_matrix.c \
 	OpenAcc/field_times_fermion_matrix.h \
 	OpenAcc/find_min_max.c \
@@ -171,7 +173,7 @@ __common_sources = \
 	tests_and_benchmarks/test_and_benchmarks.c \
 	tests_and_benchmarks/test_and_benchmarks.h 
 
-bin_PROGRAMS = main deo_doe_test inverter_multishift_test checkinput confconverter confrestart
+bin_PROGRAMS = main deo_doe_test inverter_multishift_test checkinput confconverter confrestart only_meas
 
 noinst_LIBRARIES = libdbghook.a
 
@@ -212,6 +214,14 @@ confrestart_SOURCES = tools/confrestart.c \
 	$(__common_sources)
 
 nodist_confrestart_SOURCES = $(__common_generated_sources)
+
+
+only_meas_SOURCES =	OpenAcc/only_meas.c\
+	$(__common_sources) 
+
+only_meas_LDADD = libdbghook.a
+
+nodist_only_meas_SOURCES = $(__common_generated_sources)
 
 libdbghook_a_SOURCES = DbgTools/debugger_hook.c
 libdbghook_a_CFLAGS = -O0

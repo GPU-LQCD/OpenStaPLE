@@ -92,6 +92,24 @@ void set_su3_soa_to_su3_soa(__restrict const su3_soa * const matrix_in,
     }
   }
 }
+/* //copy matrix in into matrix out, this has to happen on the host // */
+/* void set_su3_soa_to_su3_soa_diff_idx( __restrict const su3_soa * const matrix_in, int idxh, */
+/* 			     __restrict su3_soa * const matrix_out, int idxh2) */
+/* { */
+
+/* 	  assign_su3_soa_to_su3_soa_diff_idx_component(&matrix_in[0],idxh,&matrix_out[0],idxh2); */
+/* 	  assign_su3_soa_to_su3_soa_diff_idx_component(&matrix_in[1],idxh,&matrix_out[1],idxh2); */
+/* 	  assign_su3_soa_to_su3_soa_diff_idx_component(&matrix_in[2],idxh,&matrix_out[2],idxh2); */
+/* 	  assign_su3_soa_to_su3_soa_diff_idx_component(&matrix_in[3],idxh,&matrix_out[3],idxh2); */
+/* 	  assign_su3_soa_to_su3_soa_diff_idx_component(&matrix_in[4],idxh,&matrix_out[4],idxh2); */
+/* 	  assign_su3_soa_to_su3_soa_diff_idx_component(&matrix_in[5],idxh,&matrix_out[5],idxh2); */
+/* 	  assign_su3_soa_to_su3_soa_diff_idx_component(&matrix_in[6],idxh,&matrix_out[6],idxh2); */
+/* 	  assign_su3_soa_to_su3_soa_diff_idx_component(&matrix_in[7],idxh,&matrix_out[7],idxh2); */
+/* 	} */
+/*       } */
+/*     } */
+/*   } */
+/* } */
 
 
 void set_su3_soa_to_su3_soa_trasl(__restrict const su3_soa * const matrix_in,

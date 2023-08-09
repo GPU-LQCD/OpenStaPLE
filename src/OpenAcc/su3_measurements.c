@@ -25,8 +25,8 @@ void check_unitarity_device(__restrict const su3_soa * const u, double * max_uni
 	double r = 0;
 	double rmax = 0;
 
-	#pragma acc kernels present(u)
-	#pragma acc loop reduction(+:r) reduction(max:rmax)
+#pragma acc kernels present(u)
+#pragma acc loop reduction(+:r) reduction(max:rmax)
 	for(int idx = 0; idx < sizeh ; idx++){
 		for(int dir = 0; dir < 8 ; dir++){
 			single_su3 m;
@@ -57,7 +57,7 @@ void check_unitarity_host( __restrict su3_soa * const u, double * max_unitarity_
 	double rmax = 0;
 
 	for(int dir = 0; dir < 8 ; dir++){
-    for(int idx = 0; idx < sizeh ; idx++){
+		for(int idx = 0; idx < sizeh ; idx++){
 			single_su3 m;
 			single_su3_from_su3_soa(&u[dir],idx,&m);
 			rebuild3row(&m);
@@ -83,8 +83,8 @@ void check_unitarity_device_loc( __restrict su3_soa * const u, double * max_unit
 	double r = 0;
 	double rmax = 0;
 
-	#pragma acc kernels present(u)
-	#pragma acc loop reduction(+:r) reduction(max:rmax)
+#pragma acc kernels present(u)
+#pragma acc loop reduction(+:r) reduction(max:rmax)
 	for(int idx = (LNH_SIZEH-LOC_SIZEH)/2; idx < (LNH_SIZEH+LOC_SIZEH)/2 ; idx++){
 		for(int dir = 0; dir < 8 ; dir++){
 			single_su3 m;
@@ -114,7 +114,7 @@ void check_unitarity_host_loc( __restrict su3_soa * const u, double * max_unitar
 	double rmax = 0;
 
 	for(int dir = 0; dir < 8 ; dir++){
-    for(int idx = (LNH_SIZEH-LOC_SIZEH)/2; idx < (LNH_SIZEH+LOC_SIZEH)/2 ; idx++){
+		for(int idx = (LNH_SIZEH-LOC_SIZEH)/2; idx < (LNH_SIZEH+LOC_SIZEH)/2 ; idx++){
 			single_su3 m;
 			single_su3_from_su3_soa(&u[dir],idx,&m);
 			rebuild3row(&m);
@@ -140,8 +140,8 @@ double calc_momenta_action( const __restrict thmat_soa * const mom,
 														const int mu){
 	int t;
 
-	#pragma acc kernels present(mom) present(tr_local)
-	#pragma acc loop independent // gang(nt)
+#pragma acc kernels present(mom) present(tr_local)
+#pragma acc loop independent // gang(nt)
 	for(t=(LNH_SIZEH-LOC_SIZEH)/2; t  < (LNH_SIZEH+LOC_SIZEH)/2; t++) {
 		tr_local[0].d[t] = half_tr_thmat_squared(&mom[mu],t);
 	} // t
@@ -149,19 +149,18 @@ double calc_momenta_action( const __restrict thmat_soa * const mom,
 
 	double result=0.0;
 	double total_result=0.0;
-	#pragma acc kernels present(tr_local)
-	#pragma acc loop reduction(+:result)
+#pragma acc kernels present(tr_local)
+#pragma acc loop reduction(+:result)
 	for(t=(LNH_SIZEH-LOC_SIZEH)/2; t  < (LNH_SIZEH+LOC_SIZEH)/2; t++) {
 		result += tr_local[0].d[t];
 	}
 
 
 #if NRANKS_D3 > 1
-	MPI_Allreduce((void*)&result,(void*)&total_result,
-								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
+	MPI_Allreduce((void*)&result,(void*)&total_result,1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
-#endif
+	#endif
 	return total_result;
 
 } // closes routine
@@ -171,7 +170,7 @@ void invert_momenta( __restrict thmat_soa * mom)
 {
 	int t,mu;
 
-	#pragma acc kernels present(mom)
+#pragma acc kernels present(mom)
 	#pragma acc loop independent
 	for(mu=0; mu < 8 ; mu++){
 		#pragma acc loop independent
@@ -188,8 +187,8 @@ void invert_momenta( __restrict thmat_soa * mom)
 
 
 
-double  calc_plaquette_soloopenacc(__restrict  su3_soa * const tconf_acc, 
-																	 __restrict su3_soa * const local_plaqs, 
+double  calc_plaquette_soloopenacc(__restrict  su3_soa * const tconf_acc,
+																	 __restrict su3_soa * const local_plaqs,
 																	 dcomplex_soa * const tr_local_plaqs)
 {
 
@@ -208,7 +207,7 @@ double  calc_plaquette_soloopenacc(__restrict  su3_soa * const tconf_acc,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
-#endif
+	#endif
 	return total_result;
 }
 
@@ -221,10 +220,10 @@ double calc_force_norm(const __restrict tamat_soa * tipdot)
 
 
 
-	#pragma acc kernels present(tipdot)
-	#pragma acc loop reduction(+:result)
+#pragma acc kernels present(tipdot)
+#pragma acc loop reduction(+:result)
 	for(t=(LNH_SIZEH-LOC_SIZEH)/2; t  < (LNH_SIZEH+LOC_SIZEH)/2; t++) {
-		#pragma acc loop reduction(+:result)
+#pragma acc loop reduction(+:result)
 		for(mu=0; mu < 8; mu++) // NOTE: check if it works
 			{
 				result += half_tr_tamat_squared(&tipdot[mu],t);
@@ -235,12 +234,12 @@ double calc_force_norm(const __restrict tamat_soa * tipdot)
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
-#endif
+	#endif
 	return sqrt(total_result);
 
 };
 
-double calc_diff_force_norm(const __restrict tamat_soa * tipdot,  
+double calc_diff_force_norm(const __restrict tamat_soa * tipdot,
 														const __restrict tamat_soa * tipdot_old)
 {
 
@@ -251,34 +250,34 @@ double calc_diff_force_norm(const __restrict tamat_soa * tipdot,
 
 	for(mu=0; mu < 8; mu++) // NOTE: check if it works
 		{
-			#pragma acc kernels present(tipdot) present(tipdot_old)
-			#pragma acc loop reduction(+:result)
+#pragma acc kernels present(tipdot) present(tipdot_old)
+#pragma acc loop reduction(+:result)
 			for(t=(LNH_SIZEH-LOC_SIZEH)/2; t  < (LNH_SIZEH+LOC_SIZEH)/2; t++) {
 				double A = tipdot[mu].ic00[t]-tipdot_old[mu].ic00[t];
 				double B = tipdot[mu].ic11[t]-tipdot_old[mu].ic11[t];
-				d_complex C = tipdot[mu].c01[t]-tipdot_old[mu].c01[t]; 
+				d_complex C = tipdot[mu].c01[t]-tipdot_old[mu].c01[t];
 				d_complex D = tipdot[mu].c02[t]-tipdot_old[mu].c02[t];
 				d_complex E = tipdot[mu].c12[t]-tipdot_old[mu].c12[t];
-				result +=  A*A + B*B + A*B 
-					+ creal(C)*creal(C) + cimag(C)*cimag(C) 
-					+ creal(D)*creal(D) + cimag(D)*cimag(D) 
+				result +=  A*A + B*B + A*B
+					+ creal(C)*creal(C) + cimag(C)*cimag(C)
+					+ creal(D)*creal(D) + cimag(D)*cimag(D)
 					+ creal(E)*creal(E) + cimag(E)*cimag(E);
 
 			}
-    }  
+		}
 
 #if NRANKS_D3 > 1
 	MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
-#endif
+	#endif
 	return sqrt(total_result);
 
 };
 
 
-double calc_sum_momenta_norm(const __restrict thmat_soa * tmomenta,  
+double calc_sum_momenta_norm(const __restrict thmat_soa * tmomenta,
 														 const __restrict thmat_soa * tmomenta_old)
 {
 
@@ -289,33 +288,33 @@ double calc_sum_momenta_norm(const __restrict thmat_soa * tmomenta,
 
 	for(mu=0; mu < 8; mu++) // NOTE: check if it works
 		{
-			#pragma acc kernels present(tmomenta) present(tmomenta_old)
-			#pragma acc loop reduction(+:result)
+#pragma acc kernels present(tmomenta) present(tmomenta_old)
+#pragma acc loop reduction(+:result)
 			for(t=(LNH_SIZEH-LOC_SIZEH)/2; t  < (LNH_SIZEH+LOC_SIZEH)/2; t++) {
 				double A = tmomenta[mu].rc00[t]+tmomenta_old[mu].rc00[t];
 				double B = tmomenta[mu].rc11[t]+tmomenta_old[mu].rc11[t];
-				d_complex C = tmomenta[mu].c01[t]+tmomenta_old[mu].c01[t]; 
+				d_complex C = tmomenta[mu].c01[t]+tmomenta_old[mu].c01[t];
 				d_complex D = tmomenta[mu].c02[t]+tmomenta_old[mu].c02[t];
 				d_complex E = tmomenta[mu].c12[t]+tmomenta_old[mu].c12[t];
-				result +=  A*A + B*B + A*B 
-					+ creal(C)*creal(C) + cimag(C)*cimag(C) 
-					+ creal(D)*creal(D) + cimag(D)*cimag(D) 
+				result +=  A*A + B*B + A*B
+					+ creal(C)*creal(C) + cimag(C)*cimag(C)
+					+ creal(D)*creal(D) + cimag(D)*cimag(D)
 					+ creal(E)*creal(E) + cimag(E)*cimag(E);
 			}
-    }  
+		}
 
 #if NRANKS_D3 > 1
 	MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
-#endif
+	#endif
 	return sqrt(total_result);
 
 };
 
 
-double calc_diff_su3_soa_norm(const __restrict su3_soa * tconf,  
+double calc_diff_su3_soa_norm(const __restrict su3_soa * tconf,
 															const __restrict su3_soa * tconf_old)
 {
 
@@ -325,45 +324,45 @@ double calc_diff_su3_soa_norm(const __restrict su3_soa * tconf,
 
 	for(mu=0; mu < 8; mu++) // NOTE: check if it works
 		{
-			#pragma acc kernels present(tconf) present(tconf_old)
-			#pragma acc loop reduction(+:result)
+#pragma acc kernels present(tconf) present(tconf_old)
+#pragma acc loop reduction(+:result)
 			for(t=(LNH_SIZEH-LOC_SIZEH)/2; t  < (LNH_SIZEH+LOC_SIZEH)/2; t++) {
 				d_complex A = tconf[mu].r0.c0[t]-tconf_old[mu].r0.c0[t];
 				d_complex B = tconf[mu].r0.c1[t]-tconf_old[mu].r0.c1[t];
-				d_complex C = tconf[mu].r0.c2[t]-tconf_old[mu].r0.c2[t]; 
+				d_complex C = tconf[mu].r0.c2[t]-tconf_old[mu].r0.c2[t];
 				d_complex D = tconf[mu].r1.c0[t]-tconf_old[mu].r1.c0[t];
 				d_complex E = tconf[mu].r1.c1[t]-tconf_old[mu].r1.c1[t];
 				d_complex F = tconf[mu].r1.c2[t]-tconf_old[mu].r1.c2[t];
-				result += creal(A)*creal(A) + cimag(A)*cimag(A) 
-					+ creal(B)*creal(B) + cimag(B)*cimag(B) 
-					+ creal(C)*creal(C) + cimag(C)*cimag(C) 
-					+ creal(D)*creal(D) + cimag(D)*cimag(D) 
+				result += creal(A)*creal(A) + cimag(A)*cimag(A)
+					+ creal(B)*creal(B) + cimag(B)*cimag(B)
+					+ creal(C)*creal(C) + cimag(C)*cimag(C)
+					+ creal(D)*creal(D) + cimag(D)*cimag(D)
 					+ creal(E)*creal(E) + cimag(E)*cimag(E)
 					+ creal(F)*creal(F) + cimag(F)*cimag(F);
 
 			}
-    }  
+		}
 
 #if NRANKS_D3 > 1
 	MPI_Allreduce((void*)&result,(void*)&total_result,
 								1,MPI_DOUBLE,MPI_SUM,devinfo.mpi_comm);
 #else
 	total_result = result;
-#endif
+	#endif
 	return sqrt(total_result);
 
 };
 
 
 
-void copy_ipdot_into_old(const __restrict tamat_soa * tipdot,  
+void copy_ipdot_into_old(const __restrict tamat_soa * tipdot,
 												 __restrict tamat_soa * tipdot_old)
 {
 
 	// NOTE: possibly some problems here
 	int t,mu;
 
-	#pragma acc kernels present(tipdot) present(tipdot_old)
+#pragma acc kernels present(tipdot) present(tipdot_old)
 	#pragma acc loop independent
 	for(mu=0; mu < 8; mu++) // NOTE: check if it works
 		{
@@ -371,24 +370,24 @@ void copy_ipdot_into_old(const __restrict tamat_soa * tipdot,
 			for(t=(LNH_SIZEH-LOC_SIZEH)/2; t  < (LNH_SIZEH+LOC_SIZEH)/2; t++) {
 				tipdot_old[mu].ic00[t] = tipdot[mu].ic00[t];
 				tipdot_old[mu].ic11[t] = tipdot[mu].ic11[t];
-				tipdot_old[mu].c01[t]  = tipdot[mu].c01[t] ; 
+				tipdot_old[mu].c01[t]  = tipdot[mu].c01[t] ;
 				tipdot_old[mu].c02[t]  = tipdot[mu].c02[t] ;
 				tipdot_old[mu].c12[t]  = tipdot[mu].c12[t] ;
 
 			}
-    }  
+		}
 
 }
 
 void copy_momenta_into_old(
-													 const __restrict thmat_soa * tmomenta,  
+													 const __restrict thmat_soa * tmomenta,
 													 __restrict thmat_soa * tmomenta_old)
 {
 
 	// NOTE: possibly some problems here
 	int t,mu;
 
-	#pragma acc kernels present(tmomenta) present(tmomenta_old)
+#pragma acc kernels present(tmomenta) present(tmomenta_old)
 	#pragma acc loop independent
 	for(mu=0; mu < 8; mu++) // NOTE: check if it works
 		{
@@ -396,12 +395,416 @@ void copy_momenta_into_old(
 			for(t=(LNH_SIZEH-LOC_SIZEH)/2; t  < (LNH_SIZEH+LOC_SIZEH)/2; t++) {
 				tmomenta_old[mu].rc00[t] = tmomenta[mu].rc00[t];
 				tmomenta_old[mu].rc11[t] = tmomenta[mu].rc11[t];
-				tmomenta_old[mu].c01[t]  = tmomenta[mu].c01[t] ; 
+				tmomenta_old[mu].c01[t]  = tmomenta[mu].c01[t] ;
 				tmomenta_old[mu].c02[t]  = tmomenta[mu].c02[t] ;
 				tmomenta_old[mu].c12[t]  = tmomenta[mu].c12[t] ;
 			}
-    }  
+		}
 }
 
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

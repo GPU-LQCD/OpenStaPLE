@@ -176,6 +176,65 @@ static inline int read_conf_wrapper(su3_soa* conf, const char* nomefile,
 
 }
 
+static inline int local_confrw_read_conf_wrapper(global_su3_soa* conf_rw, su3_soa* conf, const char* nomefile,
+																					int * conf_id_iter, int use_ildg)
+{
+
+	int error =  0;
+#ifdef MULTIDEVICE
+
+	if(devinfo.myrank == 0){
+		if(verbosity_lv > 2)
+			printf("MPI%02d - reading global conf \n",devinfo.myrank );
+		error = read_conf(conf_rw, nomefile,conf_id_iter, use_ildg);
+		MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+
+		if(!error) {
+			send_lnh_subconf_to_buffer(conf_rw,conf,0);
+			int irank;
+			for(irank = 1 ; irank < devinfo.nranks; irank++)
+				send_lnh_subconf_to_rank(conf_rw,irank);
+        
+			MPI_Bcast((void*) conf_id_iter,1,MPI_INT,0,MPI_COMM_WORLD);
+
+		}
+		else 
+			if(verbosity_lv > 2)
+				printf("MPI%02d - no conf sent!\n",devinfo.myrank );
+
+	}
+	else{
+		if(verbosity_lv > 2)
+			printf("MPI%02d - receiving conf \n",devinfo.myrank );
+        
+		MPI_Bcast((void*) &error,1,MPI_INT,0,MPI_COMM_WORLD);
+		if(!error){ 
+			receive_lnh_subconf_from_master(conf);
+			MPI_Bcast((void*) conf_id_iter,1,MPI_INT,0,MPI_COMM_WORLD);
+		}
+		else 
+			if(verbosity_lv > 2)
+				printf("MPI%02d - no conf received!\n",devinfo.myrank );
+	}
+
+
+	if(2 == error) MPI_Finalize();
+
+#else 
+	error = read_conf(conf_rw, nomefile,conf_id_iter, use_ildg);
+	if(0 == error) send_lnh_subconf_to_buffer(conf_rw,conf,0);
+#endif
+	if(2 == error){
+		printf("MPI%02d: Configuration exists, but errors in reading it. Terminating now.\n",
+					 devinfo.myrank);
+		exit(1);
+	}
+
+	return error;
+
+}
+
+
 void rw_iterate_on_global_sites_lx_xyzt_axis_ordering(void (*single_element_rw)(
 																																								const int /*idxh*/, const int /*parity*/, 
 																																								const int /*direction*/, const void* /*data*/,
@@ -198,5 +257,7 @@ void binarywrite_single_su3_into_su3_soa(const int idx, const int parity, const 
 // read/write for the simple person:
 // void write_conf_binary_chunks(su3_soa * conf, const char *rootname,int nchunks);
 // void read_conf_binary_chunks(su3_soa * conf, const char *rootname,int chunk);
+
+char ** read_list_of_confs(char *filename, long int *lines);
 
 #endif 
