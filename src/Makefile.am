@@ -1,5 +1,43 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
+__only_meas_sources = \
+	Include/stringify.h \
+	OpenAcc/HPT_utilities.c \
+	OpenAcc/HPT_utilities.h \
+	Include/memory_wrapper.c \
+	Include/memory_wrapper.h \
+	Include/tell_geom_defines.c \
+	Include/tell_geom_defines.h \
+	Meas/gauge_meas.c \
+	Meas/gauge_meas.h \
+	Meas/polyakov.c \
+	Meas/polyakov.h \
+	Meas/measure_topo.c \
+	Meas/measure_topo.h \
+	OpenAcc/plaquettes.c \
+	OpenAcc/plaquettes.h \
+	OpenAcc/field_corr.c \
+	OpenAcc/field_corr.h \
+	OpenAcc/geometry.c \
+	OpenAcc/geometry.h \
+	OpenAcc/deviceinit.c \
+	OpenAcc/deviceinit.h \
+	OpenAcc/io.c \
+	OpenAcc/io.h \
+	OpenAcc/struct_c_def.h \
+	OpenAcc/su3_measurements.c \
+	OpenAcc/su3_measurements.h \
+	OpenAcc/su3_utilities.c \
+	OpenAcc/su3_utilities.h \
+	OpenAcc/alloc_settings.c \
+	OpenAcc/alloc_settings.h \
+	OpenAcc/cooling.c \
+	OpenAcc/cooling.h \
+	Mpi/communications.c \
+	Mpi/communications.h \
+	Mpi/multidev.c \
+	Mpi/multidev.h
+
 __common_generated_sources = \
 	OpenAcc/sp_alloc_vars.c  \
 	OpenAcc/sp_alloc_vars.h  \
@@ -33,9 +71,9 @@ __common_generated_sources = \
 	OpenAcc/sp_su3_measurements.h  \
 	OpenAcc/sp_su3_utilities.c  \
 	OpenAcc/sp_su3_utilities.h  \
-  OpenAcc/sp_topological_action.c \
+	OpenAcc/sp_topological_action.c \
 	OpenAcc/sp_topological_action.h \
-  OpenAcc/sp_topological_force.c \
+	OpenAcc/sp_topological_force.c \
 	OpenAcc/sp_topological_force.h \
 	DbgTools/sp_dbgtools.h  \
 	DbgTools/sp_dbgtools.c  \
@@ -91,7 +129,7 @@ __common_sources = \
 	Mpi/multidev.c \
 	Mpi/multidev.h \
 	OpenAcc/HPT_utilities.c \
-  OpenAcc/HPT_utilities.h \
+	OpenAcc/HPT_utilities.h \
 	OpenAcc/action.c \
 	OpenAcc/action.h \
 	OpenAcc/alloc_settings.c \
@@ -116,8 +154,6 @@ __common_sources = \
 	OpenAcc/fermionic_utilities.h \
 	OpenAcc/fermion_matrix.c \
 	OpenAcc/fermion_matrix.h \
-	OpenAcc/field_corr.c \
-	OpenAcc/field_corr.h \
 	OpenAcc/field_times_fermion_matrix.c \
 	OpenAcc/field_times_fermion_matrix.h \
 	OpenAcc/find_min_max.c \
@@ -160,9 +196,9 @@ __common_sources = \
 	OpenAcc/su3_measurements.h \
 	OpenAcc/su3_utilities.c \
 	OpenAcc/su3_utilities.h \
-  OpenAcc/topological_action.c \
+	OpenAcc/topological_action.c \
 	OpenAcc/topological_action.h \
-  OpenAcc/topological_force.c \
+	OpenAcc/topological_force.c \
 	OpenAcc/topological_force.h \
 	OpenAcc/update_versatile.c \
 	OpenAcc/update_versatile.h \
@@ -173,9 +209,11 @@ __common_sources = \
 	tests_and_benchmarks/test_and_benchmarks.c \
 	tests_and_benchmarks/test_and_benchmarks.h 
 
-bin_PROGRAMS = main deo_doe_test inverter_multishift_test checkinput confconverter confrestart only_meas
+bin_PROGRAMS = main deo_doe_test inverter_multishift_test checkinput confconverter confrestart
 
 noinst_LIBRARIES = libdbghook.a
+
+noinst_PROGRAMS = only_meas
 
 # in case we wanted other directories for utilities and benchmarks
 #utilitiesdir = $(bindir)/utilities
@@ -217,11 +255,11 @@ nodist_confrestart_SOURCES = $(__common_generated_sources)
 
 
 only_meas_SOURCES =	OpenAcc/only_meas.c\
-	$(__common_sources) 
+	$(__only_meas_sources) 
 
 only_meas_LDADD = libdbghook.a
 
-nodist_only_meas_SOURCES = $(__common_generated_sources)
+# ''nodist_only_meas_SOURCES = $(__common_generated_sources)''
 
 libdbghook_a_SOURCES = DbgTools/debugger_hook.c
 libdbghook_a_CFLAGS = -O0

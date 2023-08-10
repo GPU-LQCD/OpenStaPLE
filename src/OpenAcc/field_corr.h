@@ -17,4 +17,18 @@ void calc_field_corr_single_orientation(
 void random_gauge_transformation(__restrict su3_soa * const u,
 																 __restrict su3_soa * const u_new,
 																 __restrict su3_soa * const m_soa);
+
+void calc_field_corr(
+										 __restrict su3_soa * const u,
+										 __restrict su3_soa * const field_corr,
+										 su3_soa * field_corr_aux,
+										 __restrict su3_soa * const loc_plaq,	
+										 dcomplex_soa * const trace_local,
+										 d_complex * const corr,
+										 __restrict single_su3 * const closed_corr,
+										 double * const D_paral,
+										 double * const D_perp,
+										 double * const D_time_paral,
+										 double * const D_time_perp
+										 );
 #endif

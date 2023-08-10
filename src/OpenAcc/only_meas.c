@@ -1,64 +1,53 @@
-// here macros are defined
 #define PRINT_DETAILS_INSIDE_UPDATE
 #define ALIGN 128
-#include <mpi.h>
 #include "../Include/stringify.h"
-
 #include <errno.h>
-#include "./HPT_utilities.h"
 #include <time.h>
 
-#ifdef ONE_FILE_COMPILATION
-#include "../Include/all_include.h"
-#endif
-#include "../DbgTools/dbgtools.h" // DEBUG
-#include "../DbgTools/debugger_hook.h"
-#include "../Include/debug.h"
-#include "../Include/fermion_parameters.h"
-#include "../Include/montecarlo_parameters.h"
-#include "../Include/inverter_tricks.h"
 #include "../Include/memory_wrapper.h"
-#include "../Include/setting_file_parser.h"
 #include "../Include/tell_geom_defines.h"
-#include "../Meas/ferm_meas.h"
 #include "../Meas/gauge_meas.h"
 #include "../Meas/polyakov.h"
 #include "../Meas/measure_topo.h"
-#include "../Mpi/communications.h"
-#include "../Mpi/multidev.h"
-#include "../Rand/random.h"
-#include "../RationalApprox/rationalapprox.h"
-#include "./action.h"
-#include "./backfield_parameters.h"
+#include "./HPT_utilities.h"
+#include "./plaquettes.h"
+#include "./field_corr.h"
+#include "./geometry.h"
 #include "./deviceinit.h"
-#include "./fermion_matrix.h"
-#include "./fermionic_utilities.h"
-#include "./find_min_max.h"
-#include "./inverter_full.h"
-#include "./inverter_multishift_full.h"
 #include "./io.h"
-#include "./ipdot_gauge.h"
-#include "./md_integrator.h"
-#include "./md_parameters.h"
-#include "./random_assignement.h"
-#include "./rectangles.h"
-#include "./stouting.h"
 #include "./struct_c_def.h"
 #include "./su3_measurements.h"
 #include "./su3_utilities.h"
-#include "./update_versatile.h"
 #include "./alloc_settings.h"
+#include "./cooling.h"
+#include <unistd.h>
+
 #ifdef __GNUC__
 #include "sys/time.h"
 #endif
-#include "./cooling.h"
-#include <unistd.h>
-#include <mpi.h>
-#include "../Include/stringify.h"
 
-// definitions outside the main.
+#include "../Mpi/multidev.h"
+#if NRANKS_D3 > 1
+#include <mpi.h>
+#include "../Mpi/communications.h"
+#endif
+
+#define MAXLINES 300
+#define MAXLINELENGTH 500
+
+// global variables
+char input_file_str[MAXLINES*MAXLINELENGTH];
 int conf_id_iter;
 int verbosity_lv;
+
+// fool defintion to avoid include fermion_parameters.h and
+// insert dependence on action.{c,h}
+action_param act_params;
+typedef struct ferm_param_t{
+  double ferm_mass;
+} ferm_param;
+ferm_param *fermions_parameters;
+///// end fool definitions /////
 
 #define ALLOCCHECK(control_int,var)																			\
   if(control_int != 0 )	printf("MPI%02d: \tError in  allocation of %s . \n",devinfo.myrank, #var); \
@@ -76,12 +65,12 @@ int main(int argc, char **argv){
 			exit(1);
 		}
 
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	pre_init_multidev1D(&devinfo);
 	gdbhook();
 #endif		
 
-#ifdef MULTIDEVICE        
+#if NRANKS_D3 > 1       
 	devinfo.single_dev_choice  = 0;
 	devinfo.async_comm_fermion = 1;
 	devinfo.async_comm_gauge   = 1;
@@ -90,30 +79,25 @@ int main(int argc, char **argv){
 	devinfo.nranks_read=devinfo.nranks;
 	printf("devinfo.nranks: %d\n",devinfo.nranks);
 	
-#ifdef MULTIDEVICE        
+#if NRANKS_D3 > 1        
 	init_multidev1D(&devinfo);
+#else
+  devinfo.myrank = 0;
+  devinfo.nranks = 1;
 #endif
 	
-#ifndef __GNUC__
-	//////  OPENACC CONTEXT INITIALIZATION    //////////////////////////////////////////////////////
-	// NVIDIA GPUs
+	//////  OPENACC CONTEXT INITIALIZATION    ////
 	acc_device_t my_device_type = acc_device_nvidia;
-	// AMD GPUs
-	// acc_device_t my_device_type = acc_device_radeon;
-	// Intel XeonPhi
-	//acc_device_t my_device_type = acc_device_xeonphi;
-	// Select device ID
 	printf("MPI%02d: Selecting device.\n", devinfo.myrank);
-#ifdef MULTIDEVICE
+#if NRANKS_D3 > 1
 	printf("devinfo.single_dev_choice: %d\ndevinfo.myrank: %d\n devinfo.proc_per_node: %d\n", devinfo.single_dev_choice, devinfo.myrank, devinfo.proc_per_node);
 	select_init_acc_device(my_device_type, (devinfo.single_dev_choice + devinfo.myrank)%devinfo.proc_per_node);
-	// select_init_acc_device(my_device_type, devinfo.myrank%devinfo.proc_per_node);
 #else
 	select_init_acc_device(my_device_type, devinfo.single_dev_choice);
 #endif
 	printf("Device Selected : OK \n");
-#endif
-	
+
+
 	su3_soa * conf_acc;
 	su3_soa * aux_conf_acc;
 	su3_soa * field_corr;
@@ -225,15 +209,16 @@ int main(int argc, char **argv){
 			{
 				printf("MPI%02d - Gauge Conf \"%s\" Read : FAILED \n\nABORTING",
 							 devinfo.myrank, confs[conf_num]);
+#if NRANKS_D3 > 1
 				MPI_Abort(MPI_COMM_WORLD,0);
+#endif
 			}
 #pragma acc update device(conf_acc[0:8])
 
 		if(0==devinfo.myrank)
 			printf("Computing correlators\n");
-	
 		double  D_paral[nd0], D_perp[nd0], D_temp_paral[nd0], D_temp_perp[nd0];
-		calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sum, corr, closed_corr, &D_paral, &D_perp, &D_temp_paral, &D_temp_perp); 
+		calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sum, corr, closed_corr, D_paral, D_perp, D_temp_paral, D_temp_perp); 
 
 		if(0==devinfo.myrank)
 			for(int L=0; L<nd0/2; L++)
@@ -244,7 +229,7 @@ int main(int argc, char **argv){
 		for(int coolstep=1; coolstep<=maxstep; coolstep++){
 			cool_conf(conf_acc, conf_acc, aux_conf_acc);
 
-			calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sum, corr, closed_corr, &D_paral, &D_perp, &D_temp_paral, &D_temp_perp);
+			calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sum, corr, closed_corr, D_paral, D_perp, D_temp_paral, D_temp_perp);
 			
 			if(0==devinfo.myrank)
 				for(int L=0; L<nd0/2; L++)
