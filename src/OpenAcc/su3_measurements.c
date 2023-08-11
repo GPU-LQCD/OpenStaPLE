@@ -198,7 +198,10 @@ double  calc_plaquette_soloopenacc(__restrict  su3_soa * const tconf_acc,
 	int i_counter=0;
 	for(int mu=0;mu<3;mu++){
 		for(int nu=mu+1;nu<4;nu++){
-			result  += calc_loc_plaquettes_nnptrick(tconf_acc,local_plaqs,tr_local_plaqs,mu,nu); // here all the plaquettes of a specific plane's choice are computed.
+			printf("Entered the plaquette cycle. i_counter = %d\n",i_counter);
+			fflush(stdout);
+			result  += calc_loc_plaquettes_nnptrick(tconf_acc,local_plaqs,tr_local_plaqs,nnp_openacc,mu,nu); // here all the plaquettes of a specific plane's choice are computed.
+			i_counter++;
 		}
 	}
 

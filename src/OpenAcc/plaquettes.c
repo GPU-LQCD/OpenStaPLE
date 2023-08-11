@@ -14,9 +14,10 @@
 double calc_loc_plaquettes_nnptrick(__restrict const su3_soa * const u,
 																		__restrict su3_soa * const loc_plaq, 
 																		dcomplex_soa * const tr_local_plaqs,
+																		int nnp_openacc[sizeh][4][2],
 																		const int mu, const int nu)
 {
-	#pragma acc kernels present(u) present(loc_plaq) present(tr_local_plaqs)
+  #pragma acc kernels present(u) present(loc_plaq) present(tr_local_plaqs) present(nnp_openacc)
 	#pragma acc loop independent gang(STAPGANG3)
   for(int d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
 		#pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)

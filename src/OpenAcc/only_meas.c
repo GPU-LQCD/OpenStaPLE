@@ -104,10 +104,9 @@ int main(int argc, char **argv){
 	su3_soa * field_corr_aux;
 	single_su3 * closed_corr;
 	single_su3 * loc_plaq_aux;
-	double plq, rect;
 	global_su3_soa * conf;
 	d_complex * corr ;
-	dcomplex_soa * local_sum;
+	dcomplex_soa * local_sums;
 	int allocation_check;
 
 	allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&conf, ALIGN,8*sizeof(global_su3_soa));
@@ -121,9 +120,9 @@ int main(int argc, char **argv){
 	ALLOCCHECK(allocation_check, aux_conf_acc);
 #pragma acc enter data create(aux_conf_acc[0:8])
 
-	allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&local_sum, ALIGN, 2*sizeof(dcomplex_soa));
-	ALLOCCHECK(allocation_check, local_sum) ;
-#pragma acc enter data create(local_sum[0:2])
+	allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&local_sums, ALIGN, 2*sizeof(dcomplex_soa));
+	ALLOCCHECK(allocation_check, local_sums) ;
+#pragma acc enter data create(local_sums[0:2])
 
 	allocation_check =  POSIX_MEMALIGN_WRAPPER((void **)&field_corr, ALIGN, 8*sizeof(su3_soa)); 
 	ALLOCCHECK(allocation_check, field_corr );
@@ -176,28 +175,52 @@ int main(int argc, char **argv){
 		printf("Reading input...\n");
 	long int confmax;
 	char ** confs = read_list_of_confs(argv[1], &confmax);
+
 	
-	FILE *fp;
+	FILE *fplq;
+	char filename[100];
+	sprintf(filename,"%s_plaq",argv[2]);
 	// open output file only by master rank
 	if(0==devinfo.myrank)
 		{
-			fp=fopen(argv[2], "w");
-			if (fp == NULL)
+			printf("Opening file %s\n",filename);
+			fplq=fopen(filename, "w");
+			if (fplq == NULL)
 				{
 					printf("Could not open file\n");
 					exit(1);
 				}
 			// printing header of measurements file.
-			fprintf(fp,"#conf_id cooling_step L D_para D_perp\n");
-			fflush(fp);
+			fprintf(fplq,"#conf_id ReTrPlq\n");
+			fflush(fplq);			
+		}
+
+#ifdef MEASURE_PLAQ_CORR
+	FILE *fcor;
+	char* filename;
+	sprintf(filename,"%s_plaq",argv[2]);
+	// open output file only by master rank
+	if(0==devinfo.myrank)
+		{
+			fcor=fopen(filename, "w");
+			if (fcor == NULL)
+				{
+					printf("Could not open file\n");
+					exit(1);
+				}
+			// printing header of measurements file.
+			fprintf(fcor,"#conf_id cooling_step L D_para D_perp\n");
+			fflush(fcor);
 		}
 	
 	// hardcoded number of cooling steps. Could become a command line argument.
 	int maxstep=100;
-	su3_soa * conf_to_use;
-	int conf_id;
-	
+#endif
+
+	int conf_id;	
 	for(int conf_num=0; conf_num<confmax; conf_num++){
+
+		// reading gauge conf
 		if(0==devinfo.myrank)
 			printf("Reading file %s\n",confs[conf_num]);
 		if(! local_confrw_read_conf_wrapper(conf, conf_acc, confs[conf_num], &conf_id, 1))
@@ -215,34 +238,52 @@ int main(int argc, char **argv){
 			}
 #pragma acc update device(conf_acc[0:8])
 
+		// performing measurements
+		if(0==devinfo.myrank)
+			printf("Computing plaquette\n");
+
+		double plq;
+		plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
+
+		if(0==devinfo.myrank)
+			fprintf(fplq,"%d\t%.18lf\n", conf_id, plq/GL_SIZE/6.0/3.0);
+
+#ifdef MEASURE_PLAQ_CORR
 		if(0==devinfo.myrank)
 			printf("Computing correlators\n");
 		double  D_paral[nd0], D_perp[nd0], D_temp_paral[nd0], D_temp_perp[nd0];
-		calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sum, corr, closed_corr, D_paral, D_perp, D_temp_paral, D_temp_perp); 
+		calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sums, corr, closed_corr, D_paral, D_perp, D_temp_paral, D_temp_perp); 
 
 		if(0==devinfo.myrank)
 			for(int L=0; L<nd0/2; L++)
-			  fprintf(fp,"%d\t%d\t%d\t%.18lf\t%.18lf\t%.18lf\t%.18lf\\n", conf_id, 0, L+1,
+			  fprintf(fcor,"%d\t%d\t%d\t%.18lf\t%.18lf\t%.18lf\t%.18lf\\n", conf_id, 0, L+1,
 								D_paral[L]/((double)18*GL_SIZE),  D_perp[L]/((double)18*GL_SIZE),
 								D_temp_paral[L]/((double)6*GL_SIZE),  D_temp_perp[L]/((double)6*GL_SIZE));			
 
 		for(int coolstep=1; coolstep<=maxstep; coolstep++){
 			cool_conf(conf_acc, conf_acc, aux_conf_acc);
 
-			calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sum, corr, closed_corr, D_paral, D_perp, D_temp_paral, D_temp_perp);
+			calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sums, corr, closed_corr, D_paral, D_perp, D_temp_paral, D_temp_perp);
 			
 			if(0==devinfo.myrank)
 				for(int L=0; L<nd0/2; L++)
-					fprintf(fp,"%d\t%d\t%d\t%.18lf\t%.18lf\t%.18lf\t%.18lf\\n", conf_id, coolstep, L+1,
+					fprintf(fcor,"%d\t%d\t%d\t%.18lf\t%.18lf\t%.18lf\t%.18lf\\n", conf_id, coolstep, L+1,
 									D_paral[L]/((double)18*GL_SIZE),  D_perp[L]/((double)18*GL_SIZE),
 									D_temp_paral[L]/((double)6*GL_SIZE),  D_temp_perp[L]/((double)6*GL_SIZE));			
 			
 		}// close coolstep
+#endif
+		// end of measurements
+		
 		if(0==devinfo.myrank)
 			printf("%s analysis completed. Progress: %d/%d\n", confs[conf_num],conf_num+1,confmax);
-	}// close conf_id
-	if(0==devinfo.myrank)
-		fclose(fp);
+	}// close conf_num
+	if(0==devinfo.myrank){
+		fclose(fplq);
+#ifdef MEASURE_PLAQ_CORR
+		fclose(fcor);
+#endif
+	}
 
 #pragma acc exit data delete(nnp_openacc)
 #pragma acc exit data delete(nnm_openacc)					 
@@ -263,8 +304,8 @@ int main(int argc, char **argv){
 	FREECHECK(field_corr );
 #pragma acc exit data delete(field_corr)
 
-	FREECHECK(local_sum);
-#pragma acc exit data delete(local_sum)
+	FREECHECK(local_sums);
+#pragma acc exit data delete(local_sums)
 
 	FREECHECK(aux_conf_acc);
 #pragma acc exit data delete(aux_conf_acc)
