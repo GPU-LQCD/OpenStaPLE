@@ -12,7 +12,6 @@
 double calc_loc_plaquettes_nnptrick(__restrict const su3_soa * const u,
 																		__restrict su3_soa * const loc_plaq,
 																		dcomplex_soa * const tr_local_plaqs,
-																		int nnp_openacc[sizeh][4][2],
 																		const int mu, const int nu);
 void calc_loc_staples_nnptrick_all(__restrict const su3_soa * const u,
 																	 __restrict su3_soa * const loc_stap);
