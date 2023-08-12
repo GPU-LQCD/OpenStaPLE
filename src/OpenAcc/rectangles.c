@@ -16,11 +16,12 @@
 double calc_loc_rectangles_2x1_nnptrick(__restrict const su3_soa * const u,
 																				__restrict su3_soa * const loc_plaq,
 																				dcomplex_soa * const tr_local_plaqs,
+																				int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2],
 																				const int mu,
 																				const int nu)
 {
 	int d0, d1, d2, d3;
-	#pragma acc kernels present(u) present(loc_plaq) present(tr_local_plaqs)
+#pragma acc kernels present(u) present(loc_plaq) present(tr_local_plaqs) present(nnp_openacc,nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
 	for(d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
 		#pragma acc loop independent tile(IMPSTAPTILE0,IMPSTAPTILE1,IMPSTAPTILE2)
@@ -87,11 +88,12 @@ double calc_loc_rectangles_2x1_nnptrick(__restrict const su3_soa * const u,
 double calc_loc_rectangles_1x2_nnptrick(__restrict const su3_soa * const u,
 																				__restrict su3_soa * const loc_plaq,
 																				dcomplex_soa * const tr_local_plaqs,
+																				int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2],
 																				const int mu,
 																				const int nu)
 {
 	int d0, d1, d2, d3;
-	#pragma acc kernels present(u) present(loc_plaq) present(tr_local_plaqs)
+  #pragma acc kernels present(u) present(loc_plaq) present(tr_local_plaqs) present(nnp_openacc,nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
   for(d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
 		#pragma acc loop independent tile(IMPSTAPTILE0,IMPSTAPTILE1,IMPSTAPTILE2) 
@@ -640,8 +642,10 @@ void    MMMPP_5mat_prod_addto_mat6_absent_stag_phases(__restrict const su3_soa *
 		
 } // closes MMMPP
 
-void calc_loc_improved_staples_typeA_nnptrick_all(__restrict const su3_soa * const u,
-																									__restrict su3_soa * const loc_stap )
+void
+calc_loc_improved_staples_typeA_nnptrick_all(__restrict const su3_soa * const u,
+																						 __restrict su3_soa * const loc_stap,
+																						 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2] )
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
@@ -730,7 +734,8 @@ void calc_loc_improved_staples_typeA_nnptrick_all(__restrict const su3_soa * con
 } // closes routine
 
 void calc_loc_improved_staples_typeB_nnptrick_all(__restrict const su3_soa * const u,
-																									__restrict su3_soa * const loc_stap )
+																									__restrict su3_soa * const loc_stap,
+																									int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
@@ -824,7 +829,8 @@ void calc_loc_improved_staples_typeB_nnptrick_all(__restrict const su3_soa * con
 } // closes routine
 
 void calc_loc_improved_staples_typeC_nnptrick_all(__restrict const su3_soa * const u,
-																									__restrict su3_soa * const loc_stap )
+																									__restrict su3_soa * const loc_stap,
+																									int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
@@ -916,7 +922,8 @@ void calc_loc_improved_staples_typeC_nnptrick_all(__restrict const su3_soa * con
 } // closes routine
  
 void calc_loc_improved_staples_typeABC_nnptrick_all(__restrict const su3_soa * const u,
-																										__restrict su3_soa * const loc_stap )
+																										__restrict su3_soa * const loc_stap,
+																										int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
@@ -1054,7 +1061,8 @@ void calc_loc_improved_staples_typeABC_nnptrick_all(__restrict const su3_soa * c
 
 #if NRANKS_D3 > 1
 void calc_loc_improved_staples_typeA_nnptrick_all_bulk(__restrict const su3_soa * const u,
-																											 __restrict su3_soa * const loc_stap )
+																											 __restrict su3_soa * const loc_stap,
+																											 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2] )
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
@@ -1144,7 +1152,8 @@ void calc_loc_improved_staples_typeA_nnptrick_all_bulk(__restrict const su3_soa 
 } // closes routine
 
 void calc_loc_improved_staples_typeB_nnptrick_all_bulk(__restrict const su3_soa * const u,
-																											 __restrict su3_soa * const loc_stap )
+																											 __restrict su3_soa * const loc_stap,
+																											 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2] )
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
@@ -1237,7 +1246,8 @@ void calc_loc_improved_staples_typeB_nnptrick_all_bulk(__restrict const su3_soa 
 } // closes routine
 
 void calc_loc_improved_staples_typeC_nnptrick_all_bulk(__restrict const su3_soa * const u,
-																											 __restrict su3_soa * const loc_stap )
+																											 __restrict su3_soa * const loc_stap,
+																											 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2] )
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
@@ -1330,7 +1340,8 @@ void calc_loc_improved_staples_typeC_nnptrick_all_bulk(__restrict const su3_soa 
 } // closes routine
  
 void calc_loc_improved_staples_typeABC_nnptrick_all_bulk(__restrict const su3_soa * const u,
-																												 __restrict su3_soa * const loc_stap )
+																												 __restrict su3_soa * const loc_stap,
+																												 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2] )
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
 	#pragma acc loop independent gang(IMPSTAPGANG3)
@@ -1472,6 +1483,7 @@ void calc_loc_improved_staples_typeABC_nnptrick_all_bulk(__restrict const su3_so
 
 void calc_loc_improved_staples_typeA_nnptrick_all_d3c(__restrict const su3_soa * const u,
 																											__restrict su3_soa * const loc_stap,
+																											int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2],
 																											int offset3, int thickness3 )
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
@@ -1562,6 +1574,7 @@ void calc_loc_improved_staples_typeA_nnptrick_all_d3c(__restrict const su3_soa *
 
 void calc_loc_improved_staples_typeB_nnptrick_all_d3c(__restrict const su3_soa * const u,
 																											__restrict su3_soa * const loc_stap,
+																											int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2],
 																											int offset3, int thickness3 )
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
@@ -1655,6 +1668,7 @@ void calc_loc_improved_staples_typeB_nnptrick_all_d3c(__restrict const su3_soa *
 
 void calc_loc_improved_staples_typeC_nnptrick_all_d3c(__restrict const su3_soa * const u,
 																											__restrict su3_soa * const loc_stap,
+																											int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2],
 																											int offset3, int thickness3 )
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
@@ -1749,6 +1763,7 @@ void calc_loc_improved_staples_typeC_nnptrick_all_d3c(__restrict const su3_soa *
  
 void calc_loc_improved_staples_typeABC_nnptrick_all_d3c(__restrict const su3_soa * const u,
 																												__restrict su3_soa * const loc_stap,
+																												int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2],
 																												int offset3, int thickness3 )
 {
 	#pragma acc kernels present(u) present(loc_stap) present(nnp_openacc) present(nnm_openacc)
@@ -1887,17 +1902,19 @@ void calc_loc_improved_staples_typeABC_nnptrick_all_d3c(__restrict const su3_soa
 
 #endif
 
+
 double calc_rettangolo_soloopenacc(__restrict const su3_soa * const tconf_acc, 
 																	 __restrict su3_soa * const local_plaqs, 
-																	 dcomplex_soa * const tr_local_plaqs)
+																	 dcomplex_soa * const tr_local_plaqs,
+																	 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
   double temp=0.0;
   double total_result=0.0;
   // calculation of reactangle on the 6 planes
   for(int mu=0;mu<3;mu++){
     for(int nu=mu+1;nu<4;nu++){
-      temp  += calc_loc_rectangles_2x1_nnptrick(tconf_acc,local_plaqs,tr_local_plaqs,mu,nu);
-      temp  += calc_loc_rectangles_1x2_nnptrick(tconf_acc,local_plaqs,tr_local_plaqs,mu,nu);
+      temp  += calc_loc_rectangles_2x1_nnptrick(tconf_acc,local_plaqs,tr_local_plaqs,nnp_openacc,nnm_openacc,mu,nu);
+      temp  += calc_loc_rectangles_1x2_nnptrick(tconf_acc,local_plaqs,tr_local_plaqs,nnp_openacc,nnm_openacc,mu,nu);
     }
   }
 #if NRANKS_D3 > 1

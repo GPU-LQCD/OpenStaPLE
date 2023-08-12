@@ -216,11 +216,14 @@ int rat_approx_file_or_script_create(RationalApprox* rational_approx){
 void init_all_u1_phases(bf_param bfpars, ferm_param *fpar  )
 {
 
+	int nnp_openacc[sizeh][4][2];
+	int nnm_openacc[sizeh][4][2];
+	compute_nnp_and_nnm_openacc(nnp_openacc,nnm_openacc);
 	for(int i=0;i<alloc_info.NDiffFlavs;i++){
 		fpar[i].phases = &u1_back_phases[i*8];
 		fpar[i].phases_f = &u1_back_phases_f[i*8];
 		init_fermion_backfield(bfpars,&(fpar[i]));
-
+		
 		// printing debug info
 		if(debug_settings.print_bfield_dbginfo){
 			char tempname[50];                           
@@ -230,23 +233,22 @@ void init_all_u1_phases(bf_param bfpars, ferm_param *fpar  )
 			strcat(tempname,devinfo.myrankstr);          
 #endif
 			print_double_soa(fpar[i].phases,tempname);   
-
+			
 			// plaquettes
 			sprintf(tempname,"abelian_plq_%s_c%d",fpar[i].name,
 							fpar[i].printed_bf_dbg_info);
 #ifdef MULTIDEVICE      
 			strcat(tempname,devinfo.myrankstr);          
 #endif
-
-			print_all_abelian_plaquettes(fpar[i].phases,tempname);
+			print_all_abelian_plaquettes(fpar[i].phases,tempname,nnp_openacc);
 			fpar->printed_bf_dbg_info++; 
 		}
     
-        
+    
 		fpar[i].mag_re = &mag_obs_re[i*8];
 		fpar[i].mag_im = &mag_obs_im[i*8];
-
-		idphase_dbz(fpar[i].mag_re,fpar[i].mag_im,&fpar[i]);
+		
+		idphase_dbz(fpar[i].mag_re,fpar[i].mag_im,&fpar[i],nnp_openacc);
     
 	}
 

@@ -31,7 +31,8 @@ extern int verbosity_lv;
 
 void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc, 
 																			__restrict su3_soa * const local_staples,
-																			__restrict tamat_soa * const tipdot)
+																			__restrict tamat_soa * const tipdot,
+																			int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2])
 {
 
 #ifdef TIMING_STAPLES
@@ -40,7 +41,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
 #endif
 
 	set_su3_soa_to_zero(local_staples); // staples = 0
-	calc_loc_staples_nnptrick_all(tconf_acc,local_staples); // compute staples = dS/dU
+	calc_loc_staples_nnptrick_all(tconf_acc,local_staples,nnp_openacc,nnm_openacc); // compute staples = dS/dU
 #ifdef PAR_TEMP
 	add_defect_coeffs_to_staple(tconf_acc, local_staples); // staple_mu(x) *= k_mu(x) for every link (x,mu)
 #endif
@@ -84,7 +85,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
 		single_su3_from_su3_soa(&tconf_acc[dir_link],idxh,&sto);
 		rebuild3row(&sto);
 	}
-	double ori_act = - calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums);
+	double ori_act = - calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums,nnp_openacc);
 
 	// store derivative
 	single_tamat posi={ 0+0*I, 0+0*I, 0+0*I, 0, 0 };
@@ -113,7 +114,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 
-		double act_minus = - calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums);
+		double act_minus = - calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums,nnp_openacc);
 		// change +, compute action
 		if(devinfo.myrank==0){
 			gl3_dagger(&exp_mod); // exp( i eps lambda/2 )
@@ -126,7 +127,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 	
-		double act_plus = - calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums);
+		double act_plus = - calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums,nnp_openacc);
 
 		// set back everything
 		if(devinfo.myrank==0)
@@ -137,7 +138,7 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 
-		double check_ori_act = - calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums);
+		double check_ori_act = - calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums,nnp_openacc);
 
 		if(devinfo.myrank==0){
 			printf("ori = %.15lg\n",ori_act);
@@ -191,7 +192,8 @@ void calc_ipdot_gauge_soloopenacc_std(__restrict const su3_soa * const tconf_acc
 
 void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_acc,  
 																			 __restrict su3_soa * const local_staples,
-																			 __restrict tamat_soa * const tipdot)
+																			 __restrict tamat_soa * const tipdot,
+																			 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2])
 {
 
 #ifdef TIMING_STAPLES
@@ -200,14 +202,14 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
 #endif
 
 	set_su3_soa_to_zero(local_staples);
-	calc_loc_staples_nnptrick_all(tconf_acc,local_staples);
+	calc_loc_staples_nnptrick_all(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
 
 	// this all-toghether version seems to be quite slower
-	// calc_loc_improved_staples_typeABC_nnptrick_all(tconf_acc,local_staples);
+	// calc_loc_improved_staples_typeABC_nnptrick_all(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
 
-	calc_loc_improved_staples_typeA_nnptrick_all(tconf_acc,local_staples);
-	calc_loc_improved_staples_typeB_nnptrick_all(tconf_acc,local_staples);
-	calc_loc_improved_staples_typeC_nnptrick_all(tconf_acc,local_staples);
+	calc_loc_improved_staples_typeA_nnptrick_all(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
+	calc_loc_improved_staples_typeB_nnptrick_all(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
+	calc_loc_improved_staples_typeC_nnptrick_all(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
 
 #ifdef PAR_TEMP
 	add_defect_coeffs_to_staple(tconf_acc, local_staples); // staple_mu(x) *= k_mu(x) for every link (x,mu)
@@ -253,8 +255,8 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
 		single_su3_from_su3_soa(&tconf_acc[dir_link],idxh,&sto);
 		rebuild3row(&sto);
 	}
-	double ori_act = - C_ZERO * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
-	ori_act -= C_ONE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
+	double ori_act = - C_ZERO * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc);
+	ori_act -= C_ONE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc,nnm_openacc);
 
 	// store derivative
 	single_tamat posi={ 0+0*I, 0+0*I, 0+0*I, 0, 0 };
@@ -283,8 +285,8 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
       
-		double act_minus = - C_ZERO * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
-		act_minus -= C_ONE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
+		double act_minus = - C_ZERO * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc);
+		act_minus -= C_ONE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc,nnm_openacc);
 		// change +, compute action
 		if(devinfo.myrank==0){
 			gl3_dagger(&exp_mod); // exp( i eps lambda/2 )
@@ -297,8 +299,8 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 	
-		double act_plus = - C_ZERO * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
-		act_plus -= C_ONE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
+		double act_plus = - C_ZERO * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc);
+		act_plus -= C_ONE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc,nnm_openacc);
 		// set back everything
 		if(devinfo.myrank==0)
 			single_su3_into_su3_soa(&tconf_acc[dir_link], idxh, &sto);
@@ -308,8 +310,8 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
     communicate_su3_borders(tconf_acc, GAUGE_HALO);  
 #endif
 
-		double check_ori_act = - C_ZERO * calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums);
-		check_ori_act -= C_ONE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
+		double check_ori_act = - C_ZERO * calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc, local_sums,nnp_openacc);
+		check_ori_act -= C_ONE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc,nnm_openacc);
 
 		if(devinfo.myrank==0){
 			printf("ori = %.15lg\n",ori_act);
@@ -360,13 +362,14 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
 
 void calc_ipdot_gauge_soloopenacc(__restrict const su3_soa * const tconf_acc,  
 																	__restrict su3_soa * const local_staples,
-																	__restrict tamat_soa * const tipdot)
+																	__restrict tamat_soa * const tipdot,
+																	int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2])
 {
 	if(GAUGE_ACTION==0){
-		calc_ipdot_gauge_soloopenacc_std(tconf_acc,local_staples,tipdot);
+		calc_ipdot_gauge_soloopenacc_std(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 	}
 	if(GAUGE_ACTION==1){
-		calc_ipdot_gauge_soloopenacc_tlsm(tconf_acc,local_staples,tipdot);
+		calc_ipdot_gauge_soloopenacc_tlsm(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 	}
 	
 	if(debug_settings.save_diagnostics == 1){
@@ -426,7 +429,8 @@ void calc_ipdot_gauge_soloopenacc(__restrict const su3_soa * const tconf_acc,
 #if NRANKS_D3 > 1
 void calc_ipdot_gauge_soloopenacc_std_bulk(__restrict const su3_soa * const tconf_acc, 
 																					 __restrict su3_soa * const local_staples,
-																					 __restrict tamat_soa * const tipdot)
+																					 __restrict tamat_soa * const tipdot,
+																					 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
 
 #ifdef TIMING_STAPLES
@@ -435,7 +439,7 @@ void calc_ipdot_gauge_soloopenacc_std_bulk(__restrict const su3_soa * const tcon
 #endif
 
 	set_su3_soa_to_zero_bulk(local_staples);
-	calc_loc_staples_nnptrick_all_bulk(tconf_acc,local_staples);
+	calc_loc_staples_nnptrick_all_bulk(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
 
 #ifdef PAR_TEMP
 	add_defect_coeffs_to_staple_bulk(tconf_acc, local_staples); // staple_mu(x) *= k_mu(x) for every link (x,mu) on the bulk
@@ -465,7 +469,8 @@ void calc_ipdot_gauge_soloopenacc_std_bulk(__restrict const su3_soa * const tcon
 
 void calc_ipdot_gauge_soloopenacc_tlsm_bulk(__restrict const su3_soa * const tconf_acc,  
 																						__restrict su3_soa * const local_staples,
-																						__restrict tamat_soa * const tipdot)
+																						__restrict tamat_soa * const tipdot,
+																						int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
 
 #ifdef TIMING_STAPLES
@@ -474,14 +479,14 @@ void calc_ipdot_gauge_soloopenacc_tlsm_bulk(__restrict const su3_soa * const tco
 #endif
 
 	set_su3_soa_to_zero_bulk(local_staples);
-	calc_loc_staples_nnptrick_all_bulk(tconf_acc,local_staples);
+	calc_loc_staples_nnptrick_all_bulk(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
 
 	// this all-toghether version seems to be quite slower
-	// calc_loc_improved_staples_typeABC_nnptrick_all(tconf_acc,local_staples);
+	// calc_loc_improved_staples_typeABC_nnptrick_all(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
 
-	calc_loc_improved_staples_typeA_nnptrick_all_bulk(tconf_acc,local_staples);
-	calc_loc_improved_staples_typeB_nnptrick_all_bulk(tconf_acc,local_staples);
-	calc_loc_improved_staples_typeC_nnptrick_all_bulk(tconf_acc,local_staples);
+	calc_loc_improved_staples_typeA_nnptrick_all_bulk(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
+	calc_loc_improved_staples_typeB_nnptrick_all_bulk(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
+	calc_loc_improved_staples_typeC_nnptrick_all_bulk(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
 
 #ifdef PAR_TEMP
 	add_defect_coeffs_to_staple_bulk(tconf_acc, local_staples); // staple_mu(x) *= k_mu(x) for every link (x,mu) on the bulk
@@ -510,13 +515,14 @@ void calc_ipdot_gauge_soloopenacc_tlsm_bulk(__restrict const su3_soa * const tco
 
 void calc_ipdot_gauge_soloopenacc_bulk(__restrict const su3_soa * const tconf_acc,  
 																			 __restrict su3_soa * const local_staples,
-																			 __restrict tamat_soa * const tipdot)
+																			 __restrict tamat_soa * const tipdot,
+																			 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2])
 {
 	if(GAUGE_ACTION==0){
-		calc_ipdot_gauge_soloopenacc_std_bulk(tconf_acc,local_staples,tipdot);
+		calc_ipdot_gauge_soloopenacc_std_bulk(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 	}
 	if(GAUGE_ACTION==1){
-		calc_ipdot_gauge_soloopenacc_tlsm_bulk(tconf_acc,local_staples,tipdot);
+		calc_ipdot_gauge_soloopenacc_tlsm_bulk(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 	}
 
 }
@@ -524,6 +530,7 @@ void calc_ipdot_gauge_soloopenacc_bulk(__restrict const su3_soa * const tconf_ac
 void calc_ipdot_gauge_soloopenacc_std_d3c(__restrict const su3_soa * const tconf_acc, 
 																					__restrict su3_soa * const local_staples,
 																					__restrict tamat_soa * const tipdot,
+																					int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2],
 																					int offset3, int thickness3)
 {
 
@@ -533,13 +540,13 @@ void calc_ipdot_gauge_soloopenacc_std_d3c(__restrict const su3_soa * const tconf
 #endif
 
 	set_su3_soa_to_zero_d3c(local_staples, offset3, thickness3);
-	calc_loc_staples_nnptrick_all_d3c(tconf_acc, local_staples, offset3, thickness3);
+	calc_loc_staples_nnptrick_all_d3c(tconf_acc, local_staples, nnp_openacc, nnm_openacc, offset3, thickness3);
 
 #ifdef PAR_TEMP
 	add_defect_coeffs_to_staple_d3c(tconf_acc, local_staples, offset3, thickness3); // staple_mu(x) *= k_mu(x) for every link (x,mu) on the border
 #endif
 
-	conf_times_staples_ta_part_d3c(tconf_acc,local_staples,tipdot, offset3,thickness3);
+	conf_times_staples_ta_part_d3c(tconf_acc,local_staples,tipdot,offset3,thickness3);
     
 	if(md_dbg_print_count<debug_settings.md_dbg_print_max_count
 		 && 1 == debug_settings.md_dbg_be_verbose ){
@@ -565,6 +572,7 @@ void calc_ipdot_gauge_soloopenacc_std_d3c(__restrict const su3_soa * const tconf
 void calc_ipdot_gauge_soloopenacc_tlsm_d3c(__restrict const su3_soa * const tconf_acc,  
 																					 __restrict su3_soa * const local_staples,
 																					 __restrict tamat_soa * const tipdot,
+																					 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
 																					 int offset3, int thickness3)
 {
 
@@ -574,14 +582,14 @@ void calc_ipdot_gauge_soloopenacc_tlsm_d3c(__restrict const su3_soa * const tcon
 #endif
 
 	set_su3_soa_to_zero_d3c(local_staples,offset3,thickness3);
-	calc_loc_staples_nnptrick_all_d3c(tconf_acc,local_staples,offset3,thickness3);
+	calc_loc_staples_nnptrick_all_d3c(tconf_acc,local_staples,nnp_openacc,nnm_openacc,offset3,thickness3);
 
 	// this all-toghether version seems to be quite slower
-	// calc_loc_improved_staples_typeABC_nnptrick_all(tconf_acc,local_staples);
+	// calc_loc_improved_staples_typeABC_nnptrick_all(tconf_acc,local_staples,nnp_openacc,nnm_openacc);
 
-	calc_loc_improved_staples_typeA_nnptrick_all_d3c(tconf_acc,local_staples,offset3,thickness3);
-	calc_loc_improved_staples_typeB_nnptrick_all_d3c(tconf_acc,local_staples,offset3,thickness3);
-	calc_loc_improved_staples_typeC_nnptrick_all_d3c(tconf_acc,local_staples,offset3,thickness3);
+	calc_loc_improved_staples_typeA_nnptrick_all_d3c(tconf_acc,local_staples,nnp_openacc,nnm_openacc,offset3,thickness3);
+	calc_loc_improved_staples_typeB_nnptrick_all_d3c(tconf_acc,local_staples,nnp_openacc,nnm_openacc,offset3,thickness3);
+	calc_loc_improved_staples_typeC_nnptrick_all_d3c(tconf_acc,local_staples,nnp_openacc,nnm_openacc,offset3,thickness3);
 
 #ifdef PAR_TEMP
 	add_defect_coeffs_to_staple_d3c(tconf_acc, local_staples, offset3, thickness3); // staple_mu(x) *= k_mu(x) for every link (x,mu) on the border
@@ -615,16 +623,19 @@ void calc_ipdot_gauge_soloopenacc_d3c(
 																			__restrict const su3_soa * const tconf_acc,  
 																			__restrict su3_soa * const local_staples,
 																			__restrict tamat_soa * const tipdot,
+																			int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
 																			int offset3, int thickness3)
 {
 	if(GAUGE_ACTION==0){
 		calc_ipdot_gauge_soloopenacc_std_d3c(tconf_acc,
 																				 local_staples,tipdot,
+																				 nnp_openacc,nnm_openacc,
 																				 offset3,thickness3);
 	}
 	if(GAUGE_ACTION==1){
 		calc_ipdot_gauge_soloopenacc_tlsm_d3c(tconf_acc,
 																					local_staples,tipdot,
+																					nnp_openacc,nnm_openacc,
 																					offset3,thickness3);
 	}
 

@@ -144,8 +144,11 @@ int main(int argc, char **argv){
 	ALLOCCHECK(allocation_check, closed_corr);
 #pragma acc enter data create(closed_corr[0:1])
 
-	if(0==devinfo.myrank) print_geom_defines(); 
-	compute_nnp_and_nnm_openacc();
+	if(0==devinfo.myrank) print_geom_defines();
+
+	int nnp_openacc[sizeh][4][2];
+	int nnm_openacc[sizeh][4][2];
+	compute_nnp_and_nnm_openacc(nnp_openacc,nnm_openacc);
 #pragma acc enter data copyin(nnp_openacc) 
 #pragma acc enter data copyin(nnm_openacc) 
 
@@ -243,7 +246,7 @@ int main(int argc, char **argv){
 			printf("Computing plaquette\n");
 
 		double plq;
-		plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
+		plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums, nnp_openacc);
 
 		if(0==devinfo.myrank)
 			fprintf(fplq,"%d\t%.18lf\n", conf_id, plq/GL_SIZE/6.0/3.0);
@@ -252,7 +255,7 @@ int main(int argc, char **argv){
 		if(0==devinfo.myrank)
 			printf("Computing correlators\n");
 		double  D_paral[nd0], D_perp[nd0], D_temp_paral[nd0], D_temp_perp[nd0];
-		calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sums, corr, closed_corr, D_paral, D_perp, D_temp_paral, D_temp_perp); 
+		calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sums, corr, closed_corr, nnp_openacc, nnm_openacc, D_paral, D_perp, D_temp_paral, D_temp_perp); 
 
 		if(0==devinfo.myrank)
 			for(int L=0; L<nd0/2; L++)
@@ -261,7 +264,7 @@ int main(int argc, char **argv){
 								D_temp_paral[L]/((double)6*GL_SIZE),  D_temp_perp[L]/((double)6*GL_SIZE));			
 
 		for(int coolstep=1; coolstep<=maxstep; coolstep++){
-			cool_conf(conf_acc, conf_acc, aux_conf_acc);
+			cool_conf(conf_acc, conf_acc, aux_conf_acc, nnp_openacc, nnm_openacc);
 
 			calc_field_corr(conf_acc, field_corr, field_corr_aux, aux_conf_acc, local_sums, corr, closed_corr, D_paral, D_perp, D_temp_paral, D_temp_perp);
 			

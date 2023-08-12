@@ -36,9 +36,10 @@ void eo_inversion(inverter_package ip,
 
 
 void fermion_measures(su3_soa * tconf_acc,
-			      ferm_param * tfermions_parameters, 
+									ferm_param * tfermions_parameters, 
                   ferm_meas_params * tfm_par,
                   double res, int max_cg, int conf_id_iter,
+									int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2],
                   double plaq, double rect);
 
 

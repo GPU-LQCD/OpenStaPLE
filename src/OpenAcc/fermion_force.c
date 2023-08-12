@@ -54,6 +54,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 																													 __restrict tamat_soa  * QA, // corresponding global variable: aux_ta
 																													 __restrict const su3_soa * const U,// smeared conf
 																													 __restrict su3_soa * const TMP,// corresponding global variable: aux_conf_acc
+																													 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
 																													 const int istopo // istopo = {0,1} -> rho = {fermrho,toporho}
 																													 ){
 	if(verbosity_lv > 3) printf("DOUBLE PRECISION VERSION OF COMPUTE_SIGMA_FROM_SIGMA_PRIME_BACKINTO_SIGMA_PRIME\n");
@@ -93,7 +94,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 
 	set_su3_soa_to_zero(TMP);
 
-	calc_loc_staples_nnptrick_all_onlyferms(U,TMP);
+	calc_loc_staples_nnptrick_all_onlyferms(U,TMP,nnp_openacc,nnm_openacc);
 	if(verbosity_lv > 4)printf("MPI%02d:\t\tcomputed staples  \n",
 														 devinfo.myrank);
 #if NRANKS_D3 > 1
@@ -135,7 +136,7 @@ void compute_sigma_from_sigma_prime_backinto_sigma_prime(  __restrict su3_soa   
 		printf("Lambda02 = %.18lf + (%.18lf)*I\n",creal(Lambda[0].c02[0]),cimag(Lambda[0].c02[0]));
 		printf("Lambda12 = %.18lf + (%.18lf)*I\n\n",creal(Lambda[0].c12[0]),cimag(Lambda[0].c12[0]));
 	}
-	compute_sigma(Lambda,U,Sigma,QA,TMP,istopo);
+	compute_sigma(Lambda,U,Sigma,QA,TMP, nnp_openacc, nnm_openacc, istopo);
 	if(verbosity_lv > 4)   printf("MPI%02d:\t\tcomputed Sigma  \n",
 																devinfo.myrank);
 
@@ -174,7 +175,8 @@ void fermion_force_soloopenacc(__restrict su3_soa    * tconf_acc,
 															 __restrict const vec3_soa * ferm_in_acc, // [NPS_tot]         
 															 double res,
 															 __restrict su3_soa  * taux_conf_acc,
-															 __restrict vec3_soa * tferm_shiftmulti_acc, // container for global variable ferm_shiftmulti_acc [maxNeededShifts]           
+															 __restrict vec3_soa * tferm_shiftmulti_acc, // container for global variable ferm_shiftmulti_acc [maxNeededShifts]
+															 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
 															 inverter_package ipt,
 															 const int max_cg )
 {
@@ -194,7 +196,7 @@ void fermion_force_soloopenacc(__restrict su3_soa    * tconf_acc,
 	__restrict su3_soa_f * conf_to_use_f; // conf to use in calculation
 	// FERMION FORCE
 #ifdef STOUT_FERMIONS
-	stout_wrapper(tconf_acc,tstout_conf_acc_arr,0); // computation
+	stout_wrapper(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc,0); // computation
 	if(act_params.stout_steps > 0) 
 		conf_to_use =  
 			&(tstout_conf_acc_arr[8*(act_params.stout_steps-1)]);
@@ -244,7 +246,7 @@ void fermion_force_soloopenacc(__restrict su3_soa    * tconf_acc,
 																				 tferm_shiftmulti_acc, &ferm_in_acc[ifps+ips], res, max_cg,
 																				 CONVERGENCE_NONCRITICAL);
 			ker_openacc_compute_fermion_force(ipt.u, taux_conf_acc, tferm_shiftmulti_acc,
-																				ipt.loc_s, ipt.loc_h, &(tfermion_parameters[iflav]));
+																				ipt.loc_s, ipt.loc_h, nnp_openacc,&(tfermion_parameters[iflav]));
 
 		}
 
@@ -272,7 +274,7 @@ void fermion_force_soloopenacc(__restrict su3_soa    * tconf_acc,
 						 devinfo.myrank, stout_level,stout_level-1);
 		conf_to_use = &(tstout_conf_acc_arr[8*(stout_level-2)]);
 		compute_sigma_from_sigma_prime_backinto_sigma_prime(gl3_aux,
-																												aux_th,aux_ta,conf_to_use, taux_conf_acc, 0);
+																												aux_th,aux_ta,conf_to_use, taux_conf_acc, nnp_openacc, nnm_openacc, 0);
 		if(md_dbg_print_count<debug_settings.md_dbg_print_max_count){
 			char gl3_aux_name[50];
 			sprintf(gl3_aux_name,
@@ -288,7 +290,7 @@ void fermion_force_soloopenacc(__restrict su3_soa    * tconf_acc,
 			printf("MPI%02d:\t\tSigma' to Sigma [lvl 1 to lvl 0]\n",
 						 devinfo.myrank);
     compute_sigma_from_sigma_prime_backinto_sigma_prime(gl3_aux,
-																												aux_th,aux_ta,tconf_acc, taux_conf_acc, 0);
+																												aux_th,aux_ta,tconf_acc, taux_conf_acc, nnp_openacc, nnm_openacc,0);
 	}
 
 #endif

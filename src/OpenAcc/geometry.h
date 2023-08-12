@@ -53,13 +53,9 @@ extern geom_parameters geom_par;
 // nnp[site_half][dir][par] = nearest neighbour in the positive direction "dir"            
 //                            starting from the site "site_half" (from 0 to sizeh) of parity "par"
 // nnm[site_half][dir][par] = nearest neighbour in the negative direction "dir"
-//                            starting from the site "site_half" (from 0 to sizeh) of parity "par"         
-
-// temporarily defined and computed here (should be moved elsewhere!)      
-int nnp_openacc[sizeh][4][2];
-int nnm_openacc[sizeh][4][2];
+//                            starting from the site "site_half" (from 0 to sizeh) of parity "par"
 
 int set_geom_glv(geom_parameters* gp);
-void compute_nnp_and_nnm_openacc(void);
+void compute_nnp_and_nnm_openacc(int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2]);
 
 #endif

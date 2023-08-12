@@ -23,10 +23,11 @@ void calc_field_corr_single_orientation(
 																				dcomplex_soa * const trace_local,
 																				d_complex * const corr,
 																				__restrict single_su3 * const closed_corr,
+																				int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
 																				const int mu, const int nu, const int ro)
 {
   //computing plaquettes in the mu,nu plane for each site
-  #pragma acc kernels present(u) present(field_corr) present(loc_plaq) 
+  #pragma acc kernels present(u) present(field_corr) present(loc_plaq) present(nnp_openacc)
   #pragma acc loop independent gang(STAPGANG3)
 	//d3=time
   for(int d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
@@ -79,7 +80,7 @@ void calc_field_corr_single_orientation(
 	for(int L=0; L<nd0/2; L++){
 
 		//d3 time
-#pragma acc kernels present(u) present(field_corr) present(loc_plaq) present(field_corr_aux) present(closed_corr) present(trace_local)
+#pragma acc kernels present(u) present(field_corr) present(loc_plaq) present(field_corr_aux) present(closed_corr) present(trace_local) present(nnp_openacc)
 #pragma acc loop independent gang(STAPGANG3)
 		for(int d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
 #pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
@@ -105,12 +106,11 @@ void calc_field_corr_single_orientation(
 	     
 						int dir_roE = 2*ro + parity; 
 						int idxpro = nnp_openacc[idxh][ro][parity];  // r+ro
-						//int idxmro = nnm_openacc[idxh][ro][parity];  // r-ro
 
 						// FxU (F=fieldcorr, U=link E)     
-						mat1_times_mat2_into_mat1_absent_stag_phases_nc(&field_corr[parity], idxh, &u[dir_roE], idxh);//
+						mat1_times_mat2_into_mat1_absent_stag_phases_nc(&field_corr[parity], idxh, &u[dir_roE], idxh);
 						// U^(dagger)xFxU
-						conj_mat1_times_mat2_into_mat2_absent_stag_phases_nc(&u[dir_roE],idxh,&field_corr[parity],idxh);//
+						conj_mat1_times_mat2_into_mat2_absent_stag_phases_nc(&u[dir_roE],idxh,&field_corr[parity],idxh);
 
 						// UxFxU^(dagger)xG^(dagger)
 						//						mat1_times_conj_mat2_into_single_mat3_absent_stag_phases_nc(&field_corr[parity], idxh, &loc_plaq[!parity], idxpro, closed_corr);
@@ -139,7 +139,7 @@ void calc_field_corr_single_orientation(
 			communicate_su3_borders(field_corr_aux, GAUGE_HALO);  
 #endif
 
-    #pragma acc kernels present(field_corr) present(field_corr_aux)
+    #pragma acc kernels present(field_corr) present(field_corr_aux) present(nnm_openacc)
     #pragma acc loop independent gang(STAPGANG3)
 		for(int d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
       #pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)	
@@ -182,6 +182,7 @@ void calc_field_corr(
 										 dcomplex_soa * const trace_local,
 										 d_complex * const corr,
 										 __restrict single_su3 * const closed_corr,
+										 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
 										 double * const D_paral,
 										 double * const D_perp,
 										 double * const D_time_paral,
@@ -203,7 +204,7 @@ void calc_field_corr(
 	for(int ro=0; ro<4; ro++)
 		for(int mu=0 ; mu<3; mu++)
 			for(int nu=mu+1; nu<4; nu++){    
-				calc_field_corr_single_orientation(u, field_corr, field_corr_aux, loc_plaq, trace_local, corr, closed_corr, mu, nu, ro);
+				calc_field_corr_single_orientation(u, field_corr, field_corr_aux, loc_plaq, trace_local, corr, closed_corr, nnp_openacc, nnm_openacc, mu, nu, ro);
 
 				if(ro==3){	 
 					for(int L=0; L<nd0/2; L++)
@@ -246,58 +247,31 @@ void calc_field_corr(
 
 
 
+//Gauge transformation: G(n)xU(n)xG*(n+mu), where U is the link n-->n+mu
 void random_gauge_transformation(
 																 __restrict su3_soa * const u,
 																 __restrict su3_soa * const u_new,
-																 __restrict su3_soa * const m_soa)
+																 __restrict su3_soa * const m_soa,
+																 int nnp_openacc[sizeh][4][2])
 {
-	/*
-	//Genero per ogni sito del reticolo un elemento G di SU(3) random
-	#pragma acc kernels present(m_soa)
-	#pragma acc loop independent gang(STAPGANG3)
+  #pragma acc kernels present(m_soa) present(u) present(nnp_openacc)	
+  #pragma acc loop independent gang(STAPGANG3)
 	for(int d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
-	#pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
-	for(int d2=0; d2<nd2; d2++) {
-	for(int d1=0; d1<nd1; d1++) {
-	for(int d0=0; d0 < nd0; d0++) {
-					
-	int idxh = snum_acc(d0,d1,d2,d3);  // r
-	int parity = (d0+d1+d2+d3) % 2;
-
-	int factor=2.500000e-01;
-	single_su3 aux;
-	generate_random_su3(&aux, factor);
-	single_gl3_into_su3_soa(&m_soa[parity], idxh, &aux);
-					
-	}  // d0
-	}  // d1
-	}  // d2
-	}  // d3
-	*/
-	//Gauge transformation: G(n)xU(n)xG*(n+mu). U is the link n-->n+mu
-#pragma acc kernels present(m_soa) present(u) present(nnp_openacc)	
-#pragma acc loop independent gang(STAPGANG3)
-	for(int d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
-#pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
+    #pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
 		for(int d2=0; d2<nd2; d2++) {
 			for(int d1=0; d1<nd1; d1++) {
-				for(int d0=0; d0 < nd0; d0++) {
+				for(int d0=0; d0<nd0; d0++) {
 					
 					int idxh = snum_acc(d0,d1,d2,d3);  // r
 					int parity = (d0+d1+d2+d3) % 2;
 					int dir_link, idxpmu;
 						
 					for(int mu=0; mu<4; mu++){
-					
 						dir_link = 2*mu + parity;
 						idxpmu = nnp_openacc[idxh][mu][parity]; // r+mu
-						//U_(new) = GxU
 						mat1_times_mat2_into_mat3_absent_stag_phases_nc(&m_soa[parity], idxh, &u[dir_link], idxh, &u_new[dir_link], idxh);
-						//U_(new) = U_(new)xG*
 						mat1_times_conj_mat2_into_mat1_absent_stag_phases_nc(&u_new[dir_link], idxh, &m_soa[!parity], idxpmu);
-
 					}
-					
 				}  // d0
 			}  // d1
 		}  // d2

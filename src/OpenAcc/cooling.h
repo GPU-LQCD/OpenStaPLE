@@ -14,7 +14,7 @@ void compute_cooled_odd_links(__restrict su3_soa   * const U,__restrict su3_soa 
 															__restrict su3_soa   * const STAP);
 
 void cool_conf(__restrict su3_soa   * const U,__restrict su3_soa   * const Ucool, 
-							 __restrict su3_soa   * const TMP);
+							 __restrict su3_soa   * const TMP, int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2]);
 
 
 #endif

@@ -57,7 +57,8 @@
 
 #if defined(USE_MPI_CUDA_AWARE) || defined(__GNUC__)
 void multistep_2MN_gauge_async_bloc(su3_soa *tconf_acc_old, su3_soa *tconf_acc_new,
-																		su3_soa *local_staples, tamat_soa *tipdot,thmat_soa *tmomenta, int omelyan_index)
+																		su3_soa *local_staples, tamat_soa *tipdot,thmat_soa *tmomenta, int omelyan_index,
+																		int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
 
 	if(verbosity_lv > 3) printf("DOUBLE PRECISION VERSION OF MULTISTEP_2MN_GAUGE_ASYNC_BLOc\n");
@@ -100,9 +101,9 @@ void multistep_2MN_gauge_async_bloc(su3_soa *tconf_acc_old, su3_soa *tconf_acc_n
 
 	gettimeofday ( &t[0], NULL );
 	// NOT embarrassingly parallel
-	calc_ipdot_gauge_soloopenacc_d3c(tconf_acc_old,local_staples,tipdot,
+	calc_ipdot_gauge_soloopenacc_d3c(tconf_acc_old,local_staples,tipdot,nnp_openacc,nnm_openacc,
 																	 HALO_WIDTH,GAUGE_HALO);  // this could be modified to "optimize"
-	calc_ipdot_gauge_soloopenacc_d3c(tconf_acc_old,local_staples,tipdot,
+	calc_ipdot_gauge_soloopenacc_d3c(tconf_acc_old,local_staples,tipdot,nnp_openacc,nnm_openacc,
 																	 nd3-HALO_WIDTH-GAUGE_HALO,GAUGE_HALO); 
 
 	if(verbosity_lv > 3 && 0 == devinfo.myrank) printf("\t\tMPI%02d - mom_sum_mult_d3c()\n", devinfo.myrank);
@@ -139,7 +140,7 @@ void multistep_2MN_gauge_async_bloc(su3_soa *tconf_acc_old, su3_soa *tconf_acc_n
 	gettimeofday ( &t[4], NULL );
 	if(verbosity_lv > 3 && 0 == devinfo.myrank) printf("\t\tMPI%02d - calc_ipdot_gauge_bulk()\n", devinfo.myrank);
 	// NOT embarrassingly parallel
-	calc_ipdot_gauge_soloopenacc_bulk(tconf_acc_old,local_staples,tipdot);
+	calc_ipdot_gauge_soloopenacc_bulk(tconf_acc_old,local_staples,tipdot,nnp_openacc,nnm_openacc);
 	gettimeofday ( &t[5], NULL );
 
 	if(verbosity_lv > 3 && 0 == devinfo.myrank) printf("\t\tMPI%02d - mom_sum_mult_bulk()\n", devinfo.myrank);
@@ -204,7 +205,7 @@ void multistep_2MN_gauge_async_bloc(su3_soa *tconf_acc_old, su3_soa *tconf_acc_n
 }
 #endif 
 
-void multistep_2MN_gauge_async(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *tipdot,thmat_soa *tmomenta)
+void multistep_2MN_gauge_async(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *tipdot,thmat_soa *tmomenta, int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
 	if(verbosity_lv > 3) printf("DOUBLE PRECISION VERSION OF MULTISTEP_2MN_GAUGE_ASYNC\n");
 
@@ -218,30 +219,30 @@ void multistep_2MN_gauge_async(su3_soa *tconf_acc,su3_soa *local_staples,tamat_s
 	// tconf_acc[8:16]  --> new conf
 
 	multistep_2MN_gauge_async_bloc(tconf_acc,&tconf_acc[8], // for async we need 2 confs
-																 local_staples, tipdot,tmomenta,3);
+																 local_staples, tipdot,tmomenta,3,nnp_openacc,nnm_openacc);
 
 	for(md=1; md<md_parameters.gauge_scale; md++){
 		if(verbosity_lv > 2) printf("MPI%02d - Gauge step %d of %d...\n",
 																devinfo.myrank,md,md_parameters.gauge_scale);
 
 		multistep_2MN_gauge_async_bloc(&tconf_acc[8],tconf_acc, //for async we need 2 confs
-																	 local_staples, tipdot,tmomenta,5);
+																	 local_staples, tipdot,tmomenta,5,nnp_openacc,nnm_openacc);
 
 		multistep_2MN_gauge_async_bloc(tconf_acc,&tconf_acc[8], //for async we need 2 confs
-																	 local_staples, tipdot,tmomenta,6);
+																	 local_staples, tipdot,tmomenta,6,nnp_openacc,nnm_openacc);
 
 	}
 	if(verbosity_lv > 2) printf("MPI%02d - Last Gauge step of %d...\n",
 															devinfo.myrank,md_parameters.gauge_scale);
 
 	multistep_2MN_gauge_async_bloc(&tconf_acc[8],tconf_acc, 
-																 local_staples, tipdot,tmomenta,5);
+																 local_staples, tipdot,tmomenta,5,nnp_openacc,nnm_openacc);
 
 	// LAST STEP IS NOT ASYNCED
 	// Step for the P
 	// P' = P - l*dt*dS/dq
 	// deltas_Omelyan[3]=-cimag(ieps_acc)*lambda*scale;
-	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot);
+	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 	mom_sum_mult(tmomenta,tipdot,deltas_Omelyan,3);
 
 #else
@@ -255,7 +256,7 @@ void multistep_2MN_gauge_async(su3_soa *tconf_acc,su3_soa *local_staples,tamat_s
 
 void multistep_2MN_gauge_bloc(su3_soa *tconf_acc,
 															su3_soa *local_staples, tamat_soa *tipdot,thmat_soa *tmomenta,
-															int omelyan_index)
+															int omelyan_index, int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2])
 {
 	if(verbosity_lv > 3) printf("DOUBLE PRECISION VERSION OF MULTISTEP_2MN_GAUGE_BLOC\n");
 
@@ -300,7 +301,7 @@ void multistep_2MN_gauge_bloc(su3_soa *tconf_acc,
 
 	if(verbosity_lv > 3 && 0 == devinfo.myrank) printf("\t\tMPI%02d - calc_ipdot_gauge()\n", devinfo.myrank);
 	gettimeofday ( &t[0], NULL );
-	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot);
+	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 	if(verbosity_lv > 3 && 0 == devinfo.myrank) printf("\t\tMPI%02d - mom_sum_mult()\n", devinfo.myrank);
 	gettimeofday ( &t[1], NULL );
 	mom_sum_mult(tmomenta,tipdot,deltas_Omelyan,omelyan_index);
@@ -344,7 +345,8 @@ void multistep_2MN_gauge_bloc(su3_soa *tconf_acc,
 	}
 }
 
-void multistep_2MN_gauge(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *tipdot,thmat_soa *tmomenta)
+void multistep_2MN_gauge(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *tipdot,thmat_soa *tmomenta,
+												 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
 	if(verbosity_lv > 3) printf("DOUBLE PRECISION VERSION OF MULTISTEP_2MN_GAUGE\n");
 	int md;
@@ -352,26 +354,26 @@ void multistep_2MN_gauge(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *ti
 		printf("MPI%02d - Performing Gauge substeps\n",
 					 devinfo.myrank);
 
-	multistep_2MN_gauge_bloc(tconf_acc,local_staples, tipdot,tmomenta,3);
+	multistep_2MN_gauge_bloc(tconf_acc,local_staples, tipdot,tmomenta,3,nnp_openacc,nnm_openacc);
 
 	for(md=1; md<md_parameters.gauge_scale; md++){
 		if(verbosity_lv > 2) printf("MPI%02d - Gauge step %d of %d...\n",
 																devinfo.myrank,md,md_parameters.gauge_scale);
 
-		multistep_2MN_gauge_bloc(tconf_acc,local_staples, tipdot,tmomenta,5);
+		multistep_2MN_gauge_bloc(tconf_acc,local_staples, tipdot,tmomenta,5,nnp_openacc,nnm_openacc);
 
-		multistep_2MN_gauge_bloc(tconf_acc,local_staples, tipdot,tmomenta,6);
+		multistep_2MN_gauge_bloc(tconf_acc,local_staples, tipdot,tmomenta,6,nnp_openacc,nnm_openacc);
 
 	}
 	if(verbosity_lv > 2) printf("MPI%02d - Last Gauge step of %d...\n",
 															devinfo.myrank,md_parameters.gauge_scale);
 
-	multistep_2MN_gauge_bloc(tconf_acc, local_staples, tipdot,tmomenta,5);
+	multistep_2MN_gauge_bloc(tconf_acc, local_staples, tipdot,tmomenta,5,nnp_openacc,nnm_openacc);
 
 	// Step for the P
 	// P' = P - l*dt*dS/dq
 	// deltas_Omelyan[3]=-cimag(ieps_acc)*lambda*scale;
-	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot);
+	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 	mom_sum_mult(tmomenta,tipdot,deltas_Omelyan,3);
 
 }
@@ -387,7 +389,7 @@ void multistep_2MN_gauge(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *ti
 	// P' = P - l*dt*dS/dq
 	// deltas_Omelyan[3]=-cimag(ieps_acc)*scale*lambda;
 
-	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot); 
+	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc); 
 	#ifdef DEBUG_MD
 	char conffilename[50];
 	char momfilename[50];
@@ -428,7 +430,7 @@ void multistep_2MN_gauge(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *ti
 	// Step for the P
 	// P' = P - (1-2l)*dt*dS/dq
 	// deltas_Omelyan[5]=-cimag(ieps_acc)*(1.0-2.0*lambda)*scale;
-	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot);
+	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 
 	mom_sum_mult(tmomenta,tipdot,deltas_Omelyan,5);
 	// Step for the Q
@@ -441,7 +443,7 @@ void multistep_2MN_gauge(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *ti
 	// Step for the P
 	// P' = P - 2l*dt*dS/dq
 	// deltas_Omelyan[6]=-cimag(ieps_acc)*2.0*lambda*scale;
-	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot);
+	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 
 	mom_sum_mult(tmomenta,tipdot,deltas_Omelyan,6);
 	//--------------
@@ -463,7 +465,7 @@ void multistep_2MN_gauge(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *ti
 
 	// Step for the P
 	// P' = P - (1-2l)*dt*dS/dq
-	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot);
+	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 
 	// calc_ipdot_gauge();
 	// deltas_Omelyan[5]=-cimag(ieps_acc)*(1.0-2.0*lambda)*scale;
@@ -491,7 +493,7 @@ void multistep_2MN_gauge(su3_soa *tconf_acc,su3_soa *local_staples,tamat_soa *ti
 	// Step for the P
 	// P' = P - l*dt*dS/dq
 	// deltas_Omelyan[3]=-cimag(ieps_acc)*lambda*scale;
-	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot);
+	calc_ipdot_gauge_soloopenacc(tconf_acc,local_staples,tipdot,nnp_openacc,nnm_openacc);
 	mom_sum_mult(tmomenta,tipdot,deltas_Omelyan,3);
 
 
@@ -510,6 +512,8 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 															 int tNDiffFlavs,
 															 vec3_soa * ferm_in_acc, // [NPS_tot], will be ferm_chi_acc
 															 vec3_soa * tferm_shiftmulti_acc, // parking variable [maxNeededShifts]
+															 int nnp_openacc[sizeh][4][2],
+															 int nnm_openacc[sizeh][4][2],
 															 inverter_package ip,
 															 thmat_soa * tmomenta,
 															 dcomplex_soa * local_sums,
@@ -539,7 +543,8 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 #endif
 														tauxbis_conf_acc, // parking variable
 														tipdot_acc, tfermions_parameters, tNDiffFlavs, 
-														ferm_in_acc, res, taux_conf_acc, invOuts, ip,max_cg);
+														ferm_in_acc, res, taux_conf_acc, invOuts,
+														nnp_openacc, nnm_openacc,ip, max_cg);
 
 	if(verbosity_lv > 4) printf("MPI%02d - Calculated first fermion force\n", 
 															devinfo.myrank);
@@ -552,7 +557,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 #endif
 											tauxbis_conf_acc,
 											taux_conf_acc,
-											tipdot_acc);
+											tipdot_acc,nnp_openacc,nnm_openacc);
 	
 			if(verbosity_lv > 4) printf("MPI%02d - Calculated first topological force\n", 
 																	devinfo.myrank);
@@ -572,10 +577,10 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 		// Q' = exp[dt/2 *i P] Q
 #if NRANKS_D3 > 1
 		if(devinfo.async_comm_gauge)
-			multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
+			multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta,nnp_openacc,nnm_openacc);
 		else 
 #endif
-			multistep_2MN_gauge(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
+			multistep_2MN_gauge(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta,nnp_openacc,nnm_openacc);
 		// step for the P
 		// P' = P - (1-2l)*dt*dS/dq
 		// deltas_Omelyan[1]=-cimag(ieps_acc)*(1.0-2.0*lambda);
@@ -586,7 +591,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 															tauxbis_conf_acc, // parkeggio
 															tipdot_acc, tfermions_parameters, tNDiffFlavs,
 															ferm_in_acc, res, taux_conf_acc, invOuts,
-															ip,max_cg);
+															nnp_openacc, nnm_openacc, ip, max_cg);
 
 		if(TOPO_MACRO == 1 && act_params.topo_action == 1)
 			{
@@ -596,7 +601,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 #endif
 												tauxbis_conf_acc,
 												taux_conf_acc,
-												tipdot_acc);
+												tipdot_acc,nnp_openacc,nnm_openacc);
 			}
 
 		mom_sum_mult(tmomenta,tipdot_acc,deltas_Omelyan,1);
@@ -605,10 +610,10 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 		// Q' = exp[dt/2 *i P] Q
 #if NRANKS_D3 > 1
 		if(devinfo.async_comm_gauge)
-			multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
+			multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta,nnp_openacc,nnm_openacc);
 		else
 #endif           
-			multistep_2MN_gauge(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
+			multistep_2MN_gauge(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta,nnp_openacc,nnm_openacc);
 
 		if(md_parameters.extrapolateInvsForce){
 			printf("ERROR, not implemented correctly! %s : %d",__FILE__,__LINE__); exit(1);
@@ -625,7 +630,8 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 #endif
 															tauxbis_conf_acc, // parking
 															tipdot_acc, tfermions_parameters, tNDiffFlavs,
-															ferm_in_acc, res, taux_conf_acc, invOuts, ip,max_cg);
+															ferm_in_acc, res, taux_conf_acc, invOuts,
+														  nnp_openacc, nnm_openacc, ip, max_cg);
 
 
 		if(TOPO_MACRO == 1 && act_params.topo_action == 1)
@@ -637,7 +643,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 #endif
 												tauxbis_conf_acc,
 												taux_conf_acc,
-												tipdot_acc);
+												tipdot_acc,nnp_openacc,nnm_openacc);
 	
 			}
 
@@ -659,10 +665,10 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 	// Q' = exp[dt/2 *i P] Q
 #if NRANKS_D3 > 1
 	if(devinfo.async_comm_gauge)
-		multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
+		multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta,nnp_openacc,nnm_openacc);
 	else
 #endif
-		multistep_2MN_gauge(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
+		multistep_2MN_gauge(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta,nnp_openacc,nnm_openacc);
     
     
 	// step for the P
@@ -675,7 +681,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 														tauxbis_conf_acc, // parkeggio
 														tipdot_acc, tfermions_parameters, tNDiffFlavs,
 														ferm_in_acc, res, taux_conf_acc, invOuts, 
-														ip,max_cg);
+													  nnp_openacc, nnm_openacc, ip, max_cg);
 
     
 	if(TOPO_MACRO == 1 && act_params.topo_action == 1)
@@ -687,7 +693,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 #endif
 											tauxbis_conf_acc,
 											taux_conf_acc,
-											tipdot_acc);
+											tipdot_acc,nnp_openacc,nnm_openacc);
 	
 		}
     
@@ -697,10 +703,10 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 	// Q' = exp[dt/2 *i P] Q
 #if NRANKS_D3 > 1
 	if(devinfo.async_comm_gauge)
-		multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
+		multistep_2MN_gauge_async(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta,nnp_openacc,nnm_openacc);
 	else 
 #endif
-		multistep_2MN_gauge(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta);
+		multistep_2MN_gauge(tconf_acc,taux_conf_acc,tipdot_acc,tmomenta,nnp_openacc,nnm_openacc);
 
 	if(md_parameters.extrapolateInvsForce){ 
 		printf("ERROR, not implemented correctly! %s : %d",__FILE__,__LINE__); exit(1);
@@ -718,7 +724,8 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 #endif
 														tauxbis_conf_acc, // parking
 														tipdot_acc, tfermions_parameters, tNDiffFlavs,
-														ferm_in_acc, res, taux_conf_acc, invOuts, ip,max_cg);
+														ferm_in_acc, res, taux_conf_acc, invOuts,
+														nnp_openacc, nnm_openacc, ip, max_cg);
 
     
 	if(TOPO_MACRO == 1 && act_params.topo_action == 1)
@@ -730,7 +737,7 @@ void multistep_2MN_SOLOOPENACC(tamat_soa * tipdot_acc,
 #endif
 											tauxbis_conf_acc,
 											taux_conf_acc,
-											tipdot_acc);
+											tipdot_acc,nnp_openacc,nnm_openacc);
 	
 		}
     

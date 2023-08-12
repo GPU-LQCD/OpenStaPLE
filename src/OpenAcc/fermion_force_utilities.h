@@ -210,6 +210,7 @@ void direct_product_of_fermions_into_auxmat(
         __restrict const vec3_soa  * const loc_h,
         __restrict su3_soa * const aux_u,
         const RationalApprox * const approx,
+				int nnp_openacc[sizeh][4][2],
         int iter);
 
 void multiply_conf_times_force_and_take_ta_nophase(
@@ -234,6 +235,7 @@ void ker_openacc_compute_fermion_force(
         __restrict const vec3_soa * const in_shiftmulti,
         __restrict vec3_soa  * const loc_s,
         __restrict vec3_soa  * const loc_h,
+				int nnp_openacc[sizeh][4][2],
         __restrict ferm_param  *  tpars
         );
 

@@ -55,9 +55,9 @@ void print_1double_soa(double_soa * const vettore, const char* nomefile);
 void dbg_print_su3_soa(su3_soa * const conf, const char* nomefile,int conf_id_iter);
 int dbgread_su3_soa(su3_soa * conf, const char* nomefile,int * conf_id_iter );
 void calc_loc_abelian_plaquettes(const double_soa* phases,
-        double_soa * loc_abelian_plaquettes, const int mu, const int nu );
+									 double_soa * loc_abelian_plaquettes,int nnp_openacc[sizeh][4][2],const int mu, const int nu );
 
-void print_all_abelian_plaquettes(const double_soa* phases, const char * filename);
+void print_all_abelian_plaquettes(const double_soa* phases, const char * filename, int nnp_openacc[sizeh][4][2]);
 
 
 void dbgprint_gl3_soa(su3_soa * const conf, const char* nomefile,int conf_id_iter);

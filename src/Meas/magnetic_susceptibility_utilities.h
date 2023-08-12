@@ -8,7 +8,7 @@
 // basically, just I*( phases(b=(0,0,1)) - phases(b=(0,0,0)))
 // linearity is assumed in the field.
 void idphase_dbz(double_soa * dphi_dbz_re, double_soa * dphi_dbz_im,  // dphi_dbz_im = 0
-        ferm_param *tfermion_parameters);
+								 ferm_param *tfermion_parameters,int nnp_openacc[sizeh][4][2]);
 
 
 // FINITE differences in e^(i phase_1) - e^(i phase_0)

@@ -18,7 +18,7 @@ double compute_topo_action(__restrict su3_soa * u
 #ifdef STOUT_TOPO
 													 ,__restrict su3_soa * const tstout_conf_acc_arr
 #endif
-													 );
+													 ,int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2]);
 
 
 #endif

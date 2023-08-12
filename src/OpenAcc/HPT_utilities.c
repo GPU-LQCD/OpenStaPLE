@@ -338,7 +338,9 @@ void label_print(rep_info * hpt_params, FILE *file, int step_number){
 
 double calc_S_soloopenacc_defect(__restrict  su3_soa * const tconf_acc,
 																 __restrict su3_soa * const local_plaqs,
-																 dcomplex_soa * const tr_local_plaqs,defect_info * def)
+																 dcomplex_soa * const tr_local_plaqs,
+																 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
+																 defect_info * def)
 {
   double result=0.0;
   double total_result=0.0;
@@ -351,10 +353,10 @@ double calc_S_soloopenacc_defect(__restrict  su3_soa * const tconf_acc,
 
 		
 		// result = C_0 * delta_S_plaq_1x1
-    result += C_ZERO * calc_S_Wilson_defect(tconf_acc,local_plaqs,tr_local_plaqs,mu,nu,def);
+    result += C_ZERO * calc_S_Wilson_defect(tconf_acc,local_plaqs,tr_local_plaqs,nnp_openacc,nnm_openacc,mu,nu,def);
 #ifdef GAUGE_ACT_TLSM
 		// result + C_1 * ( delta_S_rect_1x2 + delta_S_rect_2x1 )
-    result += C_ONE * calc_S_Symanzik_defect(tconf_acc,local_plaqs,tr_local_plaqs,mu,nu,def);
+    result += C_ONE * calc_S_Symanzik_defect(tconf_acc,local_plaqs,tr_local_plaqs,nnp_openacc,nnm_openacc,mu,nu,def);
 #endif
   }
 #if NRANKS_D3 > 1
@@ -370,6 +372,7 @@ void compute_S_of_replicas(
                         __restrict su3_soa * const tconf_acc, 
                         __restrict su3_soa * const local_plaq, 
                         dcomplex_soa * const tr_local_plaqs,
+												int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
                         defect_info * def,
                         double * S_arr){
   
@@ -379,7 +382,7 @@ void compute_S_of_replicas(
     S_val[lab]=0.0;
   }
   //double S_prev_loc=(double)(devinfo.nranks*devinfo.replica_idx+devinfo.myrank); 
-  double S_loc=calc_S_soloopenacc_defect(tconf_acc,local_plaq, tr_local_plaqs,def);
+  double S_loc=calc_S_soloopenacc_defect(tconf_acc,local_plaq, tr_local_plaqs,nnp_openacc,nnm_openacc,def);
 
   // master decides swap attempts and send command of actions recomputation
   
@@ -399,9 +402,10 @@ void compute_S_of_replicas(
 
 // compute S_plaq = (beta/3) * sum K_1x1 Tr(plaq_1x1)
 double calc_S_Wilson_defect(__restrict const su3_soa * const u,
-                              __restrict su3_soa * const loc_plaq,
-                              dcomplex_soa * const tr_local_plaqs,
-                              const int mu, const int nu, defect_info * def)
+														__restrict su3_soa * const loc_plaq,
+														dcomplex_soa * const tr_local_plaqs,
+														int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
+														const int mu, const int nu, defect_info * def)
 {
   double K_mu_nu;
   double K_mu_nu2;
@@ -428,7 +432,7 @@ double calc_S_Wilson_defect(__restrict const su3_soa * const u,
   }
 	#pragma acc update device(tr_local_plaqs[0:2])
 
-	#pragma acc kernels present(u) present(loc_plaq) present(tr_local_plaqs)
+  #pragma acc kernels present(u) present(loc_plaq) present(tr_local_plaqs) present(nnp_openacc,nnm_openacc)
 	#pragma acc loop independent gang(STAPGANG3)
   for(d3=D3_min; d3<D3_max; d3++) {
 		#pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
@@ -502,9 +506,10 @@ double calc_S_Wilson_defect(__restrict const su3_soa * const u,
 // compute S = (beta/3) Sum [ K_rect_1x2 * Tr(rect)_1x2 + 1x2 ---> 2x1 ]
 #ifdef GAUGE_ACT_TLSM
 double calc_S_Symanzik_defect(__restrict const su3_soa * const u,
-                                  __restrict su3_soa * const loc_rects,
-                                  dcomplex_soa * const tr_local_rects,
-                                  const int mu, const int nu, defect_info * def)
+															__restrict su3_soa * const loc_rects,
+															dcomplex_soa * const tr_local_rects,
+															int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
+															const int mu, const int nu, defect_info * def)
 {
   double K_mu_nu;
   double K_mu_nu2;
@@ -541,7 +546,7 @@ double calc_S_Symanzik_defect(__restrict const su3_soa * const u,
 	#pragma acc update device(tr_local_rects[0:2])
 
   // 2x1
-	#pragma acc kernels present(u) present(loc_rects) present(tr_local_rects)
+  #pragma acc kernels present(u) present(loc_rects) present(tr_local_rects) present(nnp_openacc,nnm_openacc)
 	#pragma acc loop independent gang(STAPGANG3)
   for(d3=D3_min; d3< D3_max; d3++) {
 		#pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
@@ -625,7 +630,7 @@ double calc_S_Symanzik_defect(__restrict const su3_soa * const u,
   }
 	#pragma acc update device(tr_local_rects[0:2])
 
-	#pragma acc kernels present(u) present(loc_rects) present(tr_local_rects)
+  #pragma acc kernels present(u) present(loc_rects) present(tr_local_rects) present(nnp_openacc,nnm_openacc)
 	#pragma acc loop independent gang(STAPGANG3) 
   for(d3=D3_min; d3< D3_max; d3++) {
 		#pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
@@ -726,8 +731,10 @@ void manage_replica_swaps(
 										defect_info * def, 
                     int* swap_num,
 										int * all_swap_vet,
-										int * acceptance_vet, rep_info * hpt_params){
-    double S_arr_prev[NREPLICAS];
+										int * acceptance_vet, rep_info * hpt_params
+										int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2])
+{	
+	  double S_arr_prev[NREPLICAS];
     double S_arr_next[NREPLICAS];
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -753,7 +760,7 @@ void manage_replica_swaps(
             S_arr_prev[lb]=0.0;
           }
 
-          compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_prev[0]);
+          compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, nnp_openacc,nnm_openacc,def, &S_arr_prev[0]);
 
           int lab=hpt_params->label[devinfo.replica_idx];
           int twin_lab = ((swap_order==0 && (lab)%2==0) || (swap_order==1 && (lab)%2==1))? lab+1 : lab-1;
@@ -774,7 +781,7 @@ void manage_replica_swaps(
             S_arr_next[lb]=0.0;
           }
 
-          compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
+          compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, nnp_openacc,nnm_openacc,def, &S_arr_next[0]);
 
           if(devinfo.myrank_world==0){
             for(int lbs=swap_order; lbs<NREPLICAS; lbs+=2){
@@ -886,7 +893,7 @@ void manage_replica_swaps(
         for(int lab=0; lab<NREPLICAS; ++lab){
           S_arr_prev[lab]=0.0;
         }
-        compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_prev[0]);
+        compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, nnp_openacc,nnm_openacc,def, &S_arr_prev[0]);
 
 
         if(swap_order==1){ 
@@ -931,7 +938,7 @@ void manage_replica_swaps(
         for(int lab=0; lab<NREPLICAS; ++lab){
           S_arr_next[lab]=0.0;
         }
-        compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, def, &S_arr_next[0]);
+        compute_S_of_replicas(tconf_acc, loc_plaq, tr_local_plaqs, nnp_openacc,nnm_openacc,def, &S_arr_next[0]);
 
         if(devinfo.myrank_world==0 && (verbosity_lv>1) ){
           MPI_PRINTF1("All actions S_next1, S_next2, S_prev1, S_prev2: %lf, %lf, %lf, %lf\n",
@@ -1004,7 +1011,8 @@ void manage_replica_swaps(
 
     
 void trasl_conf( __restrict const su3_soa *  const tconf_acc,
-								 __restrict const su3_soa *  const taux_conf){
+								 __restrict const su3_soa *  const taux_conf,
+								 int nnm_openacc[sizeh][4][2]){
     
 #if NRANKS_D3 > 1
   communicate_su3_borders(tconf_acc, GAUGE_HALO);
@@ -1028,7 +1036,7 @@ void trasl_conf( __restrict const su3_soa *  const tconf_acc,
   if(dir0>0.5 && dir0<=0.75){dir=2;}
   if(dir0>0.75){dir=3;}
     
-  set_su3_soa_to_su3_soa_trasl( taux_conf,tconf_acc, dir);
+  set_su3_soa_to_su3_soa_trasl( taux_conf,tconf_acc, dir, nnm_openacc);
 	#pragma acc update device(tconf_acc[0:8])  
     
 #if NRANKS_D3 > 1

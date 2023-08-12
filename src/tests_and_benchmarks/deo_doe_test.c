@@ -163,7 +163,10 @@ int main(int argc, char* argv[]){
     mem_alloc_extended_f();
 
     printf("Allocazione della memoria : OK \n");
-    compute_nnp_and_nnm_openacc();
+
+		int nnp_openacc[sizeh][4][2];
+		int	nnm_openacc[sizeh][4][2];
+    compute_nnp_and_nnm_openacc(nnp_openacc,nnm_openacc);
 #pragma acc enter data copyin(nnp_openacc)
 #pragma acc enter data copyin(nnm_openacc)
 

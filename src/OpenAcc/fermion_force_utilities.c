@@ -32,12 +32,13 @@ void direct_product_of_fermions_into_auxmat(
 																						__restrict const vec3_soa  * const loc_h, 
 																						__restrict su3_soa * const aux_u,
 																						const RationalApprox * const approx,
+																						int nnp_openacc[sizeh][4][2],
 																						int iter)
 {
 
 	// loop on even sites
 	int hd0, d1, d2, d3;
-	#pragma acc kernels present(loc_s) present(loc_h)  present(approx) present(aux_u)
+  #pragma acc kernels present(loc_s) present(loc_h)  present(approx) present(aux_u) present(nnp_openacc)
 	#pragma acc loop independent gang (STAPGANG3)
 	for(d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
 		#pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
@@ -65,7 +66,7 @@ void direct_product_of_fermions_into_auxmat(
 	}  // d3
 
 	// loop on odd sites
-	#pragma acc kernels present(loc_s) present(loc_h)  present(approx) present(aux_u)
+	#pragma acc kernels present(loc_s) present(loc_h) present(approx) present(aux_u) present(nnp_openacc)
 	#pragma acc loop independent gang(STAPGANG3)
 	for(d3=D3_HALO; d3<nd3-D3_HALO; d3++) {
 		#pragma acc loop independent tile(STAPTILE0,STAPTILE1,STAPTILE2)
@@ -186,6 +187,7 @@ void ker_openacc_compute_fermion_force(
 																			 __restrict const vec3_soa * const in_shiftmulti,
 																			 __restrict vec3_soa  * const loc_s,
 																			 __restrict vec3_soa  * const loc_h,
+																			 int nnp_openacc[sizeh][4][2],
 																			 ferm_param  *  tpars)
 {
 	int ih;
@@ -194,7 +196,7 @@ void ker_openacc_compute_fermion_force(
 	for(iter=0; iter<tpars->approx_md.approx_order; iter++){
 		assign_in_to_out(&in_shiftmulti[iter],loc_s);
 		acc_Doe(u,loc_h,loc_s,tpars->phases);
-		direct_product_of_fermions_into_auxmat(loc_s,loc_h,aux_u,&(tpars->approx_md),iter);
+		direct_product_of_fermions_into_auxmat(loc_s,loc_h,aux_u,&(tpars->approx_md),nnp_openacc,iter);
 
 
 	}

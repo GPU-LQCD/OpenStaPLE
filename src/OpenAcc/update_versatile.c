@@ -42,7 +42,7 @@
 action_param act_params;
 
 int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
-																		 double res_metro, double res_md, int id_iter,int acc,int metro, int max_cg){    
+																		 double res_metro, double res_md, int id_iter,int acc,int metro, int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2], int max_cg){    
 
 #if (defined STOUT_FERMIONS) || (defined STOUT_TOPO) 
 	su3_soa *tstout_conf_acc_arr = gstout_conf_acc_arr;
@@ -146,7 +146,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 	// dilation using stouted dirac operator
 	// stouting... (already on device)
 	if ( (act_params.stout_steps > 0 ) && (alloc_info.NDiffFlavs > 0) ){
-		stout_wrapper(tconf_acc,tstout_conf_acc_arr,0);
+		stout_wrapper(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc,0);
 		gconf_as_fermionmatrix = 
 			&(tstout_conf_acc_arr[8*(act_params.stout_steps-1)]);
 
@@ -200,22 +200,22 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 		
 		// initial action computation
 		if(GAUGE_ACTION == 0)// standard gauge action 
-			action_in = BETA_BY_THREE*calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
+			action_in = BETA_BY_THREE*calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc);
 		if(GAUGE_ACTION == 1){ // tlSym gauge action
-			action_in = C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
-			action_in += C_ONE * BETA_BY_THREE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
+			action_in = C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc);
+			action_in += C_ONE * BETA_BY_THREE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc,nnm_openacc);
 		}
 		
 		if(verbosity_lv>3 && act_params.topo_action==1)printf("\tComputing topological action\n");
 
 #ifdef STOUT_TOPO
-		action_topo_in = (act_params.topo_action==0)? 0.0 : compute_topo_action(tconf_acc,tstout_conf_acc_arr);
+		action_topo_in = (act_params.topo_action==0)? 0.0 : compute_topo_action(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc);
 
 #ifdef STOUT_FERMIONS 
     // dilation using stouted dirac operator
     // stouting... (already on device)
     if ( (act_params.stout_steps > 0) && (alloc_info.NDiffFlavs > 0) ){
-			stout_wrapper(tconf_acc,tstout_conf_acc_arr,0);
+			stout_wrapper(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc,0);
 			gconf_as_fermionmatrix = 
 				&(tstout_conf_acc_arr[8*(act_params.stout_steps-1)]);
 
@@ -225,7 +225,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
     else gconf_as_fermionmatrix = tconf_acc;
 #endif
 #else
-		action_topo_in = (act_params.topo_action==0)? 0.0 : compute_topo_action(tconf_acc);
+		action_topo_in = (act_params.topo_action==0)? 0.0 : compute_topo_action(tconf_acc,nnp_openacc,nnm_openacc);
 #endif
 
 		action_mom_in = 0.0;
@@ -309,8 +309,8 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 
 		printf("Converting conf...\n");
 		convert_double_to_float_su3_soa(tconf_acc,tconf_acc_f);
-		double act_links_check_f = BETA_BY_THREE* calc_plaquette_soloopenacc_f(tconf_acc_f, aux_conf_acc_f, local_sums_f);
-		double act_links_check = BETA_BY_THREE*calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc,local_sums); // should not be necessary
+		double act_links_check_f = BETA_BY_THREE* calc_plaquette_soloopenacc_f(tconf_acc_f, aux_conf_acc_f, local_sums_f,nnp_openacc);
+		double act_links_check = BETA_BY_THREE*calc_plaquette_soloopenacc(tconf_acc, aux_conf_acc,local_sums,nnp_openacc); // should not be necessary
 
 		double act_ferm_check_f = 0;
 		double act_ferm_check = 0; // should not be necessary
@@ -340,7 +340,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 																auxbis_conf_acc_f,
 																aux_conf_acc_f,fermions_parameters,alloc_info.NDiffFlavs,
 																ferm_chi_acc_f,ferm_shiftmulti_acc_f,
-																ip,
+																nnp_openacc, nnm_openacc, ip,
 																momenta_f,local_sums_f,res_md,max_cg);
 
 		if(verbosity_lv > 1) MPI_PRINTF0("Single Precision Molecular Dynamics Completed \n" );
@@ -361,7 +361,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 															auxbis_conf_acc,
 															aux_conf_acc,fermions_parameters,alloc_info.NDiffFlavs,
 															ferm_chi_acc,ferm_shiftmulti_acc,
-															ip,
+															nnp_openacc, nnm_openacc, ip,
 															momenta,local_sums,res_md,max_cg);
 
 
@@ -395,7 +395,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 															auxbis_conf_acc,
 															aux_conf_acc,fermions_parameters,alloc_info.NDiffFlavs,
 															ferm_chi_acc,ferm_shiftmulti_acc,
-															ip,
+															nnp_openacc, nnm_openacc, ip,
 															momenta,local_sums,res_md, max_cg);
 
 		#pragma acc update device(conf_acc_bkp[0:8])
@@ -426,7 +426,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
 #ifdef STOUT_FERMIONS
 	// stouting... (already on device)
 	if ( (act_params.stout_steps > 0) && (alloc_info.NDiffFlavs > 0) ){
-		stout_wrapper(tconf_acc,tstout_conf_acc_arr,0);
+		stout_wrapper(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc,0);
 		gconf_as_fermionmatrix = 
 			&(tstout_conf_acc_arr[8*(act_params.stout_steps-1)]);
 	}
@@ -496,19 +496,19 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
         
 		// final action computation
 		if(GAUGE_ACTION == 0) // standard gauge action
-			action_fin = BETA_BY_THREE * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
+			action_fin = BETA_BY_THREE * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc);
 		if(GAUGE_ACTION == 1){ // tlSym gauge action
-			action_fin = C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
-			action_fin += C_ONE * BETA_BY_THREE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums);
+			action_fin = C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc);
+			action_fin += C_ONE * BETA_BY_THREE * calc_rettangolo_soloopenacc(tconf_acc,aux_conf_acc,local_sums,nnp_openacc,nnm_openacc);
 		}
 	
 #ifdef STOUT_TOPO
-		action_topo_fin = (act_params.topo_action==0)? 0.0 : compute_topo_action(tconf_acc,tstout_conf_acc_arr);
+		action_topo_fin = (act_params.topo_action==0)? 0.0 : compute_topo_action(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc);
 	
 #ifdef STOUT_FERMIONS
     // stouting... (already on device)
     if ( (act_params.stout_steps > 0) && (alloc_info.NDiffFlavs > 0) ){
-			stout_wrapper(tconf_acc,tstout_conf_acc_arr,0);
+			stout_wrapper(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc,0);
 			gconf_as_fermionmatrix = 
 				&(tstout_conf_acc_arr[8*(act_params.stout_steps-1)]);
     }
@@ -517,7 +517,7 @@ int UPDATE_SOLOACC_UNOSTEP_VERSATILE(su3_soa *tconf_acc,
     gconf_as_fermionmatrix = tconf_acc;
 #endif
 #else
-		action_topo_fin = (act_params.topo_action==0)? 0.0 : compute_topo_action(tconf_acc);
+		action_topo_fin = (act_params.topo_action==0)? 0.0 : compute_topo_action(tconf_acc,nnp_openacc,nnm_openacc);
 #endif
 		action_mom_fin = 0.0;
 		// action_mom doesn't change by adding the defect.

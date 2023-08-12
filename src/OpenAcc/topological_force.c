@@ -56,7 +56,7 @@ double compute_topodynamical_potential_der(const double Q)
     return 0;}
 }
 
-void four_leaves(__restrict su3_soa * const leaves,__restrict const su3_soa * const u)
+void four_leaves(__restrict su3_soa * const leaves,__restrict const su3_soa * const u, int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
   int mu, nu;
   int d0, d1, d2, d3;
@@ -147,7 +147,7 @@ void antihermatize_unsafe(__restrict su3_soa * const leaves)
 						} // closing all the loops at once
 }
 
-void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, double norm)
+void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, double norm,int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
   // compute leaves
   su3_soa * leaves;
@@ -162,7 +162,7 @@ void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, dou
 	communicate_su3_borders(u, GAUGE_HALO);  
 #endif
 
-  four_leaves(leaves,u);
+  four_leaves(leaves,u, nnp_openacc,nnm_openacc);
 
   
   if(verbosity_lv>3)
@@ -303,12 +303,13 @@ void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, dou
 
 
 void calc_loc_topo_staples(__restrict su3_soa * u,
-													 __restrict su3_soa * const staples)
+													 __restrict su3_soa * const staples,
+													 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {    
   if(verbosity_lv>3)
     printf("\t\tMPI%02d - compute_topological_charge(u,quadri,loc_q)\n",devinfo.myrank);
 
-  double Q = compute_topological_charge(u, staples, topo_loc);
+  double Q = compute_topological_charge(u, staples, topo_loc, nnp_openacc, nnm_openacc);
 
   if(verbosity_lv>4)
     printf("Topological Charge: %lf\n",Q);
@@ -326,7 +327,7 @@ void calc_loc_topo_staples(__restrict su3_soa * u,
   
 
   set_su3_soa_to_zero(staples);
-  topo_staples(u,staples,norm);
+  topo_staples(u,staples,norm,nnp_openacc,nnm_openacc);
 }
 
 
@@ -336,7 +337,8 @@ void calc_ipdot_topo(__restrict su3_soa const * const tconf_acc,
 #endif
 										 __restrict su3_soa  * const taux_conf_acc,
 										 __restrict su3_soa * const local_staples,
-										 __restrict tamat_soa * const tipdot_acc)
+										 __restrict tamat_soa * const tipdot_acc,
+										 int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
   set_su3_soa_to_zero(local_staples);
   __restrict su3_soa * conf_to_use; // configuration to use in calculation of topological force
@@ -345,7 +347,7 @@ void calc_ipdot_topo(__restrict su3_soa const * const tconf_acc,
 
 #ifdef STOUT_TOPO
   if(act_params.topo_stout_steps > 0){
-    stout_wrapper(tconf_acc,tstout_conf_acc_arr,1);
+    stout_wrapper(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc,1);
     conf_to_use = &(tstout_conf_acc_arr[8*(act_params.topo_stout_steps-1)]);
   }
   else conf_to_use=(su3_soa*)tconf_acc;
@@ -353,18 +355,18 @@ void calc_ipdot_topo(__restrict su3_soa const * const tconf_acc,
   conf_to_use=(su3_soa*)tconf_acc;
 #endif
 
-  calc_loc_topo_staples(conf_to_use,local_staples);
+  calc_loc_topo_staples(conf_to_use,local_staples,nnp_openacc,nnm_openacc);
 
 #ifdef STOUT_TOPO
   for(int stout_level = act_params.topo_stout_steps; stout_level > 1; stout_level--){
     conf_to_use = &(tstout_conf_acc_arr[8*(stout_level-2)]);
 
     compute_sigma_from_sigma_prime_backinto_sigma_prime(local_staples,aux_th,aux_ta,
-																												conf_to_use,taux_conf_acc,1);
+																												conf_to_use,taux_conf_acc,nnp_openacc,nnm_openacc,1);
   }    
   if(act_params.topo_stout_steps > 0 ){
     compute_sigma_from_sigma_prime_backinto_sigma_prime(local_staples,aux_th,aux_ta,
-																												tconf_acc, taux_conf_acc,1);
+																												tconf_acc, taux_conf_acc,nnp_openacc,nnm_openacc,1);
 
   }
 #endif
@@ -405,9 +407,9 @@ void calc_ipdot_topo(__restrict su3_soa const * const tconf_acc,
   rebuild3row(&sto);
   
 #ifdef STOUT_TOPO
-	double ori_act = compute_topo_action(tconf_acc,tstout_conf_acc_arr);
+	double ori_act = compute_topo_action(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc);
 #else
-	double ori_act = compute_topo_action(tconf_acc);
+	double ori_act = compute_topo_action(tconf_acc,nnp_openacc,nnm_openacc);
 #endif
   // store derivative
   single_tamat posi={ 0+0*I, 0+0*I, 0+0*I, 0, 0 };
@@ -430,9 +432,9 @@ void calc_ipdot_topo(__restrict su3_soa const * const tconf_acc,
       
 			#pragma acc update device(tconf_acc[0:8])      
 #ifdef STOUT_TOPO
-      double act_minus = compute_topo_action(tconf_acc,tstout_conf_acc_arr);
+      double act_minus = compute_topo_action(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc);
 #else
-      double act_minus = compute_topo_action(tconf_acc);
+      double act_minus = compute_topo_action(tconf_acc,nnp_openacc,nnm_openacc);
 #endif
       // change +, compute action
       gl3_dagger(&exp_mod); // exp( i eps Gell-Mann/2 )
@@ -441,9 +443,9 @@ void calc_ipdot_topo(__restrict su3_soa const * const tconf_acc,
       
 			#pragma acc update device(tconf_acc[0:8])      
 #ifdef STOUT_TOPO
-      double act_plus = compute_topo_action(tconf_acc,tstout_conf_acc_arr);
+      double act_plus = compute_topo_action(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc);
 #else
-      double act_plus = compute_topo_action(tconf_acc);
+      double act_plus = compute_topo_action(tconf_acc,nnp_openacc,nnm_openacc);
 #endif
 
       // set back everything
@@ -451,9 +453,9 @@ void calc_ipdot_topo(__restrict su3_soa const * const tconf_acc,
 
 			#pragma acc update device(tconf_acc[0:8])
 #ifdef STOUT_TOPO
-      double check_ori_act = compute_topo_action(tconf_acc,tstout_conf_acc_arr);
+      double check_ori_act = compute_topo_action(tconf_acc,tstout_conf_acc_arr,nnp_openacc,nnm_openacc);
 #else
-      double check_ori_act = compute_topo_action(tconf_acc);
+      double check_ori_act = compute_topo_action(tconf_acc,nnp_openacc,nnm_openacc);
 #endif
       /*
 				printf("plus = %+016.016le ",act_plus);

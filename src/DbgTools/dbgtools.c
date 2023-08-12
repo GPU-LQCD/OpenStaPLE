@@ -823,6 +823,7 @@ int read_double_soa_wrapper(double_soa * darr, const char* nomefile)
 
 void calc_loc_abelian_plaquettes(const double_soa* phases, // 8*
         double_soa * loc_abelian_plaquettes,// 2*
+				int nnp_openacc[sizeh][4][2],
         const int mu, const int nu )
 {
     int d0, d1, d2, d3;
@@ -873,6 +874,7 @@ void calc_loc_abelian_plaquettes(const double_soa* phases, // 8*
 
 void calc_loc_abelian_plaquettes_device(const double_soa* phases, // 8*
         double_soa * loc_abelian_plaquettes,// 2*
+			  int nnp_openacc[sizeh][4][2],
         const int mu, const int nu )
 {
     int d0, d1, d2, d3;
@@ -927,7 +929,7 @@ void calc_loc_abelian_plaquettes_device(const double_soa* phases, // 8*
 
 
 
-void print_all_abelian_plaquettes(const double_soa* phases,const char * filename){
+void print_all_abelian_plaquettes(const double_soa* phases,const char * filename,int nnp_openacc[sizeh][4][2]){
 
 
     printf("Printing abelian plaquettes in file %s ...\n", filename);
@@ -940,7 +942,7 @@ void print_all_abelian_plaquettes(const double_soa* phases,const char * filename
     fprintf(fp,"#");
     for(mu=0;mu<3;mu++) 
         for(nu=mu+1;nu<4;nu++){
-            calc_loc_abelian_plaquettes(phases, &all_plaquettes[2*pcount], mu, nu);
+					calc_loc_abelian_plaquettes(phases, &all_plaquettes[2*pcount], nnp_openacc,mu, nu);
             pcount++;
             fprintf(fp,"%d-%d\t",mu,nu);
         }

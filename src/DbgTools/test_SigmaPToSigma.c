@@ -58,7 +58,9 @@ int main(){
   printf("Allocazione della memoria : OK \n");
   initialize_global_variables();
   printf("init vars : OK \n");
-  compute_nnp_and_nnm_openacc();
+	int nnp_openacc[sizeh][4][2];
+	int nnm_openacc[sizeh][4][2];
+  compute_nnp_and_nnm_openacc(nnp_openacc,nnm_openacc);
   printf("nn computation : OK \n");
 #ifdef BACKFIELD
   init_backfield();
@@ -120,9 +122,9 @@ int main(){
 	       if(id_iter<therm_ITERATIONS){
 		 accettate_therm = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc[0],
                  residue_metro,residue_md,id_iter-id_iter_offset,
-                 accettate_therm,0);
+																												accettate_therm,nnp_openacc,0);
 	       }else{
-		 accettate_metro = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc[0],residue_metro,residue_md,id_iter-id_iter_offset-accettate_therm,accettate_metro,1);
+					 accettate_metro = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc[0],residue_metro,residue_md,id_iter-id_iter_offset-accettate_therm,accettate_metro,nnp_openacc,1);
 	       }
 #pragma acc update host(conf_acc[0][0:8])
 	       //---------------------------------------//

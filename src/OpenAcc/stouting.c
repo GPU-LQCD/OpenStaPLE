@@ -25,7 +25,7 @@ extern int verbosity_lv;
 
 #if (defined STOUT_FERMIONS) || (defined STOUT_TOPO)
 void stout_wrapper(__restrict const su3_soa * const tconf_acc,
-									 __restrict su3_soa * tstout_conf_acc_arr, const int istopo)
+									 __restrict su3_soa * tstout_conf_acc_arr, int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2], const int istopo)
 {
 	double max_unitarity_deviation,avg_unitarity_deviation;
 	int stoutsteps=(istopo & act_params.topo_action)?act_params.topo_stout_steps:act_params.stout_steps;
@@ -34,7 +34,7 @@ void stout_wrapper(__restrict const su3_soa * const tconf_acc,
 		MPI_PRINTF1(":Stouting gauge conf %d times.\n", stoutsteps);
 	if(stoutsteps > 0){
 		stout_isotropic(tconf_acc, tstout_conf_acc_arr, auxbis_conf_acc, 
-										glocal_staples, gipdot, istopo);
+										glocal_staples, gipdot, nnp_openacc, nnm_openacc,istopo);
 #if NRANKS_D3 > 1
 		communicate_su3_borders(tstout_conf_acc_arr,TRANSFER_THICKNESS);
 #endif
@@ -49,7 +49,7 @@ void stout_wrapper(__restrict const su3_soa * const tconf_acc,
 
 			stout_isotropic(&(tstout_conf_acc_arr[8*(stoutlevel-1)]),
 											&(tstout_conf_acc_arr[8*stoutlevel]),auxbis_conf_acc,
-											glocal_staples,  gipdot, istopo);
+											glocal_staples,  gipdot, nnp_openacc, nnm_openacc, istopo);
 #if NRANKS_D3 > 1
 			communicate_su3_borders(
 															&(tstout_conf_acc_arr[8*stoutlevel]),TRANSFER_THICKNESS);
@@ -76,6 +76,7 @@ void stout_isotropic(__restrict const su3_soa * const u, // input conf
 										 __restrict su3_soa * const local_staples, // parking variable
 										 __restrict su3_soa * const auxiliary, // parking variable
 										 __restrict tamat_soa * const tipdot, // parking variable
+										 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
 										 const int istopo) // istopo = {0,1} -> rho = {fermrho,toporho}
 {
 	if(verbosity_lv > 1) 
@@ -85,7 +86,7 @@ void stout_isotropic(__restrict const su3_soa * const u, // input conf
 	set_su3_soa_to_zero(local_staples);
 
 
-	calc_loc_staples_nnptrick_all_onlyferms(u,local_staples);
+	calc_loc_staples_nnptrick_all_onlyferms(u,local_staples,nnp_openacc,nnm_openacc);
 
 	RHO_times_conf_times_staples_ta_part(u,local_staples,tipdot,istopo);
 
@@ -1177,6 +1178,7 @@ void compute_sigma(__restrict const thmat_soa * const L, // Lambda --> ouput  (t
 									 __restrict su3_soa   * const S, // in input it is Sigma prime (input: previous step fermforce); in output it is Sigma
 									 __restrict const tamat_soa * const QA, // Cayley Hamilton Qs --> input (rho*ta(staples))
 									 __restrict su3_soa   * const TMP, // parking variable
+									 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
 									 const int istopo) // istopo = {0,1} -> rho = {fermrho,toporho}
 {
 	int d0, d1, d2, d3, mu, iter;

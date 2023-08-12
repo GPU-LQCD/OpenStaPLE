@@ -113,7 +113,7 @@ void set_su3_soa_to_su3_soa(__restrict const su3_soa * const matrix_in,
 
 
 void set_su3_soa_to_su3_soa_trasl(__restrict const su3_soa * const matrix_in,
-																	__restrict su3_soa * const matrix_out,int dir){
+																	__restrict su3_soa * const matrix_out,int dir,int nnm_openacc[sizeh][4][2]){
 	int d0, d1, d2, d3;
 	int idxh,parity,idxmdir, mu;
 	for(d3=D3_HALO; d3<nd3-D3_HALO; d3++) {

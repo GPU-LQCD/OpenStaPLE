@@ -93,7 +93,7 @@ double compute_topo_action(__restrict su3_soa * u
 #ifdef STOUT_TOPO
 													 ,__restrict su3_soa * const tstout_conf_acc_arr
 #endif
-													 )
+													 ,int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
   __restrict su3_soa * quadri;
   __restrict su3_soa * conf_to_use;
@@ -103,7 +103,7 @@ double compute_topo_action(__restrict su3_soa * u
 #ifdef STOUT_TOPO
 	#pragma acc update host(tstout_conf_acc_arr[0:8])
   if(act_params.topo_stout_steps > 0){
-    stout_wrapper(u,tstout_conf_acc_arr,1);
+    stout_wrapper(u,tstout_conf_acc_arr,nnp_openacc,nnm_openacc,1);
     conf_to_use = &(tstout_conf_acc_arr[8*(act_params.topo_stout_steps-1)]);
   }
   else conf_to_use=u;
@@ -112,7 +112,7 @@ double compute_topo_action(__restrict su3_soa * u
 #endif
   
   if(verbosity_lv>4)
-    printf("\t\t\tMPI%02d - compute_topological_charge(u,quadri,loc_q)\n",devinfo.myrank);
+    printf("\t\t\tMPI%02d - compute_topological_charge(u,quadri,loc_q, nnp_openacc, nnm_openacc)\n",devinfo.myrank);
   
   posix_memalign((void **)&quadri,128,8*sizeof(su3_soa));
 	#pragma acc enter data create(quadri[0:8])
@@ -120,7 +120,7 @@ double compute_topo_action(__restrict su3_soa * u
   posix_memalign((void **)&loc_q,128,2*sizeof(double_soa));
 	#pragma acc enter data create(loc_q[0:2])  
 
-  double Q = compute_topological_charge(conf_to_use, quadri, loc_q);
+  double Q = compute_topological_charge(conf_to_use, quadri, loc_q, nnp_openacc, nnm_openacc);
   
 	#pragma acc exit data delete(quadri)  
   free(quadri);

@@ -11,7 +11,7 @@
 #define acc_twopi 2*3.14159265358979323846
 
 void idphase_dbz(double_soa * idphi_dbz_re, double_soa * idphi_dbz_im, // dphi_dbz_re = 0 
-        ferm_param *fpar){
+								 ferm_param *fpar,int nnp_openacc[sizeh][4][2]){
 
     bf_param zero_point = (bf_param){0,0,0,0,0,0};
     bf_param bz1_point  = zero_point;
@@ -49,7 +49,7 @@ void idphase_dbz(double_soa * idphi_dbz_re, double_soa * idphi_dbz_im, // dphi_d
         strcat(tempname,devinfo.myrankstr);          
 #endif
 
-        print_all_abelian_plaquettes(idphi_dbz_im,tempname);
+        print_all_abelian_plaquettes(idphi_dbz_im,tempname,nnp_openacc);
         fpar->printed_bf_dbg_info++; 
     }
 

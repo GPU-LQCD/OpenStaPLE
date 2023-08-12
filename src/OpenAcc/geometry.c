@@ -11,7 +11,7 @@ geom_parameters geom_par = {.initialized_check = 0};
 
 
 // this function well defines the boundaries conditions.
-void compute_nnp_and_nnm_openacc(void)
+void compute_nnp_and_nnm_openacc(int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2])
 {
   int d0, d1, d2, d3,parity;
 	/*

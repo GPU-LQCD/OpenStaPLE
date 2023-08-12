@@ -171,21 +171,22 @@ void compute_cooled_odd_links(__restrict su3_soa   * const U, // unsmeared input
 
 void cool_conf(__restrict su3_soa   * const U, // unsmeared input conf
 							 __restrict su3_soa   * const Ucool, // smeared output conf
-							 __restrict su3_soa   * const TMP){ // auxiliary staple container
+							 __restrict su3_soa   * const TMP,
+							 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2]){ // auxiliary staple container
 
   set_su3_soa_to_zero(TMP);
 #if NRANKS_D3 > 1
   communicate_su3_borders(U, GAUGE_HALO);  
 #endif
  
-  calc_loc_staples_nnptrick_all_only_even(U,TMP);
+  calc_loc_staples_nnptrick_all_only_even(U,TMP,nnp_openacc,nnm_openacc);
 
 #if NRANKS_D3 > 1
   communicate_gl3_borders(TMP, GAUGE_HALO);  
 #endif
 
   compute_cooled_even_links(U,Ucool,TMP);
-  calc_loc_staples_nnptrick_all_only_odd(U,TMP);
+  calc_loc_staples_nnptrick_all_only_odd(U,TMP,nnp_openacc,nnm_openacc);
 
 #if NRANKS_D3 > 1
   communicate_gl3_borders(TMP, GAUGE_HALO);  

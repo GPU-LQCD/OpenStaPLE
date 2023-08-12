@@ -82,7 +82,8 @@ double calc_loc_plaquettes_nnptrick(__restrict const su3_soa * const u,
 
 // routine to compute the staples for each site on a given plane mu-nu and sum the result to the local stored staples
 void calc_loc_staples_nnptrick_all(__restrict const su3_soa * const u,
-																	 __restrict su3_soa * const loc_stap)
+																	 __restrict su3_soa * const loc_stap,
+																	 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2])
 {
   //       r+mu-nu  r+mu   r+mu+nu
   //          +<-----+----->+
@@ -195,7 +196,8 @@ void calc_loc_staples_nnptrick_all(__restrict const su3_soa * const u,
 
 // routine to compute the staples for each site on a given plane mu-nu and sum the result to the local stored staples
 void calc_loc_staples_nnptrick_all_onlyferms(__restrict const su3_soa * const u,
-																						 __restrict su3_soa * const loc_stap)
+																						 __restrict su3_soa * const loc_stap,
+																						 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2] )
 {
   //       r+mu-nu  r+mu   r+mu+nu
   //          +<-----+----->+
@@ -262,7 +264,8 @@ void calc_loc_staples_nnptrick_all_onlyferms(__restrict const su3_soa * const u,
 
 #if NRANKS_D3 > 1
 void calc_loc_staples_nnptrick_all_bulk(__restrict const su3_soa * const u,
-																				__restrict su3_soa * const loc_stap )
+																				__restrict su3_soa * const loc_stap,
+																				int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2] )
 {
   //       r+mu-nu  r+mu   r+mu+nu
   //          +<-----+----->+
@@ -342,6 +345,7 @@ void calc_loc_staples_nnptrick_all_bulk(__restrict const su3_soa * const u,
 
 void calc_loc_staples_nnptrick_all_d3c(__restrict const su3_soa * const u,
 																			 __restrict su3_soa * const loc_stap,
+																			 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2],
 																			 int offset, int thickness)
 {
   //       r+mu-nu  r+mu   r+mu+nu
@@ -428,7 +432,8 @@ void calc_loc_staples_nnptrick_all_d3c(__restrict const su3_soa * const u,
 
 
 void calc_loc_staples_nnptrick_all_only_even(__restrict const su3_soa * const u,
-																						 __restrict su3_soa * const loc_stap )
+																						 __restrict su3_soa * const loc_stap,
+																						 int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2] )
 {
   //       r+mu-nu  r+mu   r+mu+nu
   //          +<-----+----->+
@@ -508,7 +513,8 @@ void calc_loc_staples_nnptrick_all_only_even(__restrict const su3_soa * const u,
 } // closes routine
 
 void calc_loc_staples_nnptrick_all_only_odd(__restrict const su3_soa * const u,
-																						__restrict su3_soa * const loc_stap )
+																						__restrict su3_soa * const loc_stap,
+																						int nnp_openacc[sizeh][4][2], int nnm_openacc[sizeh][4][2] )
 {
   //       r+mu-nu  r+mu   r+mu+nu
   //          +<-----+----->+

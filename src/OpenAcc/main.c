@@ -277,8 +277,12 @@ int main(int argc, char* argv[]){
 	gl_topo_rho=act_params.topo_rho;
 	#pragma acc enter data copyin(gl_stout_rho)
 	#pragma acc enter data copyin(gl_topo_rho)
-  compute_nnp_and_nnm_openacc();
 
+	
+	int nnp_openacc[sizeh][4][2];
+	int nnm_openacc[sizeh][4][2];
+  compute_nnp_and_nnm_openacc(nnp_openacc,nnm_openacc);
+	
 	#pragma acc enter data copyin(nnp_openacc)
 	#pragma acc enter data copyin(nnm_openacc)
   MPI_PRINTF0("nn computation : OK\n");
@@ -482,7 +486,7 @@ int main(int argc, char* argv[]){
     
   IF_PERIODIC_REPLICA()
   {
-    plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
+    plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums,nnp_openacc);
     MPI_PRINTF1("Therm_iter %d Placchetta    = %.18lf \n", conf_id_iter,plq/GL_SIZE/6.0/3.0);
   }
     
@@ -491,7 +495,7 @@ int main(int argc, char* argv[]){
 #if !defined(GAUGE_ACT_WILSON) || !(NRANKS_D3 > 1)
   IF_PERIODIC_REPLICA()
   {
-    rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums);
+    rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums,nnp_openacc,nnm_openacc);
     MPI_PRINTF1("Therm_iter %d Rettangolo = %.18lf \n", conf_id_iter,rect/GL_SIZE/6.0/3.0/2.0);
   }
 #else
@@ -516,10 +520,10 @@ int main(int argc, char* argv[]){
     IF_PERIODIC_REPLICA()
     {
       printf("Gauge Measures:\n");
-      plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
+      plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums,nnp_openacc);
 
 #if !defined(GAUGE_ACT_WILSON) || !(NRANKS_D3 > 1)
-      rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums);
+      rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums,nnp_openacc,nnm_openacc);
 #else
       MPI_PRINTF0("multidevice rectangle computation with Wilson action not implemented\n");
 #endif 
@@ -538,6 +542,7 @@ int main(int argc, char* argv[]){
       fermion_measures(conf_acc,fermions_parameters,
                        &fm_par, md_parameters.residue_metro, 
                        md_parameters.max_cg_iterations, id_iter_offset,
+											 nnp_openacc,nnm_openacc,
                        plq/GL_SIZE/3.0/6.0,
                        rect/GL_SIZE/3.0/6.0/2.0);   
     }
@@ -650,9 +655,9 @@ int main(int argc, char* argv[]){
 			
 						if (verbosity_lv>10){
 							double action;
-							action  = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc, aux_conf_acc, local_sums);
+							action  = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc, aux_conf_acc, local_sums,nnp_openacc);
 #ifdef GAUGE_ACT_TLSM
-							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
+							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums,nnp_openacc,nnm_openacc);
 #endif
 
 #ifdef PAR_TEMP
@@ -694,7 +699,7 @@ int main(int argc, char* argv[]){
             
             *rankloc_accettate_which[which_mode] = UPDATE_SOLOACC_UNOSTEP_VERSATILE(conf_acc,
                                                                   md_parameters.residue_metro,md_parameters.residue_md, effective_iter,
-                                                                  *rankloc_accettate_which[which_mode],which_mode,md_parameters.max_cg_iterations);
+																																										*rankloc_accettate_which[which_mode],which_mode,nnp_openacc,nnm_openacc,md_parameters.max_cg_iterations);
 
             // sync acceptance array on world master
 #ifdef PAR_TEMP
@@ -734,9 +739,9 @@ int main(int argc, char* argv[]){
 						// final action
 						if (verbosity_lv>10){
 							double action;
-							action  = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc, aux_conf_acc, local_sums);
+							action  = - C_ZERO * BETA_BY_THREE * calc_plaquette_soloopenacc(conf_acc, aux_conf_acc, local_sums,nnp_openacc);
 #ifdef GAUGE_ACT_TLSM
-							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums);
+							action += - C_ONE  * BETA_BY_THREE * calc_rettangolo_soloopenacc(conf_acc, aux_conf_acc, local_sums,nnp_openacc,nnm_openacc);
 #endif
 
 #ifdef PAR_TEMP
@@ -751,7 +756,7 @@ int main(int argc, char* argv[]){
 							// conf swap
 							if (0==devinfo.myrank_world) {printf("CONF SWAP PROPOSED\n");}
               #pragma acc update host(conf_acc[0:alloc_info.conf_acc_size])
-              manage_replica_swaps(conf_acc, aux_conf_acc, local_sums, &def, &swap_number,all_swap_vector,acceptance_vector,rep);
+              manage_replica_swaps(conf_acc, aux_conf_acc, local_sums, &def, &swap_number,all_swap_vector,acceptance_vector,rep,nnp_openacc,nnm_openacc);
 
 							if (0==devinfo.myrank_world) {printf("Number of accepted swaps: %d\n", swap_number);}       
 							#pragma acc update host(conf_acc[0:8])
@@ -759,7 +764,7 @@ int main(int argc, char* argv[]){
 							// periodic conf translation
               lab=rep->label[devinfo.replica_idx];
               if(lab==0){
-                trasl_conf(conf_acc,auxbis_conf_acc);
+                trasl_conf(conf_acc,auxbis_conf_acc,nnm_openacc);
               }
 						}
 						#pragma acc update host(conf_acc[0:8])
@@ -839,9 +844,9 @@ int main(int argc, char* argv[]){
           {
             printf("===========GAUGE MEASURING============\n");
               
-            plq  = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
+            plq  = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums,nnp_openacc);
 #if !defined(GAUGE_ACT_WILSON) || !(NRANKS_D3 > 1)
-            rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums);
+            rect = calc_rettangolo_soloopenacc(conf_acc,aux_conf_acc,local_sums,nnp_openacc,nnm_openacc);
 #else
             MPI_PRINTF0("multidevice rectangle computation with Wilson action not implemented\n");
 #endif
@@ -849,15 +854,15 @@ int main(int argc, char* argv[]){
               
             if(meastopo_params.meascool && conf_id_iter%meastopo_params.cooleach==0){
               su3_soa *conf_to_use;
-              cool_topo_ch[0]=compute_topological_charge(conf_acc,auxbis_conf_acc,topo_loc);
+              cool_topo_ch[0]=compute_topological_charge(conf_acc,auxbis_conf_acc,topo_loc,nnp_openacc,nnm_openacc);
               for(int cs = 1; cs <= meastopo_params.coolmeasstep; cs++){
                 if(cs==1)
                   conf_to_use=(su3_soa*)conf_acc;
                 else
                   conf_to_use=(su3_soa*)aux_conf_acc;
-                cool_conf(conf_to_use,aux_conf_acc,auxbis_conf_acc);
+                cool_conf(conf_to_use,aux_conf_acc,auxbis_conf_acc,nnp_openacc,nnm_openacc);
                 if(cs%meastopo_params.cool_measinterval==0)
-                  cool_topo_ch[cs/meastopo_params.cool_measinterval]=compute_topological_charge(aux_conf_acc,auxbis_conf_acc,topo_loc);
+                  cool_topo_ch[cs/meastopo_params.cool_measinterval]=compute_topological_charge(aux_conf_acc,auxbis_conf_acc,topo_loc,nnp_openacc,nnm_openacc);
               }
               MPI_PRINTF0("Printing cooled charge - only by master rank...\n");
               if(devinfo.myrank ==0){
@@ -879,11 +884,11 @@ int main(int argc, char* argv[]){
             }
 
             if(meastopo_params.measstout && conf_id_iter%meastopo_params.stouteach==0){
-              stout_wrapper(conf_acc,gstout_conf_acc_arr,1);
-              stout_topo_ch[0]=compute_topological_charge(conf_acc,auxbis_conf_acc,topo_loc);
+              stout_wrapper(conf_acc,gstout_conf_acc_arr,nnp_openacc,nnm_openacc,1);
+              stout_topo_ch[0]=compute_topological_charge(conf_acc,auxbis_conf_acc,topo_loc,nnp_openacc,nnm_openacc);
               for(int ss = 0; ss < meastopo_params.stoutmeasstep; ss+=meastopo_params.stout_measinterval){
                 int topoindx =1+ss/meastopo_params.stout_measinterval; 
-                stout_topo_ch[topoindx]=compute_topological_charge(&gstout_conf_acc_arr[8*ss],auxbis_conf_acc,topo_loc);
+                stout_topo_ch[topoindx]=compute_topological_charge(&gstout_conf_acc_arr[8*ss],auxbis_conf_acc,topo_loc,nnp_openacc,nnm_openacc);
               }
         
               MPI_PRINTF0("Printing stouted charge - only by master rank...\n");
@@ -1038,6 +1043,7 @@ int main(int argc, char* argv[]){
 							fermion_measures(conf_acc,fermions_parameters,
 															 &fm_par, md_parameters.residue_metro,
 															 md_parameters.max_cg_iterations,conf_id_iter,
+															 nnp_openacc,nnm_openacc,
 															 plq/GL_SIZE/3.0/6.0,
 															 rect/GL_SIZE/3.0/6.0/2.0);   
 

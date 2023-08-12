@@ -21,10 +21,12 @@
 void acc_Deo_unsafe_indaddr(__restrict const su3_soa * const u, 
 														__restrict vec3_soa * const out, 
 														__restrict const vec3_soa * const in,
-														__restrict const double_soa * const backfield) {
+														__restrict const double_soa * const backfield,
+														int nnp_openacc[sizeh][4][2],	int nnm_openacc[sizeh][4][2]
+) {
 
 	int hd0, d1, d2, d3;
-	#pragma acc kernels present(u) present(out) present(in) present(backfield)
+  #pragma acc kernels present(u) present(out) present(in) present(backfield) present(nnp_openacc,nnm_openacc)
 	#pragma acc loop independent gang(DEODOEGANG3)
 	for(d3=D3_HALO; d3<D3_HALO+LOC_N3;d3++) {
 		#pragma acc loop independent tile(DEODOETILE0,DEODOETILE1,DEODOETILE2)
@@ -69,10 +71,12 @@ void acc_Deo_unsafe_indaddr(__restrict const su3_soa * const u,
 void acc_Doe_unsafe_indaddr(__restrict const su3_soa * const u,
 														__restrict vec3_soa * const out,
 														__restrict const vec3_soa * const in,
-														__restrict const double_soa * const backfield) {
+														__restrict const double_soa * const backfield,
+														int nnm_openacc[sizeh][4][2]
+) {
 
 	int hd0, d1, d2, d3;
-	#pragma acc kernels present(u) present(out) present(in) present(backfield)
+  #pragma acc kernels present(u) present(out) present(in) present(backfield) present(nnm_openacc)
 	#pragma acc loop independent gang(DEODOEGANG3)
 	for(d3=D3_HALO; d3<D3_HALO+LOC_N3;d3++) {
 		#pragma acc loop independent tile(DEODOETILE0,DEODOETILE1,DEODOETILE2)

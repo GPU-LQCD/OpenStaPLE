@@ -135,6 +135,7 @@ void fermion_measures(su3_soa * tconf_acc,
         ferm_param * tfermions_parameters,
         ferm_meas_params * tfm_par,
         double res, int max_cg, int conf_id_iter,
+			  int nnp_openacc[sizeh][4][2],int nnm_openacc[sizeh][4][2],
         double plaq, double rect )
 {
     vec3_soa * rnd_e,* rnd_o;
@@ -153,7 +154,7 @@ void fermion_measures(su3_soa * tconf_acc,
 
 
     if(act_params.stout_steps > 0){
-			  stout_wrapper(tconf_acc ,gstout_conf_acc_arr,0);
+			stout_wrapper(tconf_acc ,gstout_conf_acc_arr,nnp_openacc,nnm_openacc,0);
         conf_to_use = &gstout_conf_acc_arr[8*(act_params.stout_steps-1)];
     }
     else conf_to_use = tconf_acc;
