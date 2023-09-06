@@ -839,10 +839,10 @@ void calc_loc_abelian_plaquettes(const double_soa* phases, // 8*
                     parity = (d0+d1+d2+d3) % 2;
 
                     dir_muA = 2*mu +  parity;
-                    dir_muC = 2*mu + !parity;
+                    dir_muC = 2*mu + (1-parity);
                     idxpmu = nnp_openacc[idxh][mu][parity];// r+mu
 
-                    dir_nuB = 2*nu + !parity;
+                    dir_nuB = 2*nu + (1-parity);
                     dir_nuD = 2*nu +  parity;
                     idxpnu = nnp_openacc[idxh][nu][parity];// r+nu
                     //       r+nu (C)  r+mu+nu
@@ -894,10 +894,10 @@ void calc_loc_abelian_plaquettes_device(const double_soa* phases, // 8*
                     parity = (d0+d1+d2+d3) % 2;
 
                     dir_muA = 2*mu +  parity;
-                    dir_muC = 2*mu + !parity;
+                    dir_muC = 2*mu + (1-parity);
                     idxpmu = nnp_openacc[idxh][mu][parity];// r+mu
 
-                    dir_nuB = 2*nu + !parity;
+                    dir_nuB = 2*nu + (1-parity);
                     dir_nuD = 2*nu +  parity;
                     idxpnu = nnp_openacc[idxh][nu][parity];// r+nu
                     //       r+nu (C)  r+mu+nu

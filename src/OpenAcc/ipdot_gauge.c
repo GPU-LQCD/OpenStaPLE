@@ -21,7 +21,7 @@ extern int verbosity_lv;
 #include "../DbgTools/dbgtools.h"
 #include "./action.h"
 
-// #define DEBUG_FORCE
+#define DEBUG_FORCE
 
 #ifdef DEBUG_FORCE
 #ifdef MULTIDEVICE
@@ -214,7 +214,7 @@ void calc_ipdot_gauge_soloopenacc_tlsm(__restrict const su3_soa * const tconf_ac
 #endif
 		
 	conf_times_staples_ta_part(tconf_acc,local_staples,tipdot);
- 
+
 #ifdef DEBUG_FORCE
 	// NOTA BENE: this debug only works for a 16^4 lattice with the following mapping: x->1, y->2, z->3, t->0
 	int d0=0, d1=15, d2=0, d3=D3_HALO;

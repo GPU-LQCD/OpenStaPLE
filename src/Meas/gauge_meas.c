@@ -68,30 +68,30 @@ void compute_local_topological_charge(  __restrict const su3_soa * const u,
                   int idxpnu = nnp_openacc[idxh][nu][parity];// r+nu
                   int idxmmu = nnm_openacc[idxh][mu][parity];// r-mu
                   int idxmnu = nnm_openacc[idxh][nu][parity];// r-nu
-                  int idxmmupnu = nnp_openacc[idxmmu][nu][!parity]; // r-mu+nu
-                  int idxmmumnu = nnm_openacc[idxmmu][nu][!parity]; // r-mu-nu
-                  int idxpmumnu = nnm_openacc[idxpmu][nu][!parity]; // r+mu-nu
+                  int idxmmupnu = nnp_openacc[idxmmu][nu][(1-parity)]; // r-mu+nu
+                  int idxmmumnu = nnm_openacc[idxmmu][nu][(1-parity)]; // r-mu-nu
+                  int idxpmumnu = nnm_openacc[idxpmu][nu][(1-parity)]; // r+mu-nu
                   //piano mu-nu
                   comp_U_U_Udag_Udag(&u[2*mu+parity],   idxh,
-                          &u[2*nu+!parity],  idxpmu,
-                          &u[2*mu+!parity],  idxpnu,
+                          &u[2*nu+(1-parity)],  idxpmu,
+                          &u[2*mu+(1-parity)],  idxpnu,
                           &u[2*nu+parity],   idxh,
                           &quadri[parity],   idxh);
 
                   comp_and_add_U_Udag_Udag_U(&u[2*nu+parity],   idxh,
                           &u[2*mu+parity],   idxmmupnu,
-                          &u[2*nu+!parity],  idxmmu,
-                          &u[2*mu+!parity],  idxmmu,
+                          &u[2*nu+(1-parity)],  idxmmu,
+                          &u[2*mu+(1-parity)],  idxmmu,
                           &quadri[parity],   idxh);
 
-                  comp_and_add_Udag_Udag_U_U(&u[2*mu+!parity],  idxmmu,
+                  comp_and_add_Udag_Udag_U_U(&u[2*mu+(1-parity)],  idxmmu,
                           &u[2*nu+parity],   idxmmumnu,
                           &u[2*mu+parity],   idxmmumnu,
-                          &u[2*nu+!parity],  idxmnu,
+                          &u[2*nu+(1-parity)],  idxmnu,
                           &quadri[parity],   idxh);
 
-                  comp_and_add_Udag_U_U_Udag(&u[2*nu+!parity],  idxmnu,
-                          &u[2*mu+!parity],  idxmnu,
+                  comp_and_add_Udag_U_U_Udag(&u[2*nu+(1-parity)],  idxmnu,
+                          &u[2*mu+(1-parity)],  idxmnu,
                           &u[2*nu+parity],   idxpmumnu,
                           &u[2*mu+parity],   idxh,
                           &quadri[parity],   idxh);
@@ -100,30 +100,30 @@ void compute_local_topological_charge(  __restrict const su3_soa * const u,
                   int idxpsigma = nnp_openacc[idxh][sigma][parity];  // r+sigma
                   int idxmrho   = nnm_openacc[idxh][rho][parity];    // r-rho
                   int idxmsigma = nnm_openacc[idxh][sigma][parity];  // r-sigma
-                  int idxmrhopsigma = nnp_openacc[idxmrho][sigma][!parity]; // r-rho+sigma
-                  int idxmrhomsigma = nnm_openacc[idxmrho][sigma][!parity]; // r-rho-sigma
-                  int idxprhomsigma = nnm_openacc[idxprho][sigma][!parity]; // r+rho-sigma
+                  int idxmrhopsigma = nnp_openacc[idxmrho][sigma][(1-parity)]; // r-rho+sigma
+                  int idxmrhomsigma = nnm_openacc[idxmrho][sigma][(1-parity)]; // r-rho-sigma
+                  int idxprhomsigma = nnm_openacc[idxprho][sigma][(1-parity)]; // r+rho-sigma
                   //piano rho-sigma
                   comp_U_U_Udag_Udag(&u[2*rho+parity],     idxh,
-                          &u[2*sigma+!parity],  idxprho,
-                          &u[2*rho+!parity],    idxpsigma,
+                          &u[2*sigma+(1-parity)],  idxprho,
+                          &u[2*rho+(1-parity)],    idxpsigma,
                           &u[2*sigma+parity],   idxh,
                           &quadri[2+parity],    idxh);
 
                   comp_and_add_U_Udag_Udag_U(&u[2*sigma+parity],   idxh,
                           &u[2*rho+parity],     idxmrhopsigma,
-                          &u[2*sigma+!parity],  idxmrho,
-                          &u[2*rho+!parity],    idxmrho,
+                          &u[2*sigma+(1-parity)],  idxmrho,
+                          &u[2*rho+(1-parity)],    idxmrho,
                           &quadri[2+parity],    idxh);
 
-                  comp_and_add_Udag_Udag_U_U(&u[2*rho+!parity],    idxmrho,
+                  comp_and_add_Udag_Udag_U_U(&u[2*rho+(1-parity)],    idxmrho,
                           &u[2*sigma+parity],   idxmrhomsigma,
                           &u[2*rho+parity],     idxmrhomsigma,
-                          &u[2*sigma+!parity],  idxmsigma,
+                          &u[2*sigma+(1-parity)],  idxmsigma,
                           &quadri[2+parity],    idxh);
 
-                  comp_and_add_Udag_U_U_Udag(&u[2*sigma+!parity],  idxmsigma,
-                          &u[2*rho+!parity],    idxmsigma,
+                  comp_and_add_Udag_U_U_Udag(&u[2*sigma+(1-parity)],  idxmsigma,
+                          &u[2*rho+(1-parity)],    idxmsigma,
                           &u[2*sigma+parity],   idxprhomsigma,
                           &u[2*rho+parity],     idxh,
                           &quadri[2+parity],    idxh);

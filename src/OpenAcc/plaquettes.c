@@ -33,10 +33,10 @@ double calc_loc_plaquettes_nnptrick(__restrict const su3_soa * const u,
 					parity = (d0+d1+d2+d3) % 2;
 	    
 					dir_muA = 2*mu +  parity;
-					dir_muC = 2*mu + !parity;
+					dir_muC = 2*mu + (1-parity);
 					idxpmu = nnp_openacc[idxh][mu][parity]; // r+mu
 	    
-					dir_nuB = 2*nu + !parity;
+					dir_nuB = 2*nu + (1-parity);
 					dir_nuD = 2*nu +  parity;
 					idxpnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
@@ -117,15 +117,15 @@ void calc_loc_staples_nnptrick_all(__restrict const su3_soa * const u,
             
 							#pragma acc cache (nnp_openacc[idxh:8])
 
-							const int dir_mu_2R = 2*mu + !parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2R = 2*mu + (1-parity);
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int idx_pmu = nnp_openacc[idxh][mu][parity]; // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_3R = 2*nu +  parity;
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_3L = 2*nu + !parity;
+							const int dir_nu_3L = 2*nu + (1-parity);
 							const int idx_pnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
 							// computation of the Right part of the staple
@@ -136,7 +136,7 @@ void calc_loc_staples_nnptrick_all(__restrict const su3_soa * const u,
 																																								 &loc_stap[dir_link], idxh);
 
 							const int idx_mnu = nnm_openacc[idxh][nu][parity]; // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity]; // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)]; // r+mu-nu
 
 							// computation of the Left part of the staple
 							// N.B.: also here, each link of the staple is multiplied by its K_mu(x) factor
@@ -225,15 +225,15 @@ void calc_loc_staples_nnptrick_all_onlyferms(__restrict const su3_soa * const u,
             
 							#pragma acc cache (nnp_openacc[idxh:8])
 
-							const int dir_mu_2R = 2*mu + !parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2R = 2*mu + (1-parity);
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int idx_pmu = nnp_openacc[idxh][mu][parity]; // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_3R = 2*nu +  parity;
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_3L = 2*nu + !parity;
+							const int dir_nu_3L = 2*nu + (1-parity);
 							const int idx_pnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
 							// computation of the Right part of the staple
@@ -243,7 +243,7 @@ void calc_loc_staples_nnptrick_all_onlyferms(__restrict const su3_soa * const u,
 																																													 &loc_stap[dir_link], idxh);
 
 							const int idx_mnu = nnm_openacc[idxh][nu][parity]; // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity]; // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)]; // r+mu-nu
 
 							// computation of the Left part of the staple
 							conj_mat1_times_conj_mat2_times_mat3_addto_mat4_absent_stag_phases_onlyferms(&u[dir_nu_1L], idx_pmu_mnu,
@@ -288,25 +288,20 @@ void calc_loc_staples_nnptrick_all_bulk(__restrict const su3_soa * const u,
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { //error 
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							#pragma acc cache (nnp_openacc[idxh:8])
 
-							const int dir_mu_2R = 2*mu + !parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2R = 2*mu + (1-parity);
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int idx_pmu = nnp_openacc[idxh][mu][parity]; // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_3R = 2*nu +  parity;
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_3L = 2*nu + !parity;
+							const int dir_nu_3L = 2*nu + (1-parity);
 
 							const int idx_pnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
@@ -318,7 +313,7 @@ void calc_loc_staples_nnptrick_all_bulk(__restrict const su3_soa * const u,
 																																								 &loc_stap[dir_link], idxh);
             
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;        // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity]; // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)]; // r+mu-nu
 
 							// computation of the Left  part of the staple
 
@@ -369,25 +364,20 @@ void calc_loc_staples_nnptrick_all_d3c(__restrict const su3_soa * const u,
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error 
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							#pragma acc cache (nnp_openacc[idxh:8])
 
-							const int dir_mu_2R = 2*mu + !parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2R = 2*mu + (1-parity);
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int idx_pmu = nnp_openacc[idxh][mu][parity]; // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_3R = 2*nu +  parity;
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_3L = 2*nu + !parity;
+							const int dir_nu_3L = 2*nu + (1-parity);
 
 							const int idx_pnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
@@ -401,7 +391,7 @@ void calc_loc_staples_nnptrick_all_d3c(__restrict const su3_soa * const u,
            
 
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;        // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity]; // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)]; // r+mu-nu
 
 							// computation of the Left  part of the staple
 
@@ -455,25 +445,19 @@ void calc_loc_staples_nnptrick_all_only_even(__restrict const su3_soa * const u,
 						const int dir_link = 2*mu + parity;
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
-
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error 
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 							#pragma acc cache (nnp_openacc[idxh:8])
 
-							const int dir_mu_2R = 2*mu + !parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2R = 2*mu + (1-parity);
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int idx_pmu = nnp_openacc[idxh][mu][parity]; // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_3R = 2*nu +  parity;
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_3L = 2*nu + !parity;
+							const int dir_nu_3L = 2*nu + (1-parity);
 
 							const int idx_pnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
@@ -485,7 +469,7 @@ void calc_loc_staples_nnptrick_all_only_even(__restrict const su3_soa * const u,
 																																								 &loc_stap[dir_link], idxh);
 
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;        // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity]; // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)]; // r+mu-nu
 
 							// computation of the Left  part of the staple
 
@@ -537,24 +521,19 @@ void calc_loc_staples_nnptrick_all_only_odd(__restrict const su3_soa * const u,
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { //error 
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 							#pragma acc cache (nnp_openacc[idxh:8])
 
-							const int dir_mu_2R = 2*mu + !parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2R = 2*mu + (1-parity);
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int idx_pmu = nnp_openacc[idxh][mu][parity]; // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_3R = 2*nu +  parity;
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_3L = 2*nu + !parity;
+							const int dir_nu_3L = 2*nu + (1-parity);
 
 							const int idx_pnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
@@ -566,7 +545,7 @@ void calc_loc_staples_nnptrick_all_only_odd(__restrict const su3_soa * const u,
 																																								 &loc_stap[dir_link], idxh);
 
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;         // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];  // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];  // r+mu-nu
 
 							// computation of the Left  part of the staple
 
