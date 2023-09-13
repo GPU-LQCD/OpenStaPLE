@@ -1215,14 +1215,14 @@ void compute_sigma(__restrict const thmat_soa * const L, // Lambda --> ouput  (t
 							#pragma acc cache (nnp_openacc[idxh:8])
 
 							const int dir_link = 2*mu + parity;
-							const int dir_mu_2R = 2*mu + !parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2R = 2*mu + (1-parity);
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int idx_pmu = nnp_openacc[idxh][mu][parity]; // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_3R = 2*nu +  parity;
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_3L = 2*nu + !parity;
+							const int dir_nu_3L = 2*nu + (1-parity);
 
 							const int idx_pnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
@@ -1259,7 +1259,7 @@ void compute_sigma(__restrict const thmat_soa * const L, // Lambda --> ouput  (t
 																							&S[dir_link],        idxh,
 																							istopo);
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;         // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];  // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];  // r+mu-nu
 
 							// computation of the >>>Left<<< part of the staple with Lambdas
 							// su3

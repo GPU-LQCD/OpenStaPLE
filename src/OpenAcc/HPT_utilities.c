@@ -449,16 +449,16 @@ double calc_S_Wilson_defect(__restrict const su3_soa * const u,
 					parity = (d0+d1+d2+d3) % 2;
 
 					// impose periodic boundary conditions
-					if(d1==-1){parity = (d0+d2+d3) % 2; idxh=nnm_openacc[snum_acc(d0,0,d2,d3)][1][parity];parity=!parity;}
-					if(d2==-1){parity = (d0+d1+d3) % 2; idxh=nnm_openacc[snum_acc(d0,d1,0,d3)][2][parity];parity=!parity;}
-					if(d0==-1){parity = (d3+d1+d2) % 2; idxh=nnm_openacc[snum_acc(0,d1,d2,d3)][0][parity];parity=!parity;}
-					if(d3==-1){parity = (d0+d1+d2) % 2; idxh=nnm_openacc[snum_acc(d0,d1,d2,0)][3][parity];parity=!parity;}
+					if(d1==-1){parity = (d0+d2+d3) % 2; idxh=nnm_openacc[snum_acc(d0,0,d2,d3)][1][parity];parity=(1-parity);}
+					if(d2==-1){parity = (d0+d1+d3) % 2; idxh=nnm_openacc[snum_acc(d0,d1,0,d3)][2][parity];parity=(1-parity);}
+					if(d0==-1){parity = (d3+d1+d2) % 2; idxh=nnm_openacc[snum_acc(0,d1,d2,d3)][0][parity];parity=(1-parity);}
+					if(d3==-1){parity = (d0+d1+d2) % 2; idxh=nnm_openacc[snum_acc(d0,d1,d2,0)][3][parity];parity=(1-parity);}
                 
 					dir_muA = 2*mu +  parity;
-					dir_muC = 2*mu + !parity;
+					dir_muC = 2*mu + (1-parity);
 					idxpmu = nnp_openacc[idxh][mu][parity]; // r+mu
                 
-					dir_nuB = 2*nu + !parity;
+					dir_nuB = 2*nu + (1-parity);
 					dir_nuD = 2*nu +  parity;
 					idxpnu = nnp_openacc[idxh][nu][parity]; // r+nu
                 
@@ -557,20 +557,20 @@ double calc_S_Symanzik_defect(__restrict const su3_soa * const u,
 					idxh = snum_acc(d0,d1,d2,d3);
 					parity = (d0+d1+d2+d3) % 2; 
 
-					if(d1==-1){parity = (d0+d2+d3) % 2; idxh=nnm_openacc[snum_acc(d0,0,d2,d3)][1][parity];parity=!parity;}
-					if(d2==-1){parity = (d0+d1+d3) % 2; idxh=nnm_openacc[snum_acc(d0,d1,0,d3)][2][parity];parity=!parity;}
-					if(d0==-1){parity = (d3+d1+d2) % 2; idxh=nnm_openacc[snum_acc(0,d1,d2,d3)][0][parity];parity=!parity;}
-					if(d3==-1){parity = (d0+d1+d2) % 2; idxh=nnm_openacc[snum_acc(d0,d1,d2,0)][3][parity];parity=!parity;}
+					if(d1==-1){parity = (d0+d2+d3) % 2; idxh=nnm_openacc[snum_acc(d0,0,d2,d3)][1][parity];parity=(1-parity);}
+					if(d2==-1){parity = (d0+d1+d3) % 2; idxh=nnm_openacc[snum_acc(d0,d1,0,d3)][2][parity];parity=(1-parity);}
+					if(d0==-1){parity = (d3+d1+d2) % 2; idxh=nnm_openacc[snum_acc(0,d1,d2,d3)][0][parity];parity=(1-parity);}
+					if(d3==-1){parity = (d0+d1+d2) % 2; idxh=nnm_openacc[snum_acc(d0,d1,d2,0)][3][parity];parity=(1-parity);}
 
 					dir_muA = 2*mu +  parity;
-					dir_muB = 2*mu + !parity;
+					dir_muB = 2*mu + (1-parity);
 					dir_nuC = 2*nu +  parity;
 					dir_muD = 2*mu +  parity;
-					dir_muE = 2*mu + !parity;
+					dir_muE = 2*mu + (1-parity);
 					dir_nuF = 2*nu +  parity;
 					idxpmu = nnp_openacc[idxh][mu][parity]; // r+mu
-					idxpmupmu = nnp_openacc[idxpmu][mu][!parity]; // r+2mu
-					idxpmupnu = nnp_openacc[idxpmu][nu][!parity];// r+mu+nu
+					idxpmupmu = nnp_openacc[idxpmu][mu][(1-parity)]; // r+2mu
+					idxpmupnu = nnp_openacc[idxpmu][nu][(1-parity)];// r+mu+nu
 					idxpnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
 					//       r+nu r+mu+nu r+2mu+nu
@@ -641,27 +641,27 @@ double calc_S_Symanzik_defect(__restrict const su3_soa * const u,
 					idxh = snum_acc(d0,d1,d2,d3);
 					parity = (d0+d1+d2+d3) % 2;
 
-					if(d1==-1){parity = (d0+d2+d3) % 2; idxh=nnm_openacc[snum_acc(d0,0,d2,d3)][1][parity];parity=!parity;}
-					if(d2==-1){parity = (d0+d1+d3) % 2; idxh=nnm_openacc[snum_acc(d0,d1,0,d3)][2][parity];parity=!parity;}
-					if(d0==-1){parity = (d3+d1+d2) % 2; idxh=nnm_openacc[snum_acc(0,d1,d2,d3)][0][parity];parity=!parity;}
-					if(d3==-1){parity = (d0+d1+d2) % 2; idxh=nnm_openacc[snum_acc(d0,d1,d2,0)][3][parity];parity=!parity;}
+					if(d1==-1){parity = (d0+d2+d3) % 2; idxh=nnm_openacc[snum_acc(d0,0,d2,d3)][1][parity];parity=(1-parity);}
+					if(d2==-1){parity = (d0+d1+d3) % 2; idxh=nnm_openacc[snum_acc(d0,d1,0,d3)][2][parity];parity=(1-parity);}
+					if(d0==-1){parity = (d3+d1+d2) % 2; idxh=nnm_openacc[snum_acc(0,d1,d2,d3)][0][parity];parity=(1-parity);}
+					if(d3==-1){parity = (d0+d1+d2) % 2; idxh=nnm_openacc[snum_acc(d0,d1,d2,0)][3][parity];parity=(1-parity);}
 					int idxh1;
-					if(d1==-2){parity = (d0+d2+d3) % 2; idxh1=nnm_openacc[snum_acc(d0,0,d2,d3)][1][parity];idxh=nnm_openacc[idxh1][1][!parity]; }
-					if(d2==-2){parity = (d0+d1+d3) % 2; idxh1=nnm_openacc[snum_acc(d0,d1,0,d3)][2][parity];idxh=nnm_openacc[idxh1][2][!parity];}
-					if(d0==-2){parity = (d3+d1+d2) % 2; idxh1=nnm_openacc[snum_acc(0,d1,d2,d3)][0][parity];idxh=nnm_openacc[idxh1][0][!parity];}
-					if(d3==-2){parity = (d0+d1+d2) % 2; idxh1=nnm_openacc[snum_acc(d0,d1,d2,0)][3][parity];idxh=nnm_openacc[idxh1][3][!parity]; }
+					if(d1==-2){parity = (d0+d2+d3) % 2; idxh1=nnm_openacc[snum_acc(d0,0,d2,d3)][1][parity];idxh=nnm_openacc[idxh1][1][(1-parity)]; }
+					if(d2==-2){parity = (d0+d1+d3) % 2; idxh1=nnm_openacc[snum_acc(d0,d1,0,d3)][2][parity];idxh=nnm_openacc[idxh1][2][(1-parity)];}
+					if(d0==-2){parity = (d3+d1+d2) % 2; idxh1=nnm_openacc[snum_acc(0,d1,d2,d3)][0][parity];idxh=nnm_openacc[idxh1][0][(1-parity)];}
+					if(d3==-2){parity = (d0+d1+d2) % 2; idxh1=nnm_openacc[snum_acc(d0,d1,d2,0)][3][parity];idxh=nnm_openacc[idxh1][3][(1-parity)]; }
 
 					dir_muA = 2*mu +  parity;
-					dir_nuB = 2*nu + !parity;
+					dir_nuB = 2*nu + (1-parity);
 					dir_nuC = 2*nu +  parity;
 					dir_muD = 2*mu +  parity;
-					dir_nuE = 2*nu + !parity;
+					dir_nuE = 2*nu + (1-parity);
 					dir_nuF = 2*nu +  parity;
 
 					idxpmu = nnp_openacc[idxh][mu][parity];       // r+mu
-					idxpmupnu = nnp_openacc[idxpmu][nu][!parity]; // r+mu+nu
+					idxpmupnu = nnp_openacc[idxpmu][nu][(1-parity)]; // r+mu+nu
 					idxpnu = nnp_openacc[idxh][nu][parity];       // r+nu
-					idxpnupnu = nnp_openacc[idxpnu][nu][!parity]; // r+nu+nu
+					idxpnupnu = nnp_openacc[idxpnu][nu][(1-parity)]; // r+nu+nu
                         
 					//            (D)
 					//    r+2nu +<---+ r+mu+2nu

@@ -43,10 +43,10 @@ void calc_field_corr_single_orientation(
 					parity = (d0+d1+d2+d3) % 2;  
 	  
 					dir_muA = 2*mu +  parity; 
-					dir_muC = 2*mu + !parity;  
+					dir_muC = 2*mu + (1-parity);  
 					idxpmu = nnp_openacc[idxh][mu][parity];// r+mu
 	    
-					dir_nuB = 2*nu + !parity;
+					dir_nuB = 2*nu + (1-parity);
 					dir_nuD = 2*nu +  parity;
 					idxpnu = nnp_openacc[idxh][nu][parity];// r+nu
 
@@ -113,18 +113,18 @@ void calc_field_corr_single_orientation(
 						conj_mat1_times_mat2_into_mat2_absent_stag_phases_nc(&u[dir_roE],idxh,&field_corr[parity],idxh);
 
 						// UxFxU^(dagger)xG^(dagger)
-						//						mat1_times_conj_mat2_into_single_mat3_absent_stag_phases_nc(&field_corr[parity], idxh, &loc_plaq[!parity], idxpro, closed_corr);
+						//						mat1_times_conj_mat2_into_single_mat3_absent_stag_phases_nc(&field_corr[parity], idxh, &loc_plaq[(1-parity)], idxpro, closed_corr);
 
 						//copying field_corr in field_corr_aux 
 						assign_su3_soa_to_su3_soa_diff_idx_component(&field_corr[parity], idxh, &field_corr_aux[parity], idxh);
 							
 						
 						//UxFxU^(dagger)x(G^(dagger)-G-1/3trace(G^(dagger)-G)) [G=placchetta]
-						mat1_times_conj_mat2_minus_mat2_into_single_mat3_absent_stag_phases_nc(&field_corr[parity], idxh, &loc_plaq[!parity], idxpro, closed_corr);
+						mat1_times_conj_mat2_minus_mat2_into_single_mat3_absent_stag_phases_nc(&field_corr[parity], idxh, &loc_plaq[(1-parity)], idxpro, closed_corr);
 						//or
-						//mat1_times_conj_mat2_minus_mat2_into_single_mat3_absent_stag_phases_nc_p(&field_corr[parity], idxh, &loc_plaq[!parity], idxpro, closed_corr);
+						//mat1_times_conj_mat2_minus_mat2_into_single_mat3_absent_stag_phases_nc_p(&field_corr[parity], idxh, &loc_plaq[(1-parity)], idxpro, closed_corr);
 						//UxFxU^(dagger)xG^(dagger)
-						//            mat1_times_conj_mat2_into_single_mat3_absent_stag_phases_nc(&field_corr[parity], idxh, &loc_plaq[!parity], idxpro, closed_corr);
+						//            mat1_times_conj_mat2_into_single_mat3_absent_stag_phases_nc(&field_corr[parity], idxh, &loc_plaq[(1-parity)], idxpro, closed_corr);
 
 						d_complex tmp_aux =  single_matrix_trace_absent_stag_phase(closed_corr);
 						trace_local[parity].c[idxh] = creal(tmp_aux) + cimag(tmp_aux)*I ;
@@ -151,7 +151,7 @@ void calc_field_corr_single_orientation(
 						int parity = (d0+d1+d2+d3) % 2; 
 						int idxmro = nnm_openacc[idxh][ro][parity];// r-ro
 						
-						assign_su3_soa_to_su3_soa_diff_idx_component(&field_corr_aux[!parity], idxmro, &field_corr[parity], idxh);	
+						assign_su3_soa_to_su3_soa_diff_idx_component(&field_corr_aux[(1-parity)], idxmro, &field_corr[parity], idxh);	
 	
 		    	}  // d0
         }  // d1
@@ -270,7 +270,8 @@ void random_gauge_transformation(
 						dir_link = 2*mu + parity;
 						idxpmu = nnp_openacc[idxh][mu][parity]; // r+mu
 						mat1_times_mat2_into_mat3_absent_stag_phases_nc(&m_soa[parity], idxh, &u[dir_link], idxh, &u_new[dir_link], idxh);
-						mat1_times_conj_mat2_into_mat1_absent_stag_phases_nc(&u_new[dir_link], idxh, &m_soa[!parity], idxpmu);
+						//U_(new) = U_(new)xG*
+						mat1_times_conj_mat2_into_mat1_absent_stag_phases_nc(&u_new[dir_link], idxh, &m_soa[(1-parity)], idxpmu);
 					}
 				}  // d0
 			}  // d1

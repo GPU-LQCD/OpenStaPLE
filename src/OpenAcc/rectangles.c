@@ -36,14 +36,14 @@ double calc_loc_rectangles_2x1_nnptrick(__restrict const su3_soa * const u,
 					parity = (d0+d1+d2+d3) % 2;
 
 					dir_muA = 2*mu +  parity;
-					dir_muB = 2*mu + !parity;
+					dir_muB = 2*mu + (1-parity);
 					dir_nuC = 2*nu +  parity;
 					dir_muD = 2*mu +  parity;
-					dir_muE = 2*mu + !parity;
+					dir_muE = 2*mu + (1-parity);
 					dir_nuF = 2*nu +  parity;
 					idxpmu = nnp_openacc[idxh][mu][parity]; // r+mu 
-					idxpmupmu = nnp_openacc[idxpmu][mu][!parity]; // r+2mu
-					idxpmupnu = nnp_openacc[idxpmu][nu][!parity]; // r+mu+nu
+					idxpmupmu = nnp_openacc[idxpmu][mu][(1-parity)]; // r+2mu
+					idxpmupnu = nnp_openacc[idxpmu][nu][(1-parity)]; // r+mu+nu
 					idxpnu = nnp_openacc[idxh][nu][parity]; // r+nu
 
 					//       r+nu r+mu+nu r+2mu+nu   
@@ -108,16 +108,16 @@ double calc_loc_rectangles_1x2_nnptrick(__restrict const su3_soa * const u,
 					parity = (d0+d1+d2+d3) % 2;
 
 					dir_muA = 2*mu +  parity;
-					dir_nuB = 2*nu + !parity;
+					dir_nuB = 2*nu + (1-parity);
 					dir_nuC = 2*nu +  parity;
 					dir_muD = 2*mu +  parity;
-					dir_nuE = 2*nu + !parity;
+					dir_nuE = 2*nu + (1-parity);
 					dir_nuF = 2*nu +  parity;
 
 					idxpmu = nnp_openacc[idxh][mu][parity];       // r+mu 
-					idxpmupnu = nnp_openacc[idxpmu][nu][!parity]; // r+mu+nu
+					idxpmupnu = nnp_openacc[idxpmu][nu][(1-parity)]; // r+mu+nu
 					idxpnu = nnp_openacc[idxh][nu][parity];       // r+nu
-					idxpnupnu = nnp_openacc[idxpnu][nu][!parity]; // r+nu+nu
+					idxpnupnu = nnp_openacc[idxpnu][nu][(1-parity)]; // r+nu+nu
     
 					//            (D)
 					//    r+2nu +<---+ r+mu+2nu
@@ -662,23 +662,18 @@ calc_loc_improved_staples_typeA_nnptrick_all(__restrict const su3_soa * const u,
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_2L = 2*nu + !parity;
+							const int dir_nu_2L = 2*nu + (1-parity);
 							const int dir_mu_3L = 2*mu +  parity;
 							const int dir_nu_4L = 2*nu +  parity;
-							const int dir_nu_5L = 2*nu + !parity;
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_5L = 2*nu + (1-parity);
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_2R = 2*nu +  parity;
 							const int dir_mu_3R = 2*mu +  parity;
-							const int dir_nu_4R = 2*nu + !parity;
+							const int dir_nu_4R = 2*nu + (1-parity);
 							const int dir_nu_5R = 2*nu +  parity;
 
 							#pragma acc cache (nnp_openacc[idxh:8])
@@ -686,11 +681,11 @@ calc_loc_improved_staples_typeA_nnptrick_all(__restrict const su3_soa * const u,
 							#pragma acc cache (nnm_openacc[idx_pmu:8])													   
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];             // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;            // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];     // r+mu-nu
-							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][!parity];     // r+mu+nu
-							const int idx_2pnu = nnp_openacc[idx_pnu][nu][!parity];        // r+2nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];     // r+mu-nu
+							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][(1-parity)];     // r+mu+nu
+							const int idx_2pnu = nnp_openacc[idx_pnu][nu][(1-parity)];        // r+2nu
 							const int idx_pmu_2mnu = nnm_openacc[idx_pmu_mnu][nu][parity]; // r+mu-2nu
-							const int idx_2mnu = nnm_openacc[idx_mnu][nu][!parity] ;       // r-2nu
+							const int idx_2mnu = nnm_openacc[idx_mnu][nu][(1-parity)] ;       // r-2nu
 
 							// IMPROVEMENT TYPE A
 							//   AR is of type PPMMM
@@ -752,23 +747,18 @@ void calc_loc_improved_staples_typeB_nnptrick_all(__restrict const su3_soa * con
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
-							const int dir_mu_1L = 2*mu + !parity;
-							const int dir_nu_2L = 2*nu + !parity;
+							const int dir_mu_1L = 2*mu + (1-parity);
+							const int dir_nu_2L = 2*nu + (1-parity);
 							const int dir_mu_3L = 2*mu +  parity;
-							const int dir_mu_4L = 2*mu + !parity;
-							const int dir_nu_5L = 2*nu + !parity;
-							const int dir_mu_1R = 2*mu + !parity;
+							const int dir_mu_4L = 2*mu + (1-parity);
+							const int dir_nu_5L = 2*nu + (1-parity);
+							const int dir_mu_1R = 2*mu + (1-parity);
 							const int dir_nu_2R = 2*nu +  parity;
 							const int dir_mu_3R = 2*mu +  parity;
-							const int dir_mu_4R = 2*mu + !parity;
+							const int dir_mu_4R = 2*mu + (1-parity);
 							const int dir_nu_5R = 2*nu +  parity;
 
 							#pragma acc cache (nnp_openacc[idxh:8])
@@ -776,9 +766,9 @@ void calc_loc_improved_staples_typeB_nnptrick_all(__restrict const su3_soa * con
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];             // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;            // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];     // r+mu-nu
-							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][!parity];     // r+mu+nu
-							const int idx_2pmu = nnp_openacc[idx_pmu][mu][!parity];        // r+2mu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];     // r+mu-nu
+							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][(1-parity)];     // r+mu+nu
+							const int idx_2pmu = nnp_openacc[idx_pmu][mu][(1-parity)];        // r+2mu
 							const int idx_2pmu_mnu = nnp_openacc[idx_pmu_mnu][mu][parity]; // r+2mu-nu
 
 
@@ -847,34 +837,29 @@ void calc_loc_improved_staples_typeC_nnptrick_all(__restrict const su3_soa * con
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int dir_mu_3L = 2*mu +  parity;
 							const int dir_nu_4L = 2*nu +  parity;
-							const int dir_mu_5L = 2*mu + !parity;
-							const int dir_nu_1R = 2*nu + !parity;
-							const int dir_mu_2R = 2*mu + !parity;
+							const int dir_mu_5L = 2*mu + (1-parity);
+							const int dir_nu_1R = 2*nu + (1-parity);
+							const int dir_mu_2R = 2*mu + (1-parity);
 							const int dir_mu_3R = 2*mu +  parity;
-							const int dir_nu_4R = 2*nu + !parity;
-							const int dir_mu_5R = 2*mu + !parity;
+							const int dir_nu_4R = 2*nu + (1-parity);
+							const int dir_mu_5R = 2*mu + (1-parity);
 
 							#pragma acc cache (nnp_openacc[idxh:8])
 							const int idx_pmu = nnp_openacc[idxh][mu][parity];         // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];         // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;        // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity]; // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)]; // r+mu-nu
 							const int idx_mmu = nnm_openacc[idxh][mu][parity];         // r-mu
-							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][!parity]; // r-mu+nu
-							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][!parity]; // r-mu-nu
+							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][(1-parity)]; // r-mu+nu
+							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][(1-parity)]; // r-mu-nu
 
 
 							// IMPROVEMENT TYPE C
@@ -940,63 +925,58 @@ void calc_loc_improved_staples_typeABC_nnptrick_all(__restrict const su3_soa * c
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							const int Adir_nu_1L = 2*nu +  parity;
-							const int Adir_nu_2L = 2*nu + !parity;
+							const int Adir_nu_2L = 2*nu + (1-parity);
 							const int Adir_mu_3L = 2*mu +  parity;
 							const int Adir_nu_4L = 2*nu +  parity;
-							const int Adir_nu_5L = 2*nu + !parity;
-							const int Adir_nu_1R = 2*nu + !parity;
+							const int Adir_nu_5L = 2*nu + (1-parity);
+							const int Adir_nu_1R = 2*nu + (1-parity);
 							const int Adir_nu_2R = 2*nu +  parity;
 							const int Adir_mu_3R = 2*mu +  parity;
-							const int Adir_nu_4R = 2*nu + !parity;
+							const int Adir_nu_4R = 2*nu + (1-parity);
 							const int Adir_nu_5R = 2*nu +  parity;
 
-							const int Bdir_mu_1L = 2*mu + !parity;
-							const int Bdir_nu_2L = 2*nu + !parity;
+							const int Bdir_mu_1L = 2*mu + (1-parity);
+							const int Bdir_nu_2L = 2*nu + (1-parity);
 							const int Bdir_mu_3L = 2*mu +  parity;
-							const int Bdir_mu_4L = 2*mu + !parity;
-							const int Bdir_nu_5L = 2*nu + !parity;
-							const int Bdir_mu_1R = 2*mu + !parity;
+							const int Bdir_mu_4L = 2*mu + (1-parity);
+							const int Bdir_nu_5L = 2*nu + (1-parity);
+							const int Bdir_mu_1R = 2*mu + (1-parity);
 							const int Bdir_nu_2R = 2*nu +  parity;
 							const int Bdir_mu_3R = 2*mu +  parity;
-							const int Bdir_mu_4R = 2*mu + !parity;
+							const int Bdir_mu_4R = 2*mu + (1-parity);
 							const int Bdir_nu_5R = 2*nu +  parity;
 
 
 							const int Cdir_nu_1L = 2*nu +  parity;
-							const int Cdir_mu_2L = 2*mu + !parity;
+							const int Cdir_mu_2L = 2*mu + (1-parity);
 							const int Cdir_mu_3L = 2*mu +  parity;
 							const int Cdir_nu_4L = 2*nu +  parity;
-							const int Cdir_mu_5L = 2*mu + !parity;
-							const int Cdir_nu_1R = 2*nu + !parity;
-							const int Cdir_mu_2R = 2*mu + !parity;
+							const int Cdir_mu_5L = 2*mu + (1-parity);
+							const int Cdir_nu_1R = 2*nu + (1-parity);
+							const int Cdir_mu_2R = 2*mu + (1-parity);
 							const int Cdir_mu_3R = 2*mu +  parity;
-							const int Cdir_nu_4R = 2*nu + !parity;
-							const int Cdir_mu_5R = 2*mu + !parity;
+							const int Cdir_nu_4R = 2*nu + (1-parity);
+							const int Cdir_mu_5R = 2*mu + (1-parity);
 
 							#pragma acc cache (nnp_openacc[idxh:8])
 							const int idx_pmu = nnp_openacc[idxh][mu][parity];             // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];             // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;            // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];     // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];     // r+mu-nu
 							const int idx_mmu = nnm_openacc[idxh][mu][parity];             // r-mu
-							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][!parity];     // r-mu+nu
-							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][!parity];     // r-mu-nu
-							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][!parity];     // r+mu+nu
-							const int idx_2pmu = nnp_openacc[idx_pmu][mu][!parity];        // r+2mu
+							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][(1-parity)];     // r-mu+nu
+							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][(1-parity)];     // r-mu-nu
+							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][(1-parity)];     // r+mu+nu
+							const int idx_2pmu = nnp_openacc[idx_pmu][mu][(1-parity)];        // r+2mu
 							const int idx_2pmu_mnu = nnp_openacc[idx_pmu_mnu][mu][parity]; // r+2mu-nu
-							const int idx_2pnu = nnp_openacc[idx_pnu][nu][!parity];        // r+2nu
+							const int idx_2pnu = nnp_openacc[idx_pnu][nu][(1-parity)];        // r+2nu
 							const int idx_pmu_2mnu = nnm_openacc[idx_pmu_mnu][nu][parity]; // r+mu-2nu
-							const int idx_2mnu = nnm_openacc[idx_mnu][nu][!parity] ;       // r-2nu              
+							const int idx_2mnu = nnm_openacc[idx_mnu][nu][(1-parity)] ;       // r-2nu              
 
 							// improvement type abc
 							// computation of the Right part of the A staple
@@ -1079,23 +1059,18 @@ void calc_loc_improved_staples_typeA_nnptrick_all_bulk(__restrict const su3_soa 
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_2L = 2*nu + !parity;
+							const int dir_nu_2L = 2*nu + (1-parity);
 							const int dir_mu_3L = 2*mu +  parity;
 							const int dir_nu_4L = 2*nu +  parity;
-							const int dir_nu_5L = 2*nu + !parity;
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_5L = 2*nu + (1-parity);
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_2R = 2*nu +  parity;
 							const int dir_mu_3R = 2*mu +  parity;
-							const int dir_nu_4R = 2*nu + !parity;
+							const int dir_nu_4R = 2*nu + (1-parity);
 							const int dir_nu_5R = 2*nu +  parity;
 
 							#pragma acc cache (nnp_openacc[idxh:8])
@@ -1103,11 +1078,11 @@ void calc_loc_improved_staples_typeA_nnptrick_all_bulk(__restrict const su3_soa 
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];             // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;            // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];     // r+mu-nu
-							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][!parity];     // r+mu+nu
-							const int idx_2pnu = nnp_openacc[idx_pnu][nu][!parity];        // r+2nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];     // r+mu-nu
+							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][(1-parity)];     // r+mu+nu
+							const int idx_2pnu = nnp_openacc[idx_pnu][nu][(1-parity)];        // r+2nu
 							const int idx_pmu_2mnu = nnm_openacc[idx_pmu_mnu][nu][parity]; // r+mu-2nu
-							const int idx_2mnu = nnm_openacc[idx_mnu][nu][!parity] ;       // r-2nu
+							const int idx_2mnu = nnm_openacc[idx_mnu][nu][(1-parity)] ;       // r-2nu
 
 							// IMPROVEMENT TYPE A
 							//   AR is of type PPMMM
@@ -1170,23 +1145,18 @@ void calc_loc_improved_staples_typeB_nnptrick_all_bulk(__restrict const su3_soa 
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
-							const int dir_mu_1L = 2*mu + !parity;
-							const int dir_nu_2L = 2*nu + !parity;
+							const int dir_mu_1L = 2*mu + (1-parity);
+							const int dir_nu_2L = 2*nu + (1-parity);
 							const int dir_mu_3L = 2*mu +  parity;
-							const int dir_mu_4L = 2*mu + !parity;
-							const int dir_nu_5L = 2*nu + !parity;
-							const int dir_mu_1R = 2*mu + !parity;
+							const int dir_mu_4L = 2*mu + (1-parity);
+							const int dir_nu_5L = 2*nu + (1-parity);
+							const int dir_mu_1R = 2*mu + (1-parity);
 							const int dir_nu_2R = 2*nu +  parity;
 							const int dir_mu_3R = 2*mu +  parity;
-							const int dir_mu_4R = 2*mu + !parity;
+							const int dir_mu_4R = 2*mu + (1-parity);
 							const int dir_nu_5R = 2*nu +  parity;
 
 							#pragma acc cache (nnp_openacc[idxh:8])
@@ -1194,9 +1164,9 @@ void calc_loc_improved_staples_typeB_nnptrick_all_bulk(__restrict const su3_soa 
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];             // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;            // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];     // r+mu-nu
-							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][!parity];     // r+mu+nu
-							const int idx_2pmu = nnp_openacc[idx_pmu][mu][!parity];        // r+2mu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];     // r+mu-nu
+							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][(1-parity)];     // r+mu+nu
+							const int idx_2pmu = nnp_openacc[idx_pmu][mu][(1-parity)];        // r+2mu
 							const int idx_2pmu_mnu = nnp_openacc[idx_pmu_mnu][mu][parity]; // r+2mu-nu
 
 
@@ -1264,34 +1234,29 @@ void calc_loc_improved_staples_typeC_nnptrick_all_bulk(__restrict const su3_soa 
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int dir_mu_3L = 2*mu +  parity;
 							const int dir_nu_4L = 2*nu +  parity;
-							const int dir_mu_5L = 2*mu + !parity;
-							const int dir_nu_1R = 2*nu + !parity;
-							const int dir_mu_2R = 2*mu + !parity;
+							const int dir_mu_5L = 2*mu + (1-parity);
+							const int dir_nu_1R = 2*nu + (1-parity);
+							const int dir_mu_2R = 2*mu + (1-parity);
 							const int dir_mu_3R = 2*mu +  parity;
-							const int dir_nu_4R = 2*nu + !parity;
-							const int dir_mu_5R = 2*mu + !parity;
+							const int dir_nu_4R = 2*nu + (1-parity);
+							const int dir_mu_5R = 2*mu + (1-parity);
 
 							#pragma acc cache (nnp_openacc[idxh:8])
 							const int idx_pmu = nnp_openacc[idxh][mu][parity];         // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];         // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;        // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity]; // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)]; // r+mu-nu
 							const int idx_mmu = nnm_openacc[idxh][mu][parity];         // r-mu
-							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][!parity]; // r-mu+nu
-							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][!parity]; // r-mu-nu
+							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][(1-parity)]; // r-mu+nu
+							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][(1-parity)]; // r-mu-nu
 
 
 							// IMPROVEMENT TYPE C
@@ -1358,63 +1323,58 @@ void calc_loc_improved_staples_typeABC_nnptrick_all_bulk(__restrict const su3_so
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							const int Adir_nu_1L = 2*nu +  parity;
-							const int Adir_nu_2L = 2*nu + !parity;
+							const int Adir_nu_2L = 2*nu + (1-parity);
 							const int Adir_mu_3L = 2*mu +  parity;
 							const int Adir_nu_4L = 2*nu +  parity;
-							const int Adir_nu_5L = 2*nu + !parity;
-							const int Adir_nu_1R = 2*nu + !parity;
+							const int Adir_nu_5L = 2*nu + (1-parity);
+							const int Adir_nu_1R = 2*nu + (1-parity);
 							const int Adir_nu_2R = 2*nu +  parity;
 							const int Adir_mu_3R = 2*mu +  parity;
-							const int Adir_nu_4R = 2*nu + !parity;
+							const int Adir_nu_4R = 2*nu + (1-parity);
 							const int Adir_nu_5R = 2*nu +  parity;
 
-							const int Bdir_mu_1L = 2*mu + !parity;
-							const int Bdir_nu_2L = 2*nu + !parity;
+							const int Bdir_mu_1L = 2*mu + (1-parity);
+							const int Bdir_nu_2L = 2*nu + (1-parity);
 							const int Bdir_mu_3L = 2*mu +  parity;
-							const int Bdir_mu_4L = 2*mu + !parity;
-							const int Bdir_nu_5L = 2*nu + !parity;
-							const int Bdir_mu_1R = 2*mu + !parity;
+							const int Bdir_mu_4L = 2*mu + (1-parity);
+							const int Bdir_nu_5L = 2*nu + (1-parity);
+							const int Bdir_mu_1R = 2*mu + (1-parity);
 							const int Bdir_nu_2R = 2*nu +  parity;
 							const int Bdir_mu_3R = 2*mu +  parity;
-							const int Bdir_mu_4R = 2*mu + !parity;
+							const int Bdir_mu_4R = 2*mu + (1-parity);
 							const int Bdir_nu_5R = 2*nu +  parity;
 
 
 							const int Cdir_nu_1L = 2*nu +  parity;
-							const int Cdir_mu_2L = 2*mu + !parity;
+							const int Cdir_mu_2L = 2*mu + (1-parity);
 							const int Cdir_mu_3L = 2*mu +  parity;
 							const int Cdir_nu_4L = 2*nu +  parity;
-							const int Cdir_mu_5L = 2*mu + !parity;
-							const int Cdir_nu_1R = 2*nu + !parity;
-							const int Cdir_mu_2R = 2*mu + !parity;
+							const int Cdir_mu_5L = 2*mu + (1-parity);
+							const int Cdir_nu_1R = 2*nu + (1-parity);
+							const int Cdir_mu_2R = 2*mu + (1-parity);
 							const int Cdir_mu_3R = 2*mu +  parity;
-							const int Cdir_nu_4R = 2*nu + !parity;
-							const int Cdir_mu_5R = 2*mu + !parity;
+							const int Cdir_nu_4R = 2*nu + (1-parity);
+							const int Cdir_mu_5R = 2*mu + (1-parity);
 
 							#pragma acc cache (nnp_openacc[idxh:8])
 							const int idx_pmu = nnp_openacc[idxh][mu][parity];             // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];             // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;            // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];     // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];     // r+mu-nu
 							const int idx_mmu = nnm_openacc[idxh][mu][parity];             // r-mu
-							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][!parity];     // r-mu+nu
-							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][!parity];     // r-mu-nu
-							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][!parity];     // r+mu+nu
-							const int idx_2pmu = nnp_openacc[idx_pmu][mu][!parity];        // r+2mu
+							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][(1-parity)];     // r-mu+nu
+							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][(1-parity)];     // r-mu-nu
+							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][(1-parity)];     // r+mu+nu
+							const int idx_2pmu = nnp_openacc[idx_pmu][mu][(1-parity)];        // r+2mu
 							const int idx_2pmu_mnu = nnp_openacc[idx_pmu_mnu][mu][parity]; // r+2mu-nu
-							const int idx_2pnu = nnp_openacc[idx_pnu][nu][!parity];        // r+2nu
+							const int idx_2pnu = nnp_openacc[idx_pnu][nu][(1-parity)];        // r+2nu
 							const int idx_pmu_2mnu = nnm_openacc[idx_pmu_mnu][nu][parity]; // r+mu-2nu
-							const int idx_2mnu = nnm_openacc[idx_mnu][nu][!parity] ;       // r-2nu              
+							const int idx_2mnu = nnm_openacc[idx_mnu][nu][(1-parity)] ;       // r-2nu              
 
 
 
@@ -1501,23 +1461,18 @@ void calc_loc_improved_staples_typeA_nnptrick_all_d3c(__restrict const su3_soa *
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_nu_2L = 2*nu + !parity;
+							const int dir_nu_2L = 2*nu + (1-parity);
 							const int dir_mu_3L = 2*mu +  parity;
 							const int dir_nu_4L = 2*nu +  parity;
-							const int dir_nu_5L = 2*nu + !parity;
-							const int dir_nu_1R = 2*nu + !parity;
+							const int dir_nu_5L = 2*nu + (1-parity);
+							const int dir_nu_1R = 2*nu + (1-parity);
 							const int dir_nu_2R = 2*nu +  parity;
 							const int dir_mu_3R = 2*mu +  parity;
-							const int dir_nu_4R = 2*nu + !parity;
+							const int dir_nu_4R = 2*nu + (1-parity);
 							const int dir_nu_5R = 2*nu +  parity;
 
 							#pragma acc cache (nnp_openacc[idxh:8])
@@ -1525,11 +1480,11 @@ void calc_loc_improved_staples_typeA_nnptrick_all_d3c(__restrict const su3_soa *
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];             // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;            // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];     // r+mu-nu
-							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][!parity];     // r+mu+nu
-							const int idx_2pnu = nnp_openacc[idx_pnu][nu][!parity];        // r+2nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];     // r+mu-nu
+							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][(1-parity)];     // r+mu+nu
+							const int idx_2pnu = nnp_openacc[idx_pnu][nu][(1-parity)];        // r+2nu
 							const int idx_pmu_2mnu = nnm_openacc[idx_pmu_mnu][nu][parity]; // r+mu-2nu
-							const int idx_2mnu = nnm_openacc[idx_mnu][nu][!parity];        // r-2nu
+							const int idx_2mnu = nnm_openacc[idx_mnu][nu][(1-parity)];        // r-2nu
 
 							// IMPROVEMENT TYPE A
 							//   AR is of type PPMMM
@@ -1592,23 +1547,18 @@ void calc_loc_improved_staples_typeB_nnptrick_all_d3c(__restrict const su3_soa *
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
-							const int dir_mu_1L = 2*mu + !parity;
-							const int dir_nu_2L = 2*nu + !parity;
+							const int dir_mu_1L = 2*mu + (1-parity);
+							const int dir_nu_2L = 2*nu + (1-parity);
 							const int dir_mu_3L = 2*mu +  parity;
-							const int dir_mu_4L = 2*mu + !parity;
-							const int dir_nu_5L = 2*nu + !parity;
-							const int dir_mu_1R = 2*mu + !parity;
+							const int dir_mu_4L = 2*mu + (1-parity);
+							const int dir_nu_5L = 2*nu + (1-parity);
+							const int dir_mu_1R = 2*mu + (1-parity);
 							const int dir_nu_2R = 2*nu +  parity;
 							const int dir_mu_3R = 2*mu +  parity;
-							const int dir_mu_4R = 2*mu + !parity;
+							const int dir_mu_4R = 2*mu + (1-parity);
 							const int dir_nu_5R = 2*nu +  parity;
 
 							#pragma acc cache (nnp_openacc[idxh:8])
@@ -1616,9 +1566,9 @@ void calc_loc_improved_staples_typeB_nnptrick_all_d3c(__restrict const su3_soa *
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];             // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;            // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];     // r+mu-nu
-							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][!parity];     // r+mu+nu
-							const int idx_2pmu = nnp_openacc[idx_pmu][mu][!parity];        // r+2mu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];     // r+mu-nu
+							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][(1-parity)];     // r+mu+nu
+							const int idx_2pmu = nnp_openacc[idx_pmu][mu][(1-parity)];        // r+2mu
 							const int idx_2pmu_mnu = nnp_openacc[idx_pmu_mnu][mu][parity]; // r+2mu-nu
 
 							// IMPROVEMENT TYPE B      
@@ -1686,34 +1636,29 @@ void calc_loc_improved_staples_typeC_nnptrick_all_d3c(__restrict const su3_soa *
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							const int dir_nu_1L = 2*nu +  parity;
-							const int dir_mu_2L = 2*mu + !parity;
+							const int dir_mu_2L = 2*mu + (1-parity);
 							const int dir_mu_3L = 2*mu +  parity;
 							const int dir_nu_4L = 2*nu +  parity;
-							const int dir_mu_5L = 2*mu + !parity;
-							const int dir_nu_1R = 2*nu + !parity;
-							const int dir_mu_2R = 2*mu + !parity;
+							const int dir_mu_5L = 2*mu + (1-parity);
+							const int dir_nu_1R = 2*nu + (1-parity);
+							const int dir_mu_2R = 2*mu + (1-parity);
 							const int dir_mu_3R = 2*mu +  parity;
-							const int dir_nu_4R = 2*nu + !parity;
-							const int dir_mu_5R = 2*mu + !parity;
+							const int dir_nu_4R = 2*nu + (1-parity);
+							const int dir_mu_5R = 2*mu + (1-parity);
 
 							#pragma acc cache (nnp_openacc[idxh:8])
 							const int idx_pmu = nnp_openacc[idxh][mu][parity];         // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];         // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;        // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity]; // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)]; // r+mu-nu
 							const int idx_mmu = nnm_openacc[idxh][mu][parity];         // r-mu
-							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][!parity]; // r-mu+nu
-							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][!parity]; // r-mu-nu
+							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][(1-parity)]; // r-mu+nu
+							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][(1-parity)]; // r-mu-nu
 
 
 							// IMPROVEMENT TYPE C
@@ -1781,63 +1726,58 @@ void calc_loc_improved_staples_typeABC_nnptrick_all_d3c(__restrict const su3_soa
 						#pragma acc loop seq
 						for(int iter=0; iter<3; iter++){
 
-							int nu;
-							if (mu==0) { nu = iter + 1; }
-							else if (mu==1) { nu = iter + (iter & 1) + (iter >> 1); }
-							else if (mu==2) { nu = iter + (iter >> 1); }
-							else if (mu==3) { nu = iter; }
-							else { // error
-							}
+							int perp_dirs[4][3] = { {1,2,3}, {0,2,3}, {0,1,3}, {0,1,2} };
+							int nu = perp_dirs[mu][iter];
 
 							const int Adir_nu_1L = 2*nu +  parity;
-							const int Adir_nu_2L = 2*nu + !parity;
+							const int Adir_nu_2L = 2*nu + (1-parity);
 							const int Adir_mu_3L = 2*mu +  parity;
 							const int Adir_nu_4L = 2*nu +  parity;
-							const int Adir_nu_5L = 2*nu + !parity;
-							const int Adir_nu_1R = 2*nu + !parity;
+							const int Adir_nu_5L = 2*nu + (1-parity);
+							const int Adir_nu_1R = 2*nu + (1-parity);
 							const int Adir_nu_2R = 2*nu +  parity;
 							const int Adir_mu_3R = 2*mu +  parity;
-							const int Adir_nu_4R = 2*nu + !parity;
+							const int Adir_nu_4R = 2*nu + (1-parity);
 							const int Adir_nu_5R = 2*nu +  parity;
 
-							const int Bdir_mu_1L = 2*mu + !parity;
-							const int Bdir_nu_2L = 2*nu + !parity;
+							const int Bdir_mu_1L = 2*mu + (1-parity);
+							const int Bdir_nu_2L = 2*nu + (1-parity);
 							const int Bdir_mu_3L = 2*mu +  parity;
-							const int Bdir_mu_4L = 2*mu + !parity;
-							const int Bdir_nu_5L = 2*nu + !parity;
-							const int Bdir_mu_1R = 2*mu + !parity;
+							const int Bdir_mu_4L = 2*mu + (1-parity);
+							const int Bdir_nu_5L = 2*nu + (1-parity);
+							const int Bdir_mu_1R = 2*mu + (1-parity);
 							const int Bdir_nu_2R = 2*nu +  parity;
 							const int Bdir_mu_3R = 2*mu +  parity;
-							const int Bdir_mu_4R = 2*mu + !parity;
+							const int Bdir_mu_4R = 2*mu + (1-parity);
 							const int Bdir_nu_5R = 2*nu +  parity;
 
 
 							const int Cdir_nu_1L = 2*nu +  parity;
-							const int Cdir_mu_2L = 2*mu + !parity;
+							const int Cdir_mu_2L = 2*mu + (1-parity);
 							const int Cdir_mu_3L = 2*mu +  parity;
 							const int Cdir_nu_4L = 2*nu +  parity;
-							const int Cdir_mu_5L = 2*mu + !parity;
-							const int Cdir_nu_1R = 2*nu + !parity;
-							const int Cdir_mu_2R = 2*mu + !parity;
+							const int Cdir_mu_5L = 2*mu + (1-parity);
+							const int Cdir_nu_1R = 2*nu + (1-parity);
+							const int Cdir_mu_2R = 2*mu + (1-parity);
 							const int Cdir_mu_3R = 2*mu +  parity;
-							const int Cdir_nu_4R = 2*nu + !parity;
-							const int Cdir_mu_5R = 2*mu + !parity;
+							const int Cdir_nu_4R = 2*nu + (1-parity);
+							const int Cdir_mu_5R = 2*mu + (1-parity);
 
 							#pragma acc cache (nnp_openacc[idxh:8])
 							const int idx_pmu = nnp_openacc[idxh][mu][parity];             // r+mu
 							#pragma acc cache (nnm_openacc[idx_pmu:8])
 							const int idx_pnu = nnp_openacc[idxh][nu][parity];             // r+nu
 							const int idx_mnu = nnm_openacc[idxh][nu][parity] ;            // r-nu
-							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][!parity];     // r+mu-nu
+							const int idx_pmu_mnu = nnm_openacc[idx_pmu][nu][(1-parity)];     // r+mu-nu
 							const int idx_mmu = nnm_openacc[idxh][mu][parity];             // r-mu
-							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][!parity];     // r-mu+nu
-							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][!parity];     // r-mu-nu
-							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][!parity];     // r+mu+nu
-							const int idx_2pmu = nnp_openacc[idx_pmu][mu][!parity];        // r+2mu
+							const int idx_mmu_pnu = nnp_openacc[idx_mmu][nu][(1-parity)];     // r-mu+nu
+							const int idx_mmu_mnu = nnm_openacc[idx_mmu][nu][(1-parity)];     // r-mu-nu
+							const int idx_pmu_pnu = nnp_openacc[idx_pmu][nu][(1-parity)];     // r+mu+nu
+							const int idx_2pmu = nnp_openacc[idx_pmu][mu][(1-parity)];        // r+2mu
 							const int idx_2pmu_mnu = nnp_openacc[idx_pmu_mnu][mu][parity]; // r+2mu-nu
-							const int idx_2pnu = nnp_openacc[idx_pnu][nu][!parity];        // r+2nu
+							const int idx_2pnu = nnp_openacc[idx_pnu][nu][(1-parity)];        // r+2nu
 							const int idx_pmu_2mnu = nnm_openacc[idx_pmu_mnu][nu][parity]; // r+mu-2nu
-							const int idx_2mnu = nnm_openacc[idx_mnu][nu][!parity] ;       // r-2nu              
+							const int idx_2mnu = nnm_openacc[idx_mnu][nu][(1-parity)] ;       // r-2nu              
 
 							// IMPROVEMENT TYPE ABC
 							// computation of the Right part of the A staple

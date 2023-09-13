@@ -80,28 +80,28 @@ void four_leaves(__restrict su3_soa * const leaves,__restrict const su3_soa * co
 							int idx_m_mu = nnm_openacc[idxh][mu][parity];
 							int idx_m_nu = nnm_openacc[idxh][nu][parity];
 	      
-							int idx_p_nu_m_mu = nnm_openacc[idx_p_nu][mu][!parity];
-							int idx_m_mu_m_nu = nnm_openacc[idx_m_mu][nu][!parity];
-							int idx_m_nu_p_mu = nnp_openacc[idx_m_nu][mu][!parity];
+							int idx_p_nu_m_mu = nnm_openacc[idx_p_nu][mu][(1-parity)];
+							int idx_m_mu_m_nu = nnm_openacc[idx_m_mu][nu][(1-parity)];
+							int idx_m_nu_p_mu = nnp_openacc[idx_m_nu][mu][(1-parity)];
 							
 							// first leave
 							comp_U_U_Udag_Udag(&u[2*mu+parity] , idxh,
-																 &u[2*nu+!parity], idx_p_mu,
-																 &u[2*mu+!parity], idx_p_nu,
+																 &u[2*nu+(1-parity)], idx_p_mu,
+																 &u[2*mu+(1-parity)], idx_p_nu,
 																 &u[2*nu+parity] , idxh,
 																 &leaves[2*idx_plane+parity], idxh);
 							comp_and_add_U_Udag_Udag_U(&u[2*nu+parity] , idxh,
 																				 &u[2*mu+parity] , idx_p_nu_m_mu,
-																				 &u[2*nu+!parity], idx_m_mu,
-																				 &u[2*mu+!parity], idx_m_mu,
+																				 &u[2*nu+(1-parity)], idx_m_mu,
+																				 &u[2*mu+(1-parity)], idx_m_mu,
 																				 &leaves[2*idx_plane+parity], idxh);
-							comp_and_add_Udag_Udag_U_U(&u[2*mu+!parity], idx_m_mu,           
+							comp_and_add_Udag_Udag_U_U(&u[2*mu+(1-parity)], idx_m_mu,           
 																				 &u[2*nu+parity] , idx_m_mu_m_nu,  
 																				 &u[2*mu+parity] , idx_m_mu_m_nu,      
-																				 &u[2*nu+!parity], idx_m_nu,      
+																				 &u[2*nu+(1-parity)], idx_m_nu,      
 																				 &leaves[2*idx_plane+parity], idxh);
-							comp_and_add_Udag_U_U_Udag(&u[2*nu+!parity], idx_m_nu,           
-																				 &u[2*mu+!parity], idx_m_nu,  
+							comp_and_add_Udag_U_U_Udag(&u[2*nu+(1-parity)], idx_m_nu,           
+																				 &u[2*mu+(1-parity)], idx_m_nu,  
 																				 &u[2*nu+parity] , idx_m_nu_p_mu,      
 																				 &u[2*mu+parity] , idxh,      
 																				 &leaves[2*idx_plane+parity], idxh);
@@ -209,24 +209,24 @@ void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, dou
 	      
 							const int idxF = nnp_openacc[idxA][mu][parity];
 							const int idxB = nnp_openacc[idxA][nu][parity];
-							const int idxC = nnp_openacc[idxB][mu][!parity];
+							const int idxC = nnp_openacc[idxB][mu][(1-parity)];
 							const int idxD = nnm_openacc[idxA][nu][parity];
-							const int idxE = nnp_openacc[idxD][mu][!parity];
+							const int idxE = nnp_openacc[idxD][mu][(1-parity)];
 		  
 							// compute ABC BCF ABCF
 							su3_soa_times_su3_soa_into_single_su3(&u[2*nu+parity],  idxA,
-																										&u[2*mu+!parity], idxB,
+																										&u[2*mu+(1-parity)], idxB,
 																										&ABC);
-							su3_soa_times_su3_soa_dag_into_single_su3(&u[2*mu+!parity], idxB,
-																												&u[2*nu+!parity], idxF,
+							su3_soa_times_su3_soa_dag_into_single_su3(&u[2*mu+(1-parity)], idxB,
+																												&u[2*nu+(1-parity)], idxF,
 																												&BCF);
 							su3_soa_times_single_su3_into_single_su3(&u[2*nu+parity],idxA,
 																											 &BCF, &ABCF);
 							// compute ADE DEF ADEF
-							su3_soa_dag_times_su3_soa_into_single_su3(&u[2*nu+!parity], idxD,
-																												&u[2*mu+!parity], idxD,
+							su3_soa_dag_times_su3_soa_into_single_su3(&u[2*nu+(1-parity)], idxD,
+																												&u[2*mu+(1-parity)], idxD,
 																												&ADE);
-							su3_soa_times_su3_soa_into_single_su3(&u[2*mu+!parity], idxD,
+							su3_soa_times_su3_soa_into_single_su3(&u[2*mu+(1-parity)], idxD,
 																										&u[2*nu+parity],  idxE,
 																										&DEF);
 							single_su3_times_su3_soa_into_single_su3(&ADE,
@@ -236,22 +236,22 @@ void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, dou
 							gl3_soa_times_single_su3_addto_gl3(&leaves[2*iplan+parity],idxA,
 																								 &ABCF,&loc_stap);
 							su3_soa_times_gl3_soa_into_gl3(&u[2*nu+parity],idxA,
-																						 &leaves[2*iplan+!parity],idxB,
+																						 &leaves[2*iplan+(1-parity)],idxB,
 																						 &temp);
 							single_gl3xsu3_add_to_out(&loc_stap,&temp,&BCF);
 							gl3_soa_times_su3_soa_dag_into_gl3(&leaves[2*iplan+parity],idxC,
-																								 &u[2*nu+!parity],       idxF,
+																								 &u[2*nu+(1-parity)],       idxF,
 																								 &temp);
               single_su3xgl3_add_to_out(&loc_stap,&ABC,&temp);
 							single_su3_times_gl3_soa_addto_gl3(&ABCF,
-																								 &leaves[2*iplan+!parity],idxF,
+																								 &leaves[2*iplan+(1-parity)],idxF,
 																								 &loc_stap);
 							// ^-- Right staple
 							// v-- Left staple
 							gl3_soa_dag_times_single_su3_addto_gl3(&leaves[2*iplan+parity],idxA,
 																										 &ADEF,&loc_stap);
-							su3_soa_dag_times_gl3_soa_dag_into_gl3(&u[2*nu+!parity],        idxD,
-																										 &leaves[2*iplan+!parity],idxD,
+							su3_soa_dag_times_gl3_soa_dag_into_gl3(&u[2*nu+(1-parity)],        idxD,
+																										 &leaves[2*iplan+(1-parity)],idxD,
 																										 &temp);
 							single_gl3xsu3_add_to_out(&loc_stap,&temp,&DEF);
 							gl3_soa_dag_times_su3_soa_into_gl3(&leaves[2*iplan+parity],idxE,
@@ -259,7 +259,7 @@ void topo_staples(__restrict su3_soa * u,__restrict su3_soa * const staples, dou
 																								 &temp);
 							single_su3xgl3_add_to_out(&loc_stap,&ADE,&temp);
 							single_su3_times_gl3_soa_dag_addto_gl3(&ADEF,
-																										 &leaves[2*iplan+!parity],idxF,
+																										 &leaves[2*iplan+(1-parity)],idxF,
 																										 &loc_stap);
 
 							// finalizing

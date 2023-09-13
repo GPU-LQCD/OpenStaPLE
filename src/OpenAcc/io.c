@@ -592,7 +592,7 @@ void rw_iterate_on_global_sites_lx_xyzt_axis_ordering(void (*single_element_rw)(
 																							x = xtmp;
 																							parity = (x+y+z+t)%2; // parity = (d0+d1+d2+d3)%2;
 #if (NRANKS_D3 > 1) && defined(GAUGE_ACT_WILSON)
-																							parity = !parity;
+																							parity = (1-parity);
 #endif
 																						}
 																						int xs[4] = {x,y,z,t};
