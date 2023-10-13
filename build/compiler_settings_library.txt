@@ -28,6 +28,10 @@ ifeq ($(COMPILER), PGI)
     $(info ARCH set to CC60)
     CC_FLAGS=-acc=noautopar -v -O3 -Minfo=all -ta=tesla:cc35,cuda10.0 -DUSE_MPI_CUDA_AWARE -I${MPIINC}
     LINKER_FLAGS=-acc=noautopar -v -O3 -Minfo=all -ta=tesla:cc35,cuda10.0 -lmpi -L${MPILIB}
+  else ifeq ($(ARCH), CC80)
+    $(info ARCH set to CC80)
+    CC_FLAGS=-acc=noautopar -v -O3 -Minfo=all -ta=tesla:cc80 -DUSE_MPI_CUDA_AWARE -I${MPIINC}
+    LINKER_FLAGS=-acc=noautopar -v -O3 -Minfo=all -ta=tesla:cc80 -lmpi -L${MPILIB}
   else ifeq ($(ARCH), HASWELL)
     $(info ARCH set to HASWELL)
     CC_FLAGS=-acc=noautopar -v -O3 -Minfo=all -Mvect=levels:5 -ta=multicore -tp=haswell -DUSE_MPI_CUDA_AWARE -I${MPIINC}
