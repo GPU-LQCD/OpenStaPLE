@@ -348,7 +348,6 @@ int main(int argc, char* argv[]){
         fclose(file_label);
       }
       if (0==devinfo.myrank_world) printf("%d/%d Defect initialization\n",replica_idx,rep->replicas_total_number); 
-      init_k(conf_acc,rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,0);
     }else{ // not first iteration: initialize boundaries from label file
       if(devinfo.myrank_world ==0){ // read labeling from file
         file_label=fopen(acc_info->file_label_name,"r");
@@ -376,17 +375,15 @@ int main(int argc, char* argv[]){
       }
       // broadcast it to all replicas and ranks 
       MPI_Bcast((void*)&(rep->label[0]),NREPLICAS,MPI_INT,0,MPI_COMM_WORLD);
-      init_k(conf_acc,rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,0);
     }
 		strcpy(mc_params.save_conf_name,aux_name_file);
-
-
 		
+    init_k(conf_acc,rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,0);
 #if NRANKS_D3 > 1
     if(devinfo.async_comm_gauge) init_k(&conf_acc[8],rep->cr_vec[rep->label[replica_idx]],rep->defect_boundary,rep->defect_coordinates,&def,1);
 #endif
-		
 		#pragma acc update device(conf_acc[0:alloc_info.conf_acc_size])
+
 		if(md_parameters.singlePrecMD){
 			convert_double_to_float_su3_soa(conf_acc,conf_acc_f);
 			//^^ NOTE: doing this because a K initialization for su3_soa_f doesn't exist. Please create it.
