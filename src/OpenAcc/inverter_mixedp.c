@@ -56,7 +56,8 @@ int inverter_mixed_precision(inverter_package ip,
   double source_norm = l2norm2_global(in);
   
   int printevery = 10000;
-  for(int q=0;q<verbosity_lv;q++) printevery /= 2;
+  int qmax = (verbosity_lv < 13) ? verbosity_lv : 13;
+  for(int q=0;q<qmax;q++) printevery /= 2;
   if (verbosity_lv > 3 && 0==devinfo.myrank )
 		{ 
       printf("source_norm: %e, ",source_norm);

@@ -44,10 +44,10 @@ const char * type_strings[]={"(int)", "(double)", "(string)" };
 typedef struct par_info_t {
 	void* par;
 	enum dtype type;
-	const char* name;
-	const void* default_value;
-	const char* comment;
-	const int data_length;
+	char* name;
+	void* default_value;
+	char* comment;
+	int data_length;
 	double* dvet_par;
 	int* zvet_par;
 } par_info;

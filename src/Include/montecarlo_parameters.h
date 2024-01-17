@@ -2,8 +2,8 @@
 #define _MONTECARLO_PARAMS_H_
 
 
-#ifdef __GNUC__
-#include "sys/time.h"
+#if defined(__GNUC__) || defined(__NVCOMPILER)
+      #include "sys/time.h"
 #endif
 
 #define GPSTATUS_UPDATE 1 

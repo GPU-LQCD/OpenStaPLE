@@ -18,14 +18,14 @@
 // one in the nvidia hpc-sdk package.
 // When using the PGI compiler in M100, they give errors. Keep them commented
 // in that case
-/*
+
 	#define conj __builtin_conj
 	#define creal __builtin_creal
 	#define cimag __builtin_cimag
 	#define conjf __builtin_conjf
 	#define crealf __builtin_crealf
 	#define cimagf __builtin_cimagf
-*/
+
 
 #define DIM_BLOCK_X 8 // This should divide (nx/2)
 #define DIM_BLOCK_Y 8 // This should divide ny
