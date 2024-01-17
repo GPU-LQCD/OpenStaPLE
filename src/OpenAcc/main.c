@@ -512,9 +512,9 @@ int main(int argc, char* argv[]){
     printf("\tMEASUREMENTS ONLY ON FILE %s\n", mc_params.save_conf_name);
     printf("\n#################################################\n");
 
-    // gauge stuff measures
     IF_PERIODIC_REPLICA()
     {
+      // gauge stuff measures
       printf("Gauge Measures:\n");
       plq = calc_plaquette_soloopenacc(conf_acc,aux_conf_acc,local_sums);
 
@@ -528,11 +528,9 @@ int main(int argc, char* argv[]){
       printf("Plaquette     : %.18lf\n" ,plq/GL_SIZE/3.0/6.0);
       printf("Rectangle     : %.18lf\n" ,rect/GL_SIZE/3.0/6.0/2.0);
       printf("Polyakov Loop : (%.18lf,%.18lf) \n",creal(poly),cimag(poly));
-    }
 
-    // fermionic stuff measures
-    IF_PERIODIC_REPLICA()
-    {
+      // fermionic stuff measures
+      //
       printf("Fermion Measurements: see file %s\n",
 																		fm_par.fermionic_outfilename);
       fermion_measures(conf_acc,fermions_parameters,
@@ -996,8 +994,6 @@ int main(int argc, char* argv[]){
 
 
         if (GPSTATUS_FERMION_MEASURES == mc_params.next_gps){
-    
-            
 					// fermionic stuff measures
             
 					if(0 != mc_params.JarzynskiMode ){ // halfway measurements for Jarzynski
@@ -1197,8 +1193,7 @@ int main(int argc, char* argv[]){
   // saving gauge conf and RNG status to file
   {
 #ifdef PAR_TEMP
-    int lab=rep->label[devinfo.replica_idx];
-    snprintf(rep_str,20,"replica_%d",lab); // initialize rep_str
+    snprintf(rep_str,20,"replica_%d",devinfo.replica_idx); // initialize rep_str
     strcat(mc_params.save_conf_name,rep_str); // append rep_str
 #endif
 		
